@@ -32,7 +32,7 @@ To get started with Filman Flutter, follow these steps:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/filman_flutter.git filman_flutter
+git clone https://github.com/majusss/unofficial-filman-flutter.git filman_flutter
 ```
 
 2. Change to the project directory:
