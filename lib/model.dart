@@ -1,6 +1,12 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:filman_flutter/types/film.dart';
+import 'package:filman_flutter/types/film_details.dart';
+import 'package:filman_flutter/types/home_page.dart';
+import 'package:filman_flutter/types/login_response.dart';
+import 'package:filman_flutter/types/search_results.dart';
+import 'package:filman_flutter/types/season.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +30,7 @@ class FilmanModel extends ChangeNotifier {
     prefs?.remove('cookies');
   }
 
-  Future<Response> loginToFilman(login, password) async {
+  Future<LoginResponse> loginToFilman(login, password) async {
     try {
       final response = await dio.post(
         "https://filman.cc/logowanie",
@@ -47,17 +53,27 @@ class FilmanModel extends ChangeNotifier {
         prefs?.setStringList('cookies', cookies);
       }
 
-      return response;
+      LoginResponse loginResponse =
+          LoginResponse(success: response.statusCode == 302);
+
+      final document = parse(response.data);
+
+      document.querySelectorAll('.alert').forEach((element) {
+        final error = element.text.trim();
+        if (error.isNotEmpty) {
+          loginResponse.addError(error);
+        }
+      });
+
+      return loginResponse;
     } catch (identifier) {
-      return Response(
-        data: "<div class='alert'>${identifier.toString()}</div>",
-        statusCode: 200,
-        requestOptions: RequestOptions(path: ""),
-      );
+      LoginResponse loginResponse = LoginResponse(success: false);
+      loginResponse.addError('Error occurred while logging in: $identifier');
+      return loginResponse;
     }
   }
 
-  Future<Response> getFilmanPage() async {
+  Future<HomePage> getFilmanPage() async {
     final response = await dio.get(
       "https://filman.cc/",
       options: Options(
@@ -68,10 +84,40 @@ class FilmanModel extends ChangeNotifier {
         headers: {'cookie': cookies.join('; ')},
       ),
     );
-    return response;
+
+    final document = parse(response.data);
+
+    final homePage = HomePage();
+
+    for (final list in document.querySelectorAll('div[id=item-list]')) {
+      for (final filmDOM in list.children) {
+        final poster = filmDOM.querySelector('.poster');
+        final String title =
+            poster?.querySelector('a')?.attributes['title'] ?? "Brak danych";
+        final String desc =
+            poster?.querySelector('a')?.attributes['data-text'] ??
+                "Brak danych";
+        final String imageUrl =
+            poster?.querySelector('img')?.attributes['src'] ?? "Brak danych";
+        // final String qualityVersion =
+        //     poster?.querySelector('.quality-version')?.text.trim() ??
+        //         "Brak danych o jakości";
+        // final String viewCount = poster?.querySelector('.view')?.text.trim() ??
+        //     "Brak danych o ilości odsłon";
+        final String link =
+            poster?.querySelector('a')?.attributes['href'] ?? "Brak danych";
+
+        final category =
+            list.parent?.querySelector("h3")?.text.trim() ?? "INNE";
+        homePage.addFilm(category,
+            Film(title: title, desc: desc, imageUrl: imageUrl, link: link));
+      }
+    }
+
+    return homePage;
   }
 
-  Future<Response> searchInFilman(String query) async {
+  Future<SearchResults> searchInFilman(String query) async {
     final response = await dio.get(
       "https://filman.cc/item",
       queryParameters: {"phrase": query},
@@ -83,153 +129,176 @@ class FilmanModel extends ChangeNotifier {
         headers: {'cookie': cookies.join('; ')},
       ),
     );
-    return response;
+    final document = parse(response.data);
+
+    final searchResults = SearchResults();
+    final films = document.querySelectorAll('.col-xs-6.col-sm-3.col-lg-2');
+
+    for (final filmDOM in films) {
+      final poster = filmDOM.querySelector('.poster');
+      final title =
+          filmDOM.querySelector('.film_title')?.text.trim() ?? 'Brak danych';
+      final desc =
+          poster?.querySelector('a')?.attributes['data-text']?.trim() ??
+              'Brak danych';
+      // final releaseDate = filmDOM.querySelector('.film_year')?.text.trim();
+      final imageUrl =
+          poster?.querySelector('img')?.attributes['src']?.trim() ??
+              'Brak danych';
+      // final qualityVersion =
+      //     poster?.querySelector('a .quality-version')?.text.trim() ??
+      //         'Brak danych o jakości';
+      // final rating = poster?.querySelector('a .rate')?.text.trim();
+      final link =
+          poster?.querySelector('a')?.attributes['href'] ?? 'Brak danych';
+
+      searchResults.addFilm(
+          Film(title: title, desc: desc, imageUrl: imageUrl, link: link));
+    }
+
+    return searchResults;
   }
 
-  Future<Map<String, dynamic>> getFilmDetails(String link) async {
-    try {
-      final response = await dio.get(
-        link,
-        options: Options(
-          followRedirects: false,
-          validateStatus: (status) {
-            return true;
-          },
-          headers: {'cookie': cookies.join('; ')},
-        ),
-      );
+  Future<FilmDetails> getFilmDetails(String link) async {
+    final response = await dio.get(
+      link,
+      options: Options(
+        followRedirects: false,
+        validateStatus: (status) {
+          return true;
+        },
+        headers: {'cookie': cookies.join('; ')},
+      ),
+    );
 
-      if (response.headers['location'] != null) {
-        throw Exception(
-            'GET $link redirect to ${response.headers['location']}');
-      }
+    if (response.headers['location'] != null) {
+      throw Exception('GET $link redirect to ${response.headers['location']}');
+    }
 
-      if (response.statusCode != 200) {
-        throw Exception('GET $link return ${response.statusCode}');
-      }
+    if (response.statusCode != 200) {
+      throw Exception('GET $link return ${response.statusCode}');
+    }
 
-      final document = parse(response.data);
-      final desc = document.querySelector('p.description')?.text.trim() ?? '';
+    final document = parse(response.data);
+    final desc = document.querySelector('p.description')?.text.trim() ?? '';
 
-      final info = document
-          .querySelector('div.info')
-          ?.text
-          .replaceAll("\n", "")
-          .replaceAll("\t", "")
-          .replaceAll(" ", "");
+    final info = document
+        .querySelector('div.info')
+        ?.text
+        .replaceAll("\n", "")
+        .replaceAll("\t", "")
+        .replaceAll(" ", "");
 
-      Match? yearMatch = RegExp(r'Rok:(\d+)').firstMatch(info ?? "");
+    Match? yearMatch = RegExp(r'Rok:(\d+)').firstMatch(info ?? "");
 
-      String? releaseDate = "Brak informacji o roku produkcji";
+    String releaseDate = "Brak informacji o roku produkcji";
 
-      if (yearMatch != null) {
-        releaseDate = yearMatch.group(1);
-      }
+    if (yearMatch != null) {
+      releaseDate = yearMatch.group(1) ?? "Brak informacji o roku produkcji";
+    }
 
-      Match? viewCountMatch = RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "");
+    Match? viewCountMatch = RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "");
 
-      String? viewCount = "Brak informacji o ilości odsłon";
+    String viewCount = "Brak informacji o ilości odsłon";
 
-      if (viewCountMatch != null) {
-        viewCount = viewCountMatch.group(1);
-      }
+    if (viewCountMatch != null) {
+      viewCount = viewCountMatch.group(1) ?? "Brak informacji o ilości odsłon";
+    }
 
-      Match? countryMatch = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "");
+    Match? countryMatch = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "");
 
-      String? country = "Brak informacji o kraju produkcji";
+    String country = "Brak informacji o kraju produkcji";
 
-      if (countryMatch != null) {
-        country = countryMatch.group(1);
-      }
+    if (countryMatch != null) {
+      country = countryMatch.group(1) ?? "Brak informacji o kraju produkcji";
+    }
 
-      final categories = document
-          .querySelectorAll('ul.categories a')
-          .map((cat) => cat.text.trim())
-          .toList();
+    final categories = document
+        .querySelectorAll('ul.categories a')
+        .map((cat) => cat.text.trim())
+        .toList();
 
-      final isSerialPage = document.querySelector('#links') == null;
-      final season = <Map<String, dynamic>>[];
+    final isSerialPage = document.querySelector('#links') == null;
 
-      if (isSerialPage) {
-        document.querySelectorAll('#episode-list li').forEach((li) {
-          final seasonTitle = li.querySelector('span')?.text.trim() ?? '';
+    if (isSerialPage) {
+      List<Season> seasons = [];
+      document.querySelectorAll('#episode-list li').forEach((li) {
+        final seasonTitle = li.querySelector('span')?.text.trim() ?? '';
 
-          if (seasonTitle.isNotEmpty) {
-            final episodes = <Map<String, String>>[];
+        if (seasonTitle.isNotEmpty) {
+          final season = Season(seasonTitle: seasonTitle, episodes: []);
 
-            li.querySelectorAll('ul li').forEach((episode) {
-              final episodeUrl =
-                  episode.querySelector('a')?.attributes['href'] ?? '';
-              final episodeName = episode.querySelector('a')?.text.trim() ?? '';
+          li.querySelectorAll('ul li').forEach((episode) {
+            final episodeUrl =
+                episode.querySelector('a')?.attributes['href'] ?? '';
+            final episodeName = episode.querySelector('a')?.text.trim() ?? '';
 
-              episodes.add({
-                'url': episodeUrl,
-                'name': episodeName,
-              });
-            });
+            season.addEpisode(
+                Episode(episodeName: episodeName, episodeUrl: episodeUrl));
+          });
 
-            season.add({
-              'name': seasonTitle,
-              'episodes': episodes,
-            });
-          }
-        });
+          seasons.add(season);
+        }
+      });
 
-        return {
-          'isSerialPage': isSerialPage,
-          'releaseDate': releaseDate,
-          'categories': categories,
-          'viewCount': viewCount,
-          'country': country,
-          'desc': desc,
-          'season': season,
-        };
-      } else {
-        final links = <Map<String, String>>[];
+      return FilmDetails(
+          desc: desc,
+          releaseDate: releaseDate,
+          viewCount: viewCount,
+          country: country,
+          categories: categories,
+          isSerial: isSerialPage,
+          seasons: seasons);
+    } else {
+      List<Link> links = [];
 
-        document.querySelectorAll('tbody tr').forEach((row) {
-          final main = row.querySelector('td')?.text.trim() ?? '';
-          String link;
+      document.querySelectorAll('tbody tr').forEach((row) {
+        final main = row.querySelector('td')?.text.trim() ?? '';
+        String link;
 
-          try {
-            Codec<String, String> stringToBase64 = utf8.fuse(base64);
-            String decoded = stringToBase64.decode(
-                (row.querySelector('td a')?.attributes['data-iframe'] ?? ''));
-            link = jsonDecode(decoded)["src"] ?? '';
-          } catch (error) {
-            link = '';
-          }
+        try {
+          Codec<String, String> stringToBase64 = utf8.fuse(base64);
+          String decoded = stringToBase64.decode(
+              (row.querySelector('td a')?.attributes['data-iframe'] ?? ''));
+          link = jsonDecode(decoded)["src"] ?? '';
+        } catch (error) {
+          link = '';
+        }
 
-          final hostingImg =
-              row.querySelector('td a img')?.attributes['src'] ?? '';
-          final tableData = row.querySelectorAll('td');
-          final language = tableData.length > 1 ? tableData[1].text.trim() : '';
-          final qualityVersion =
-              tableData.length > 2 ? tableData[2].text.trim() : '';
+        final hostingImg =
+            row.querySelector('td a img')?.attributes['src'] ?? '';
+        final tableData = row.querySelectorAll('td');
+        final language = tableData.length > 1 ? tableData[1].text.trim() : '';
+        final qualityVersion =
+            tableData.length > 2 ? tableData[2].text.trim() : '';
 
-          final linkObj = {
-            'main': main,
-            'link': link,
-            'language': language,
-            'qualityVersion': qualityVersion,
-            'hostingImg': hostingImg,
-          };
+        links.add(Link(
+          main: main,
+          qualityVersion: qualityVersion,
+          language: language,
+          link: link,
+          hostingImgUrl: hostingImg,
+        ));
+      });
 
-          links.add(linkObj);
-        });
+      // return {
+      //   'isSerialPage': isSerialPage,
+      //   'releaseDate': releaseDate,
+      //   'categories': categories,
+      //   'viewCount': viewCount,
+      //   'country': country,
+      //   'desc': desc,
+      //   'links': links,
+      // };
 
-        return {
-          'isSerialPage': isSerialPage,
-          'releaseDate': releaseDate,
-          'categories': categories,
-          'viewCount': viewCount,
-          'country': country,
-          'desc': desc,
-          'links': links,
-        };
-      }
-    } catch (error) {
-      throw Exception('Error occurred while fetching video details: $error');
+      return FilmDetails(
+          desc: desc,
+          releaseDate: releaseDate,
+          viewCount: viewCount,
+          country: country,
+          categories: categories,
+          isSerial: isSerialPage,
+          links: links);
     }
   }
 }

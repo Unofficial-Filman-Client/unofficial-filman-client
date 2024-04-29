@@ -1,7 +1,8 @@
 import 'package:filman_flutter/home.dart';
 import 'package:filman_flutter/model.dart';
+import 'package:filman_flutter/types/login_response.dart';
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,14 +21,15 @@ class _LoginScreenState extends State<LoginScreen> {
       isLoading = true;
     });
 
-    final response = await Provider.of<FilmanModel>(context, listen: false)
-        .loginToFilman(loginController.text, passwordController.text);
+    final LoginResponse loginResponse =
+        await Provider.of<FilmanModel>(context, listen: false)
+            .loginToFilman(loginController.text, passwordController.text);
 
     setState(() {
       isLoading = false;
     });
 
-    if (response.statusCode == 302) {
+    if (loginResponse.success) {
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -35,11 +37,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      final dom = parse(response.data);
-
-      dom.querySelectorAll('.alert').forEach((element) {
-        final error = element.text.trim();
-        if (error.isNotEmpty) {
+      for (final error in loginResponse.errors) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(error),
             dismissDirection: DismissDirection.horizontal,
@@ -47,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
             showCloseIcon: true,
           ));
         }
-      });
+      }
     }
   }
 
@@ -56,6 +55,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight
+    ]);
     loginController = TextEditingController();
     passwordController = TextEditingController();
   }

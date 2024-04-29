@@ -1,9 +1,11 @@
 import 'package:filman_flutter/film.dart';
 import 'package:filman_flutter/login.dart';
 import 'package:filman_flutter/model.dart';
+import 'package:filman_flutter/types/film.dart';
+import 'package:filman_flutter/types/home_page.dart';
+import 'package:filman_flutter/types/search_results.dart';
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import 'package:html/parser.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,26 +16,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  late Future<Response> lazyDocument;
-  late Future<Response> lazySearch;
   late final TextEditingController searchController;
-  String lastSearch = '';
-  Set<String> categories = {};
+
+  late Future<HomePage> homePageLoader;
+  late Future<SearchResults> lazySearch;
 
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     searchController = TextEditingController();
-    lazySearch = Future.value(Response(
-        data: '', statusCode: 200, requestOptions: RequestOptions(path: '')));
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    setState(() {
-      lazyDocument =
-          Provider.of<FilmanModel>(context, listen: false).getFilmanPage();
-    });
+    homePageLoader =
+        Provider.of<FilmanModel>(context, listen: false).getFilmanPage();
   }
 
   void _showBottomSheet() {
@@ -57,9 +54,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       leading: const Icon(Icons.search),
                       autoFocus: true,
                       onChanged: (value) {
-                        if (value.isNotEmpty && value != lastSearch) {
+                        if (value.isNotEmpty) {
                           setState(() {
-                            lastSearch = value;
                             lazySearch =
                                 Provider.of<FilmanModel>(context, listen: false)
                                     .searchInFilman(value);
@@ -99,90 +95,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ));
                                 } else if (snapshot.connectionState ==
                                     ConnectionState.done) {
-                                  final document = parse(snapshot.data?.data);
-
-                                  final films = document.querySelectorAll(
-                                      '.col-xs-6.col-sm-3.col-lg-2');
-
-                                  List<Widget> filmWidgets = [];
-
-                                  for (final film in films) {
-                                    final poster =
-                                        film.querySelector('.poster');
-                                    final title = film
-                                        .querySelector('.film_title')
-                                        ?.text
-                                        .trim();
-                                    final desc = poster
-                                        ?.querySelector('a')
-                                        ?.attributes['data-text']
-                                        ?.trim();
-                                    final releaseDate = film
-                                        .querySelector('.film_year')
-                                        ?.text
-                                        .trim();
-                                    final imageUrl = poster
-                                        ?.querySelector('img')
-                                        ?.attributes['src']
-                                        ?.trim();
-                                    final qualityVersion = poster
-                                        ?.querySelector('a .quality-version')
-                                        ?.text
-                                        .trim();
-                                    final rating = poster
-                                        ?.querySelector('a .rate')
-                                        ?.text
-                                        .trim();
-                                    final link = poster
-                                        ?.querySelector('a')
-                                        ?.attributes['href'];
-
-                                    final filmObj = {
-                                      'title': title,
-                                      'desc': desc,
-                                      'releaseDate': releaseDate,
-                                      'imageUrl': imageUrl,
-                                      'qualityVersion': qualityVersion,
-                                      'rating': rating,
-                                      'link': link,
-                                    };
-
-                                    filmWidgets.add(
-                                      Card(
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 3.0),
-                                        child: ListTile(
-                                          title: Text(filmObj['title'] ?? ''),
-                                          subtitle: Text(filmObj['desc'] ?? ''),
-                                          leading: Image.network(
-                                              filmObj['imageUrl'] ?? ''),
-                                          onTap: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FilmScreen(
-                                                  url: filmObj["link"],
-                                                  title: filmObj["title"],
-                                                  image: filmObj["imageUrl"],
+                                  return ListView(
+                                    children: snapshot.data?.isNotEmpty() ??
+                                            false
+                                        ? [
+                                            for (Film film
+                                                in snapshot.data?.getFilms() ??
+                                                    [])
+                                              Card(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16.0,
+                                                        vertical: 3.0),
+                                                child: ListTile(
+                                                  title: Text(film.title),
+                                                  subtitle: Text(film.desc),
+                                                  leading: Image.network(
+                                                      film.imageUrl),
+                                                  onTap: () {
+                                                    Navigator.of(context).push(
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            FilmScreen(
+                                                          url: film.link,
+                                                          title: film.title,
+                                                          image: film.imageUrl,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return ListView(
-                                    children: filmWidgets.isNotEmpty
-                                        ? [
-                                            ...filmWidgets,
                                             SizedBox(
                                               height: MediaQuery.of(context)
                                                   .viewInsets
                                                   .bottom,
                                             )
                                           ]
-                                        : [const Text("Brak wyników")],
+                                        : [
+                                            Center(
+                                              child: Text("Brak wyników",
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .labelMedium),
+                                            )
+                                          ],
                                   );
                                 }
                                 return const Text("Brak wyników");
@@ -210,8 +167,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: lazyDocument,
-      builder: (BuildContext context, AsyncSnapshot<Response> snapshot) {
+      future: homePageLoader,
+      builder: (BuildContext context, AsyncSnapshot<HomePage> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
               appBar: AppBar(
@@ -251,43 +208,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: CircularProgressIndicator(),
               ));
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Scaffold(
+              appBar: AppBar(
+                title: const Text('Welcome to Filman!'),
+                actions: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 8.0),
+                    child: IconButton(
+                      onPressed: () {
+                        // Handle settings action
+                      },
+                      icon: const Icon(Icons.settings),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(right: 16.0),
+                    child: IconButton(
+                      onPressed: () {
+                        Provider.of<FilmanModel>(context, listen: false)
+                            .logout();
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.logout),
+                    ),
+                  ),
+                ],
+                automaticallyImplyLeading: false,
+                bottom: PreferredSize(
+                    preferredSize: Size(MediaQuery.of(context).size.width, 50),
+                    child: const LinearProgressIndicator()),
+              ),
+              body: Center(
+                child: Text(
+                    "Wystąpił błąd podczas ładowania strony (${snapshot.error})"),
+              ));
         } else {
-          final document = parse(snapshot.data!.data);
-
-          final output = {};
-          final Set<String> finalCategories = {};
-
-          document.querySelectorAll('div[id=item-list]').forEach((list) {
-            for (final film in list.children) {
-              final poster = film.querySelector('.poster');
-              final title = poster?.querySelector('a')?.attributes['title'];
-              final desc = poster?.querySelector('a')?.attributes['data-text'];
-              final imageUrl = poster?.querySelector('img')?.attributes['src'];
-              final qualityVersion =
-                  poster?.querySelector('.quality-version')?.text.trim();
-              final viewCount = poster?.querySelector('.view')?.text.trim();
-              final link = poster?.querySelector('a')?.attributes['href'];
-
-              final filmObj = {
-                'title': title,
-                'desc': desc,
-                'imageUrl': imageUrl,
-                'qualityVersion': qualityVersion,
-                'viewCount': viewCount,
-                'link': link,
-              };
-
-              final category =
-                  list.parent?.querySelector("h3")?.text.trim() ?? "INNE";
-              if (output[category] == null) output[category] = [];
-              output[category].add(filmObj);
-              finalCategories.add(category);
-            }
-          });
-
           return DefaultTabController(
-            length: finalCategories.length,
+            length: snapshot.data?.categories.length ?? 0,
             child: Scaffold(
               appBar: AppBar(
                 title: const Text('Welcome to Filman!'),
@@ -322,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   isScrollable: true,
                   tabAlignment: TabAlignment.center,
                   tabs: [
-                    for (final category in finalCategories)
+                    for (final category in snapshot.data?.getCategories() ?? [])
                       Tab(
                         child: Text(
                           category,
@@ -335,28 +296,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               body: SafeArea(
                 child: TabBarView(
                   children: [
-                    for (final category in output.values)
+                    for (final category in snapshot.data?.getCategories() ?? [])
                       RefreshIndicator(
-                        onRefresh: _refresh,
+                        onRefresh: () async {
+                          setState(() {
+                            homePageLoader =
+                                Provider.of<FilmanModel>(context, listen: false)
+                                    .getFilmanPage();
+                          });
+                        },
                         child: ListView(
                           children: [
                             const SizedBox(height: 3.0),
-                            for (final film in category)
+                            for (Film film
+                                in snapshot.data?.getFilms(category) ?? [])
                               Card(
                                 margin: const EdgeInsets.symmetric(
                                     horizontal: 16.0, vertical: 3.0),
                                 child: ListTile(
-                                  title: Text(film['title'] ?? ''),
-                                  subtitle: Text(film['desc'] ?? ''),
-                                  leading:
-                                      Image.network(film['imageUrl'] ?? ''),
+                                  title: Text(film.title),
+                                  subtitle: Text(film.desc),
+                                  leading: Image.network(film.imageUrl),
                                   onTap: () async {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (context) => FilmScreen(
-                                          url: film["link"],
-                                          title: film["title"],
-                                          image: film["imageUrl"],
+                                          url: film.link,
+                                          title: film.title,
+                                          image: film.imageUrl,
                                         ),
                                       ),
                                     );

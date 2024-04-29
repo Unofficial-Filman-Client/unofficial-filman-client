@@ -1,10 +1,10 @@
 name: filman_flutter
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
-  sdk: '>=3.3.3 <4.0.0'
+  sdk: ">=3.3.3 <4.0.0"
 
 dependencies:
   dio: ^5.4.2+1
@@ -12,12 +12,15 @@ dependencies:
   flutter:
     sdk: flutter
   html: ^0.15.4
-  pod_player: ^0.2.2
+  media_kit: ^1.1.10+1
+  media_kit_libs_audio: ^1.0.4
+  media_kit_libs_video: ^1.0.4
+  media_kit_video: ^1.2.4
   provider: ^6.1.2
   share_plus: ^8.0.3
   shared_preferences: ^2.2.2
   url_launcher: ^6.2.5
-  video_player: ^2.1.15
+  wakelock_plus: ^1.2.4
 
 dev_dependencies:
   flutter_test:

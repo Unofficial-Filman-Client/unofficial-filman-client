@@ -1,93 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:flutter/services.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
-class Player extends StatefulWidget {
+class FilmanPlayer extends StatefulWidget {
   final String url;
 
-  const Player({super.key, required this.url});
+  const FilmanPlayer({super.key, required this.url});
 
   @override
-  State<Player> createState() => _PlayerState();
+  State<FilmanPlayer> createState() => _FilmanPlayerState();
 }
 
-class _PlayerState extends State<Player> {
-  late final VideoPlayerController controller;
+class _FilmanPlayerState extends State<FilmanPlayer> {
+  late final player = Player();
+  late final controller = VideoController(player);
 
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
+
     debugPrint('Player: ${widget.url}');
-    controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize().then((_) {
-        setState(() {});
-      });
+    player.open(Media(widget.url));
+    // controller.addListener(() {
+    //   if (controller.value.isPlaying) {
+    //     WakelockPlus.enable();
+    //   } else {
+    //     WakelockPlus.disable();
+    //   }
+    // });
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          if (controller.value.isInitialized)
-            AspectRatio(
-              aspectRatio: controller.value.aspectRatio,
-              child: VideoPlayer(controller),
-            ),
-          const Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Movie Title',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.star,
-                      color: Colors.yellow,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      '4.5',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Icon(
-                      Icons.timer,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      '2h 30m',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+    return Center(
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width * 9.0 / 16.0,
+        child: Video(controller: controller),
       ),
     );
   }

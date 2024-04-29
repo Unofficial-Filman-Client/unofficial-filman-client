@@ -1,7 +1,8 @@
 import 'package:filman_flutter/model.dart';
 import 'package:filman_flutter/player.dart';
-import 'package:filman_flutter/player_scraper.dart';
+import 'package:filman_flutter/types/film_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,12 +19,16 @@ class _FilmScreenState extends State<FilmScreen> {
   String? get url => widget.url;
   String? get title => widget.title;
   String? get image => widget.image;
-  late Future lazyFilm;
-  String directUrl = '';
+  late Future<FilmDetails> lazyFilm;
+  String? directUrl;
 
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     lazyFilm = Provider.of<FilmanModel>(context, listen: false)
         .getFilmDetails(url ?? '');
   }
@@ -39,8 +44,8 @@ class _FilmScreenState extends State<FilmScreen> {
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
-            if (snapshot.data["isSerialPage"] == false) {
-              getDirect(snapshot.data['links']).then((value) {
+            if (snapshot.data?.isSerial == false) {
+              snapshot.data?.getDirect().then((value) {
                 setState(() {
                   directUrl = value;
                 });
@@ -52,9 +57,10 @@ class _FilmScreenState extends State<FilmScreen> {
               child: Column(children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                      snapshot.data['categories'].join(' ').toUpperCase() ??
-                          "Brak kategorii"),
+                  child: Text(((snapshot.data?.categories.isNotEmpty ?? false)
+                          ? snapshot.data?.categories.join(' ').toUpperCase()
+                          : "Brak kategorii") ??
+                      "Brak kategorii"),
                 ),
                 Align(
                     alignment: Alignment.centerLeft,
@@ -80,24 +86,30 @@ class _FilmScreenState extends State<FilmScreen> {
                     scrollDirection: Axis.horizontal,
                     children: [
                       Chip(
-                        label: Text(snapshot.data['releaseDate']),
+                        label: Text(
+                            snapshot.data?.releaseDate ?? 'Brak informacji'),
                         avatar: const Icon(Icons.calendar_month),
                       ),
                       const SizedBox(width: 8),
                       Chip(
-                        label: Text(snapshot.data['viewCount']),
+                        label:
+                            Text(snapshot.data?.viewCount ?? 'Brak informacji'),
                         avatar: const Icon(Icons.people),
                       ),
                       const SizedBox(width: 8),
                       Chip(
-                        label: Text(snapshot.data['country']),
+                        label:
+                            Text(snapshot.data?.country ?? 'Brak informacji'),
                         avatar: const Icon(Icons.flag),
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  snapshot.data['desc'] ?? '',
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Text(
+                    snapshot.data?.desc ?? 'Brak opisu',
+                  ),
                 ),
               ]),
             ));
@@ -135,12 +147,17 @@ class _FilmScreenState extends State<FilmScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Player(url: directUrl),
-            ),
-          );
+          if (directUrl is String) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FilmanPlayer(url: directUrl as String),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Could not get direct link')));
+          }
         },
         child: FutureBuilder(
           future: lazyFilm,
@@ -150,7 +167,7 @@ class _FilmScreenState extends State<FilmScreen> {
             } else if (snapshot.hasError) {
               return const Icon(Icons.error);
             } else {
-              return Icon(snapshot.data['isSerialPage']
+              return Icon(snapshot.data?.isSerial ?? false
                   ? Icons.list
                   : Icons.play_arrow);
             }

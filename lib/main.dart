@@ -3,11 +3,13 @@ import 'package:filman_flutter/home.dart';
 import 'package:filman_flutter/login.dart';
 import 'package:filman_flutter/model.dart';
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
   final cookies = prefs.getStringList('cookies') ?? [];
