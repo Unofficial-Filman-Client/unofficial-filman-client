@@ -1,4 +1,4 @@
-import 'package:filman_flutter/home.dart';
+import 'package:filman_flutter/screens/home.dart';
 import 'package:filman_flutter/model.dart';
 import 'package:filman_flutter/types/login_response.dart';
 import 'package:flutter/material.dart';

@@ -1,6 +1,6 @@
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:filman_flutter/home.dart';
-import 'package:filman_flutter/login.dart';
+import 'package:filman_flutter/screens/home.dart';
+import 'package:filman_flutter/screens/login.dart';
 import 'package:filman_flutter/model.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Episode {
   final String episodeName;
   final String episodeUrl;
@@ -14,6 +16,17 @@ class Season {
 
   void addEpisode(Episode episode) {
     episodes.add(episode);
+  }
+
+  List<Episode> getEpisodes() {
+    episodes.sort((a, b) => a.episodeName
+        .split(" ")[0]
+        .split("e")[1]
+        .replaceAll("]", "")
+        .compareTo(
+            b.episodeName.split(" ")[0].split("e")[1].replaceAll("]", "")));
+
+    return episodes;
   }
 
   Season({

@@ -47,6 +47,11 @@ class FilmDetails {
     return Uri.parse(link ?? '').toString();
   }
 
+  List<Season>? getSeasons() {
+    seasons?.sort((a, b) => a.seasonTitle.compareTo(b.seasonTitle));
+    return seasons;
+  }
+
   FilmDetails({
     required this.desc,
     required this.releaseDate,

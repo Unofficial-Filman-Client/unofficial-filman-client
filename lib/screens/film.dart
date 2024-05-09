@@ -1,6 +1,8 @@
 import 'package:filman_flutter/model.dart';
-import 'package:filman_flutter/player.dart';
+import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/types/film_details.dart';
+import 'package:filman_flutter/types/season.dart';
+import 'package:filman_flutter/widgets/episodes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +22,21 @@ class _FilmScreenState extends State<FilmScreen> {
   String? get title => widget.title;
   String? get image => widget.image;
   late Future<FilmDetails> lazyFilm;
-  String? directUrl;
+
+  void _showBottomSheet(List<Season> seasons) {
+    showModalBottomSheet(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        builder: (context) {
+          return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: EpisodesModal(seasons: seasons));
+        });
+  }
 
   @override
   void initState() {
@@ -44,13 +60,6 @@ class _FilmScreenState extends State<FilmScreen> {
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
-            if (snapshot.data?.isSerial == false) {
-              snapshot.data?.getDirect().then((value) {
-                setState(() {
-                  directUrl = value;
-                });
-              });
-            }
             return SafeArea(
                 child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -145,34 +154,46 @@ class _FilmScreenState extends State<FilmScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (directUrl is String) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FilmanPlayer(url: directUrl as String),
-              ),
-            );
+      floatingActionButton: FutureBuilder(
+        future: lazyFilm,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return FloatingActionButton(
+                onPressed: () {}, child: const CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return FloatingActionButton(
+                onPressed: () {}, child: const Icon(Icons.error));
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Could not get direct link')));
+            return FloatingActionButton(
+                child: Icon(snapshot.data?.isSerial ?? false
+                    ? Icons.list
+                    : Icons.play_arrow),
+                onPressed: () async {
+                  if (snapshot.data?.isSerial == true) {
+                    if (snapshot.data?.seasons?.isNotEmpty ?? false) {
+                      _showBottomSheet(snapshot.data?.getSeasons() ?? []);
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Brak dostępnych sezonów')));
+                      }
+                    }
+                    if (snapshot.data?.isSerial == false) {
+                      String? direct = await snapshot.data?.getDirect();
+                      if (direct != null) {
+                        if (context.mounted) {
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => FilmanPlayer(
+                                    url: direct,
+                                  )));
+                        }
+                      } else {}
+                    }
+                  }
+                });
           }
         },
-        child: FutureBuilder(
-          future: lazyFilm,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const CircularProgressIndicator();
-            } else if (snapshot.hasError) {
-              return const Icon(Icons.error);
-            } else {
-              return Icon(snapshot.data?.isSerial ?? false
-                  ? Icons.list
-                  : Icons.play_arrow);
-            }
-          },
-        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
     );
