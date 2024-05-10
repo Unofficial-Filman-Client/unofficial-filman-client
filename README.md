@@ -1,3 +1,5 @@
+[![Codemagic build status](https://api.codemagic.io/apps/663d2aa900f4aebf44ffa035/663d2aa900f4aebf44ffa034/status_badge.svg)](https://codemagic.io/apps/663d2aa900f4aebf44ffa035/663d2aa900f4aebf44ffa034/latest_build)
+
 # Unofficial Filman Client
 
 Unofficial Filman Client is a client for filman.cc built using Flutter. It allows you to browse, search, and watch movies and TV shows available on filman.cc.
@@ -19,10 +21,8 @@ Unofficial Filman Client is a client for filman.cc built using Flutter. It allow
 ## TODO
 
 - Allow users to choose the language and quality of the video.
-- Add support for serials.
 - Make a custom video overlay.
 - Add Google/Android TV support.
-- Move scraping to another file.
 - Check internet access.
 
 ## Getting Started
