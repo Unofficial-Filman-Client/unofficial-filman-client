@@ -74,19 +74,28 @@ class _FilmScreenState extends State<FilmScreen> {
                 Align(
                     alignment: Alignment.centerLeft,
                     child: Row(
-                      children: [
-                        Image.network(
-                          image ?? '',
-                          width: MediaQuery.of(context).size.width * 0.25,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            title ?? '',
-                            style: const TextStyle(fontSize: 24),
-                          ),
-                        )
-                      ],
+                      children: image?.isEmpty ?? true
+                          ? [
+                              Flexible(
+                                child: Text(
+                                  title ?? '',
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                              )
+                            ]
+                          : [
+                              Image.network(
+                                image ?? '',
+                                width: MediaQuery.of(context).size.width * 0.25,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  title ?? '',
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                              )
+                            ],
                     )),
                 const SizedBox(height: 8),
                 SizedBox(
@@ -179,16 +188,23 @@ class _FilmScreenState extends State<FilmScreen> {
                                 content: Text('Brak dostępnych sezonów')));
                       }
                     }
-                    if (snapshot.data?.isSerial == false) {
-                      String? direct = await snapshot.data?.getDirect();
+                  }
+                  if (snapshot.data?.isSerial == false) {
+                    String? direct = await snapshot.data?.getDirect();
+                    debugPrint('Direct: $direct');
+                    if (context.mounted) {
                       if (direct != null) {
-                        if (context.mounted) {
-                          Navigator.of(context).push(MaterialPageRoute(
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
                               builder: (context) => FilmanPlayer(
                                     url: direct,
-                                  )));
-                        }
-                      } else {}
+                                  )),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not supported yet')));
+                      }
                     }
                   }
                 });

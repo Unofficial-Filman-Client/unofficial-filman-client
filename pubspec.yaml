@@ -13,11 +13,10 @@ dependencies:
     sdk: flutter
   html: ^0.15.4
   media_kit: ^1.1.10+1
-  media_kit_libs_audio: ^1.0.4
   media_kit_libs_video: ^1.0.4
   media_kit_video: ^1.2.4
   provider: ^6.1.2
-  share_plus: ^8.0.3
+  share_plus: ^9.0.0
   shared_preferences: ^2.2.2
   url_launcher: ^6.2.5
   wakelock_plus: ^1.2.4
@@ -25,7 +24,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
