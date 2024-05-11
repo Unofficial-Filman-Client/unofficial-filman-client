@@ -190,21 +190,50 @@ class _FilmScreenState extends State<FilmScreen> {
                     }
                   }
                   if (snapshot.data?.isSerial == false) {
-                    String? direct = await snapshot.data?.getDirect();
-                    debugPrint('Direct: $direct');
-                    if (context.mounted) {
-                      if (direct != null) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => FilmanPlayer(
-                                    url: direct,
-                                  )),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Not supported yet')));
-                      }
+                    List<DirectLink>? direct = await snapshot.data?.getDirect();
+                    if (!context.mounted) return;
+                    if (direct == null) return;
+                    if (direct.length > 1) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Wybierz język'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (DirectLink link in direct)
+                                ListTile(
+                                  title: Text(link.language),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => FilmanPlayer(
+                                                url: link.link,
+                                              )),
+                                    );
+                                  },
+                                )
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                                onPressed: Navigator.of(context).pop,
+                                child: const Text('Anuluj'))
+                          ],
+                        ),
+                      );
+                    } else if (direct.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => FilmanPlayer(
+                                  url: direct.first.link,
+                                )),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Brak dostępnych linków')));
                     }
                   }
                 });

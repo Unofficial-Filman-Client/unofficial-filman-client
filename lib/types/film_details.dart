@@ -18,6 +18,18 @@ class Link {
   });
 }
 
+class DirectLink {
+  final String link;
+  final String qualityVersion;
+  final String language;
+
+  DirectLink({
+    required this.link,
+    required this.qualityVersion,
+    required this.language,
+  });
+}
+
 class FilmDetails {
   final String desc;
   final String releaseDate;
@@ -28,13 +40,18 @@ class FilmDetails {
   final List<Season>? seasons;
   final List<Link>? links;
 
-  Future<String?> getDirect() async {
+  Future<List<DirectLink>> getDirect() async {
+    List<DirectLink> directLinks = [];
     for (Link link in links ?? []) {
       if (link.main.toString().contains("vidoza")) {
-        return await scrapVidoza(link.link);
+        directLinks.add(DirectLink(
+          link: await scrapVidoza(link.link),
+          qualityVersion: link.qualityVersion,
+          language: link.language,
+        ));
       }
     }
-    return null;
+    return directLinks;
   }
 
   Future<String> scrapVidoza(String url) async {

@@ -189,29 +189,19 @@ class FilmanModel extends ChangeNotifier {
         .replaceAll("\t", "")
         .replaceAll(" ", "");
 
-    Match? yearMatch = RegExp(r'Rok:(\d+)').firstMatch(info ?? "");
+    Match? yearMatch =
+        RegExp(r'(Rok:(\d+))|(Premiera:(\d+))').firstMatch(info ?? "");
 
-    String releaseDate = "Brak informacji o roku produkcji";
+    String releaseDate = yearMatch?.group(2) ??
+        yearMatch?.group(4) ??
+        "Brak informacji o roku produkcji";
 
-    if (yearMatch != null) {
-      releaseDate = yearMatch.group(1) ?? "Brak informacji o roku produkcji";
-    }
+    String viewCount =
+        RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "")?.group(1) ??
+            "Brak informacji o ilości odsłon";
 
-    Match? viewCountMatch = RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "");
-
-    String viewCount = "Brak informacji o ilości odsłon";
-
-    if (viewCountMatch != null) {
-      viewCount = viewCountMatch.group(1) ?? "Brak informacji o ilości odsłon";
-    }
-
-    Match? countryMatch = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "");
-
-    String country = "Brak informacji o kraju produkcji";
-
-    if (countryMatch != null) {
-      country = countryMatch.group(1) ?? "Brak informacji o kraju produkcji";
-    }
+    String country = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "")?.group(1) ??
+        "Brak informacji o kraju produkcji";
 
     final categories = document
         .querySelectorAll('ul.categories a')
