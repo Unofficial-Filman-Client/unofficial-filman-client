@@ -95,7 +95,7 @@ jobs:
         run: |
           gh release create v${{ github.run_number }} \
             --title "Release v${{ github.run_number }}" \
-            --notes "Automated release" \
+            --notes "Automated release, Commit: ${{ github.event.head_commit.message }}" \
             /home/runner/work/unofficial-filman-flutter/unofficial-filman-flutter/unofficial-filman-android.apk /home/runner/work/unofficial-filman-flutter/unofficial-filman-flutter/unofficial-filman-ios.ipa
         env:
           GH_TOKEN: ${{ github.token }}
