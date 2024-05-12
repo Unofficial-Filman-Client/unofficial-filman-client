@@ -43,7 +43,6 @@ jobs:
   ios-build:
     name: Build iOS IPA
     runs-on: macos-latest
-    needs: android-build
 
     steps:
       - name: Checkout Repository
@@ -93,9 +92,11 @@ jobs:
 
       - name: Create Release
         run: |
-          gh release create v${{ github.run_number }} \
-            --title "Release v${{ github.run_number }}" \
-            --notes "Automated release, Commit: ${{ github.event.head_commit.message }}" \
+          current_date=$(date +'%Y-%m-%d_%H-%M-%S')
+          gh release create "$current_date.${{ github.run_number }}" \
+            --title "Release $current_date.${{ github.run_number }}" \
+            --notes "Commit: \`$(git log -1 --pretty=format:'%h - %s')\`<br/>*Auto release*"
             /home/runner/work/unofficial-filman-flutter/unofficial-filman-flutter/unofficial-filman-android.apk /home/runner/work/unofficial-filman-flutter/unofficial-filman-flutter/unofficial-filman-ios.ipa
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
