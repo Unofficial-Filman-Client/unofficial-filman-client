@@ -85,6 +85,12 @@ class FilmanModel extends ChangeNotifier {
       ),
     );
 
+    if (response.headers['location'] != null) {
+      logout();
+      throw Exception(
+          'GET https://filman.cc/ redirect to ${response.headers['location']}');
+    }
+
     final document = parse(response.data);
 
     final homePage = HomePage();
@@ -180,7 +186,11 @@ class FilmanModel extends ChangeNotifier {
     }
 
     final document = parse(response.data);
-    final desc = document.querySelector('p.description')?.text.trim() ?? '';
+
+    final title = document.querySelector("[itemprop='title']")?.text.trim() ??
+        "${document.querySelector("#item-headline")?.querySelector("h2")?.text.trim() ?? "Brak tytułu"} - ${document.querySelector("#item-headline")?.querySelector("h3")?.text.trim()}";
+    final desc =
+        document.querySelector('p.description')?.text.trim() ?? 'Brak opisu';
 
     final info = document
         .querySelector('div.info')
@@ -232,6 +242,7 @@ class FilmanModel extends ChangeNotifier {
       });
 
       return FilmDetails(
+          title: title,
           desc: desc,
           releaseDate: releaseDate,
           viewCount: viewCount,
@@ -282,6 +293,7 @@ class FilmanModel extends ChangeNotifier {
       // };
 
       return FilmDetails(
+          title: title,
           desc: desc,
           releaseDate: releaseDate,
           viewCount: viewCount,

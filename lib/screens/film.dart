@@ -41,16 +41,16 @@ class _FilmScreenState extends State<FilmScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
     lazyFilm = Provider.of<FilmanModel>(context, listen: false)
         .getFilmDetails(url ?? '');
   }
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     return Scaffold(
       body: FutureBuilder(
         future: lazyFilm,
@@ -203,13 +203,15 @@ class _FilmScreenState extends State<FilmScreen> {
                             children: [
                               for (DirectLink link in direct)
                                 ListTile(
-                                  title: Text(link.language),
+                                  title: Text(
+                                      '${link.qualityVersion} ${link.language}'),
                                   onTap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) => FilmanPlayer(
-                                                url: link.link,
+                                                filmDetails: snapshot.data!,
+                                                selectedLink: link,
                                               )),
                                     );
                                   },
@@ -228,7 +230,8 @@ class _FilmScreenState extends State<FilmScreen> {
                         context,
                         MaterialPageRoute(
                             builder: (context) => FilmanPlayer(
-                                  url: direct.first.link,
+                                  filmDetails: snapshot.data!,
+                                  selectedLink: direct.first,
                                 )),
                       );
                     } else {

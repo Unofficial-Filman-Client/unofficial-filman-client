@@ -21,10 +21,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
     homePageLoader =
         Provider.of<FilmanModel>(context, listen: false).getFilmanPage();
   }
@@ -46,6 +42,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     return FutureBuilder(
       future: homePageLoader,
       builder: (BuildContext context, AsyncSnapshot<HomePage> snapshot) {
@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
                 automaticallyImplyLeading: false,
                 bottom: PreferredSize(
-                    preferredSize: Size(MediaQuery.of(context).size.width, 50),
+                    preferredSize: Size(MediaQuery.of(context).size.width, 49),
                     child: const LinearProgressIndicator()),
               ),
               body: const Center(

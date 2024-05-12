@@ -18,6 +18,7 @@ dependencies:
   provider: ^6.1.2
   share_plus: ^9.0.0
   shared_preferences: ^2.2.2
+  system_screen_brightness: ^0.0.4
   url_launcher: ^6.2.5
   wakelock_plus: ^1.2.4
 

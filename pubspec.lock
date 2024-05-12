@@ -629,6 +629,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0+1"
+  system_screen_brightness:
+    dependency: "direct main"
+    description:
+      name: system_screen_brightness
+      sha256: "26650841ee3409badd517432b11469e45079352dc10015b7354e2d2b36866f21"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   term_glyph:
     dependency: transitive
     description:

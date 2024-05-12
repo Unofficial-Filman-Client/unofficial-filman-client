@@ -31,6 +31,7 @@ class DirectLink {
 }
 
 class FilmDetails {
+  final String title;
   final String desc;
   final String releaseDate;
   final String viewCount;
@@ -70,6 +71,7 @@ class FilmDetails {
   }
 
   FilmDetails({
+    required this.title,
     required this.desc,
     required this.releaseDate,
     required this.viewCount,
