@@ -99,9 +99,10 @@ class FilmanModel extends ChangeNotifier {
       for (final filmDOM in list.children) {
         final poster = filmDOM.querySelector('.poster');
         final String title =
-            poster?.querySelector('a')?.attributes['title'] ?? "Brak danych";
+            poster?.querySelector('a')?.attributes['title']?.trim() ??
+                "Brak danych";
         final String desc =
-            poster?.querySelector('a')?.attributes['data-text'] ??
+            poster?.querySelector('a')?.attributes['data-text']?.trim() ??
                 "Brak danych";
         final String imageUrl =
             poster?.querySelector('img')?.attributes['src'] ?? "Brak danych";

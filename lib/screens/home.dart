@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     "Wystąpił błąd podczas ładowania strony (${snapshot.error})"),
               ));
         } else {
+          final double screenWidth = MediaQuery.of(context).size.width;
           return DefaultTabController(
             length: snapshot.data?.categories.length ?? 0,
             child: Scaffold(
@@ -185,32 +186,85 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     .getFilmanPage();
                           });
                         },
-                        child: ListView(
-                          children: [
-                            const SizedBox(height: 3.0),
-                            for (Film film
-                                in snapshot.data?.getFilms(category) ?? [])
-                              Card(
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 16.0, vertical: 3.0),
-                                child: ListTile(
-                                  title: Text(film.title),
-                                  subtitle: Text(film.desc),
-                                  leading: Image.network(film.imageUrl),
-                                  onTap: () async {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => FilmScreen(
-                                          url: film.link,
-                                          title: film.title,
-                                          image: film.imageUrl,
+                        child: GridView.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: screenWidth > 1024 ? 3 : 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.7,
+                          ),
+                          padding: const EdgeInsets.all(10),
+                          itemCount:
+                              snapshot.data?.getFilms(category)?.length ?? 0,
+                          itemBuilder: (BuildContext context, int index) {
+                            Film? film =
+                                snapshot.data?.getFilms(category)?[index];
+                            if (film == null) return const SizedBox();
+                            return Card(
+                              child: InkWell(
+                                onTap: () async {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => FilmScreen(
+                                        url: film.link,
+                                        title: film.title,
+                                        image: film.imageUrl,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(4.0)),
+                                        child: Image.network(
+                                          film.imageUrl,
+                                          fit: BoxFit.cover,
                                         ),
                                       ),
-                                    );
-                                  },
+                                    ),
+                                    const SizedBox(height: 8.0),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              film.title,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16.0,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4.0),
+                                            Expanded(
+                                              child: Text(
+                                                film.desc,
+                                                style: const TextStyle(
+                                                    fontSize: 14.0),
+                                                overflow: TextOverflow.fade,
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                   ],
