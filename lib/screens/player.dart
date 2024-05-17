@@ -1,63 +1,69 @@
 import 'dart:async';
 
+import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/types/film_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:provider/provider.dart';
 import 'package:system_screen_brightness/system_screen_brightness.dart';
 
 class FilmanPlayer extends StatefulWidget {
-  final FilmDetails filmDetails;
-  final DirectLink selectedLink;
+  final String targetUrl;
+  final FilmDetails? filmDetails;
 
-  const FilmanPlayer(
-      {super.key, required this.filmDetails, required this.selectedLink});
+  FilmanPlayer({super.key, required this.targetUrl}) : filmDetails = null;
+  FilmanPlayer.fromDetails({super.key, required this.filmDetails})
+      : targetUrl = '';
 
   @override
-  State<FilmanPlayer> createState() => _FilmanPlayerState();
+  _FilmanPlayerState createState() => _FilmanPlayerState();
 }
 
 class _FilmanPlayerState extends State<FilmanPlayer> {
-  late final player = Player();
-  late final controller = VideoController(player);
-  late StreamSubscription<Duration> _positionSubscription;
-  late StreamSubscription<Duration?> _durationSubscription;
-  late StreamSubscription<bool> _playingSubscription;
-  late StreamSubscription<bool> _bufferingSubscription;
+  late final Player _player;
+  late final VideoController _controller;
+  late final SystemScreenBrightness _brightnessPlugin;
+  late final StreamSubscription<Duration> _positionSubscription;
+  late final StreamSubscription<Duration?> _durationSubscription;
+  late final StreamSubscription<bool> _playingSubscription;
+  late final StreamSubscription<bool> _bufferingSubscription;
+
   bool _isOverlayVisible = true;
+  bool _isBuffering = true;
+  bool _isPlaying = false;
+  bool _hasBrightnessPermission = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
-  bool _playing = false;
-  bool _buffering = true;
-  late final SystemScreenBrightness _systemScreenBrightnessPlugin;
-  bool _hasBrightnessPermission = false;
+  FilmDetails? _filmDetails;
 
   @override
   void initState() {
     super.initState();
+    _player = Player();
+    _controller = VideoController(_player);
+    _brightnessPlugin = SystemScreenBrightness();
 
-    _systemScreenBrightnessPlugin = SystemScreenBrightness();
+    _initializeSubscriptions();
+    _checkBrightnessPermission();
+    _initializePlayer();
+  }
 
-    player.open(Media(widget.selectedLink.link));
-
+  void _initializeSubscriptions() {
     _positionSubscription =
-        controller.player.stream.position.listen((position) {
-      setState(() {
-        _position = position;
-      });
+        _controller.player.stream.position.listen((position) {
+      setState(() => _position = position);
     });
 
     _durationSubscription =
-        controller.player.stream.duration.listen((duration) {
-      setState(() {
-        _duration = duration;
-      });
+        _controller.player.stream.duration.listen((duration) {
+      setState(() => _duration = duration);
     });
 
-    _playingSubscription = controller.player.stream.playing.listen((playing) {
+    _playingSubscription = _controller.player.stream.playing.listen((playing) {
       setState(() {
-        _playing = playing;
+        _isPlaying = playing;
         if (playing) {
           SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
         }
@@ -65,42 +71,87 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     });
 
     _bufferingSubscription =
-        controller.player.stream.buffering.listen((buffering) {
-      setState(() {
-        _buffering = buffering;
-      });
-    });
-    checkBrightnessPermission();
-  }
-
-  void checkBrightnessPermission() async {
-    final bool hasPermission =
-        await _systemScreenBrightnessPlugin.checkSystemWritePermission;
-    setState(() {
-      _hasBrightnessPermission = hasPermission;
+        _controller.player.stream.buffering.listen((buffering) {
+      setState(() => _isBuffering = buffering);
     });
   }
 
-  void requestPerms() async {
-    await _systemScreenBrightnessPlugin.openAndroidPermissionsMenu();
+  Future<void> _initializePlayer() async {
+    if (widget.filmDetails == null) {
+      final details = await Provider.of<FilmanNotifier>(context, listen: false)
+          .getFilmDetails(widget.targetUrl);
+      setState(() => _filmDetails = details);
+    } else {
+      setState(() => _filmDetails = widget.filmDetails);
+    }
+
+    final directs = await _filmDetails?.getDirect() ?? [];
+    if (directs.length > 1) {
+      _showLanguageSelectionDialog(directs);
+    } else if (directs.isNotEmpty) {
+      _player.open(Media(directs.first.link));
+    } else {
+      _showNoLinksSnackbar();
+    }
+  }
+
+  void _showLanguageSelectionDialog(List<DirectLink> directs) {
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Wybierz język'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: directs
+                .map((link) => ListTile(
+                      title: Text('${link.qualityVersion} ${link.language}'),
+                      onTap: () {
+                        _player.open(Media(link.link));
+                        Navigator.of(context).pop();
+                      },
+                    ))
+                .toList(),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showNoLinksSnackbar() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Brak dostępnych linków'),
+        dismissDirection: DismissDirection.horizontal,
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+      ));
+    }
+  }
+
+  Future<void> _checkBrightnessPermission() async {
+    final hasPermission = await _brightnessPlugin.checkSystemWritePermission;
+    setState(() => _hasBrightnessPermission = hasPermission);
+  }
+
+  void _requestPermissions() async {
+    await _brightnessPlugin.openAndroidPermissionsMenu();
     setState(() {});
   }
 
   @override
   void dispose() {
-    player.dispose();
     _positionSubscription.cancel();
     _durationSubscription.cancel();
     _playingSubscription.cancel();
     _bufferingSubscription.cancel();
+    _player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
@@ -112,151 +163,160 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       body: Stack(
         children: [
           Center(
-            child: Video(controller: controller, controls: NoVideoControls),
+            child: Video(controller: _controller, controls: NoVideoControls),
           ),
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isOverlayVisible = !_isOverlayVisible;
-              });
-            },
-            child: AnimatedOpacity(
-                opacity: _isOverlayVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Stack(
-                  children: [
-                    Positioned(
-                        left: 0,
-                        top: -10,
-                        height: MediaQuery.of(context).size.height,
-                        child: FutureBuilder<double>(
-                            future:
-                                _systemScreenBrightnessPlugin.currentBrightness,
-                            builder: (context, snapshot) {
-                              if (!_hasBrightnessPermission) {
-                                return IconButton(
-                                    onPressed: () => requestPerms(),
-                                    icon: const Icon(Icons.no_cell));
-                              }
-
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  RotatedBox(
-                                    quarterTurns: -1,
-                                    child: Slider(
-                                      value: snapshot.data ?? 0,
-                                      min: 0,
-                                      max: 1,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _systemScreenBrightnessPlugin
-                                              .setSystemScreenBrightness(
-                                                  (value * 255).toInt());
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  Icon(snapshot.data! >= 0.875
-                                      ? Icons.brightness_7
-                                      : snapshot.data! >= 0.75
-                                          ? Icons.brightness_6
-                                          : snapshot.data! >= 0.625
-                                              ? Icons.brightness_5
-                                              : snapshot.data! >= 0.5
-                                                  ? Icons.brightness_4
-                                                  : snapshot.data! >= 0.375
-                                                      ? Icons.brightness_1
-                                                      : snapshot.data! >= 0.25
-                                                          ? Icons.brightness_2
-                                                          : snapshot.data! >=
-                                                                  0.125
-                                                              ? Icons
-                                                                  .brightness_3
-                                                              : Icons
-                                                                  .brightness_3)
-                                ],
-                              );
-                            })),
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        width: double.infinity,
-                        height: 48,
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: Text(
-                                  widget.filmDetails.title,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 16),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Center(
-                        child: _buffering
-                            ? const CircularProgressIndicator()
-                            : IconButton(
-                                icon: Icon(
-                                    _playing ? Icons.pause : Icons.play_arrow),
-                                iconSize: 48,
-                                onPressed: () {
-                                  player.playOrPause();
-                                },
-                              )),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 56),
-                        width: double.infinity,
-                        height: 24,
-                        margin: const EdgeInsets.only(bottom: 32),
-                        child: Row(
-                          children: [
-                            Text(
-                              '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            Expanded(
-                                child: Slider(
-                              value: _position.inSeconds.toDouble(),
-                              onChanged: (value) {
-                                final Duration newPosition =
-                                    Duration(seconds: value.toInt());
-                                controller.player.seek(newPosition);
-                              },
-                              min: 0,
-                              max: _duration.inSeconds.toDouble(),
-                              activeColor: colorScheme.primary,
-                              inactiveColor: Colors.white,
-                            )),
-                            _duration.inMinutes == 0 && _duration.inSeconds == 0
-                                ? const SizedBox()
-                                : Text(
-                                    '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                          ],
-                        ),
-                      ),
-                    )
-                  ],
-                )),
-          ),
+          _buildOverlay(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildOverlay(BuildContext context) {
+    return InkWell(
+      onTap: () => setState(() => _isOverlayVisible = !_isOverlayVisible),
+      child: AnimatedOpacity(
+        opacity: _isOverlayVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: Stack(
+          children: [
+            _buildBrightnessControl(context),
+            _buildTopBar(),
+            _buildCenterPlayPauseButton(),
+            _buildBottomBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrightnessControl(BuildContext context) {
+    return Positioned(
+      left: 10,
+      top: -10,
+      height: MediaQuery.of(context).size.height,
+      child: FutureBuilder<double>(
+        future: _brightnessPlugin.currentBrightness,
+        builder: (context, snapshot) {
+          if (!_hasBrightnessPermission) {
+            return Center(
+              child: IconButton(
+                onPressed: () {
+                  _checkBrightnessPermission();
+                  _requestPermissions();
+                },
+                icon: const Icon(Icons.no_cell),
+              ),
+            );
+          }
+
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              RotatedBox(
+                quarterTurns: -1,
+                child: Slider(
+                  value: snapshot.data ?? 0,
+                  min: 0,
+                  max: 1,
+                  onChanged: (value) {
+                    _brightnessPlugin
+                        .setSystemScreenBrightness((value * 255).toInt());
+                  },
+                ),
+              ),
+              Icon(_getBrightnessIcon(snapshot.data ?? 0)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  IconData _getBrightnessIcon(double brightness) {
+    if (brightness >= 0.875) return Icons.brightness_7;
+    if (brightness >= 0.75) return Icons.brightness_6;
+    if (brightness >= 0.625) return Icons.brightness_5;
+    if (brightness >= 0.5) return Icons.brightness_4;
+    if (brightness >= 0.375) return Icons.brightness_1;
+    if (brightness >= 0.25) return Icons.brightness_2;
+    if (brightness >= 0.125) return Icons.brightness_3;
+    return Icons.brightness_3;
+  }
+
+  Widget _buildTopBar() {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        width: double.infinity,
+        height: 48,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  _filmDetails?.title ?? '',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterPlayPauseButton() {
+    return Center(
+      child: _isBuffering
+          ? const CircularProgressIndicator()
+          : IconButton(
+              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
+              iconSize: 48,
+              onPressed: () => _player.playOrPause(),
+            ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 56),
+        width: double.infinity,
+        height: 24,
+        margin: const EdgeInsets.only(bottom: 32),
+        child: Row(
+          children: [
+            Text(
+              '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            Expanded(
+              child: Slider(
+                value: _position.inSeconds.toDouble(),
+                onChanged: (value) {
+                  _controller.player.seek(Duration(seconds: value.toInt()));
+                },
+                min: 0,
+                max: _duration.inSeconds.toDouble(),
+                activeColor: Theme.of(context).colorScheme.primary,
+                inactiveColor: Colors.white,
+              ),
+            ),
+            _duration == Duration.zero
+                ? const SizedBox()
+                : Text(
+                    '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+          ],
+        ),
       ),
     );
   }

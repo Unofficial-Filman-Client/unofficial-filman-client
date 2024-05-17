@@ -1,7 +1,8 @@
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/home.dart';
 import 'package:filman_flutter/screens/login.dart';
-import 'package:filman_flutter/model.dart';
+import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
@@ -14,11 +15,18 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final cookies = prefs.getStringList('cookies') ?? [];
 
-  final filman = FilmanModel();
+  final filman = FilmanNotifier();
+  final settings = SettingsNotifier();
+
   await filman.initPrefs();
+  await settings.loadSettings();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => filman,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => filman),
+        ChangeNotifierProvider(create: (_) => settings),
+      ],
       child: MyApp(
         isAuth: cookies.isNotEmpty,
       ),

@@ -1,4 +1,5 @@
-import 'package:filman_flutter/model.dart';
+import 'package:filman_flutter/notifiers/filman.dart';
+import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/film.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/search_results.dart';
@@ -41,7 +42,7 @@ class _SearchModalState extends State<SearchModal> {
           onChanged: (value) {
             if (value.isNotEmpty) {
               setState(() {
-                lazySearch = Provider.of<FilmanModel>(context, listen: false)
+                lazySearch = Provider.of<FilmanNotifier>(context, listen: false)
                     .searchInFilman(value);
               });
             }
@@ -67,15 +68,15 @@ class _SearchModalState extends State<SearchModal> {
                           padding: EdgeInsets.only(
                             bottom: MediaQuery.of(context).viewInsets.bottom,
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              "Wystąpił błąd podczas wyszukiwania",
+                              "Wystąpił błąd podczas wyszukiwania, ${snapshot.error}",
                             ),
                           ));
                     } else if (snapshot.connectionState ==
                         ConnectionState.done) {
                       return ListView(
-                        children: snapshot.data?.isNotEmpty() ?? false
+                        children: snapshot.data?.isNotEmpty() == true
                             ? [
                                 for (Film film
                                     in snapshot.data?.getFilms() ?? [])
@@ -83,7 +84,21 @@ class _SearchModalState extends State<SearchModal> {
                                     margin: const EdgeInsets.symmetric(
                                         horizontal: 16.0, vertical: 3.0),
                                     child: ListTile(
-                                      title: Text(film.title),
+                                      title: Consumer<SettingsNotifier>(
+                                        builder: (context, value, child) =>
+                                            Text(
+                                          film.title.contains("/")
+                                              ? value.titleType ==
+                                                      TitleDisplayType.first
+                                                  ? film.title.split('/').first
+                                                  : value.titleType ==
+                                                          TitleDisplayType
+                                                              .second
+                                                      ? film.title.split('/')[1]
+                                                      : film.title
+                                              : film.title,
+                                        ),
+                                      ),
                                       subtitle: Text(film.desc),
                                       leading: Image.network(film.imageUrl),
                                       onTap: () {

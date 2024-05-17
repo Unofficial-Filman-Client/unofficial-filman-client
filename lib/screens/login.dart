@@ -1,5 +1,5 @@
 import 'package:filman_flutter/screens/home.dart';
-import 'package:filman_flutter/model.dart';
+import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/types/login_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     final LoginResponse loginResponse =
-        await Provider.of<FilmanModel>(context, listen: false)
+        await Provider.of<FilmanNotifier>(context, listen: false)
             .loginToFilman(loginController.text, passwordController.text);
 
     setState(() {

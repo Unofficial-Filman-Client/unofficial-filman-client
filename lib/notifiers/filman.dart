@@ -1,6 +1,6 @@
-import 'dart:collection';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:filman_flutter/types/exceptions.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/film_details.dart';
 import 'package:filman_flutter/types/home_page.dart';
@@ -12,10 +12,9 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:html/parser.dart';
 
-class FilmanModel extends ChangeNotifier {
+class FilmanNotifier extends ChangeNotifier {
   final List<String> cookies = [];
 
-  UnmodifiableListView<String> get items => UnmodifiableListView(cookies);
   SharedPreferences? prefs;
   late final Dio dio;
 
@@ -86,9 +85,12 @@ class FilmanModel extends ChangeNotifier {
     );
 
     if (response.headers['location'] != null) {
-      logout();
-      throw Exception(
-          'GET https://filman.cc/ redirect to ${response.headers['location']}');
+      if (response.headers['location']
+              ?.contains("https://filman.cc/logowanie") ==
+          true) {
+        logout();
+        throw const LogOutException();
+      }
     }
 
     final document = parse(response.data);
@@ -100,9 +102,6 @@ class FilmanModel extends ChangeNotifier {
         final poster = filmDOM.querySelector('.poster');
         final String title =
             poster?.querySelector('a')?.attributes['title']?.trim() ??
-                "Brak danych";
-        final String desc =
-            poster?.querySelector('a')?.attributes['data-text']?.trim() ??
                 "Brak danych";
         final String imageUrl =
             poster?.querySelector('img')?.attributes['src'] ?? "Brak danych";
@@ -117,7 +116,7 @@ class FilmanModel extends ChangeNotifier {
         final category =
             list.parent?.querySelector("h3")?.text.trim() ?? "INNE";
         homePage.addFilm(category,
-            Film(title: title, desc: desc, imageUrl: imageUrl, link: link));
+            Film(title: title, desc: "", imageUrl: imageUrl, link: link));
       }
     }
 
@@ -136,6 +135,16 @@ class FilmanModel extends ChangeNotifier {
         headers: {'cookie': cookies.join('; ')},
       ),
     );
+
+    if (response.headers['location'] != null) {
+      if (response.headers['location']
+              ?.contains("https://filman.cc/logowanie") ==
+          true) {
+        logout();
+        throw const LogOutException();
+      }
+    }
+
     final document = parse(response.data);
 
     final searchResults = SearchResults();
@@ -179,11 +188,12 @@ class FilmanModel extends ChangeNotifier {
     );
 
     if (response.headers['location'] != null) {
-      throw Exception('GET $link redirect to ${response.headers['location']}');
-    }
-
-    if (response.statusCode != 200) {
-      throw Exception('GET $link return ${response.statusCode}');
+      if (response.headers['location']
+              ?.contains("https://filman.cc/logowanie") ==
+          true) {
+        logout();
+        throw const LogOutException();
+      }
     }
 
     final document = parse(response.data);
@@ -219,7 +229,7 @@ class FilmanModel extends ChangeNotifier {
         .map((cat) => cat.text.trim())
         .toList();
 
-    final isSerialPage = document.querySelector('#links') == null;
+    final isSerialPage = link.contains("serial-online");
 
     if (isSerialPage) {
       List<Season> seasons = [];
@@ -282,16 +292,6 @@ class FilmanModel extends ChangeNotifier {
           hostingImgUrl: hostingImg,
         ));
       });
-
-      // return {
-      //   'isSerialPage': isSerialPage,
-      //   'releaseDate': releaseDate,
-      //   'categories': categories,
-      //   'viewCount': viewCount,
-      //   'country': country,
-      //   'desc': desc,
-      //   'links': links,
-      // };
 
       return FilmDetails(
           title: title,

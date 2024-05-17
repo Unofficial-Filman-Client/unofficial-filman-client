@@ -1,6 +1,9 @@
+import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/film.dart';
 import 'package:filman_flutter/screens/login.dart';
-import 'package:filman_flutter/model.dart';
+import 'package:filman_flutter/notifiers/filman.dart';
+import 'package:filman_flutter/screens/settings.dart';
+import 'package:filman_flutter/types/exceptions.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/home_page.dart';
 import 'package:filman_flutter/widgets/search.dart';
@@ -22,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     homePageLoader =
-        Provider.of<FilmanModel>(context, listen: false).getFilmanPage();
+        Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
   }
 
   void _showBottomSheet() {
@@ -58,7 +61,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(right: 8.0),
                     child: IconButton(
                       onPressed: () {
-                        // Handle settings action
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.settings),
                     ),
@@ -67,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(right: 16.0),
                     child: IconButton(
                       onPressed: () {
-                        Provider.of<FilmanModel>(context, listen: false)
+                        Provider.of<FilmanNotifier>(context, listen: false)
                             .logout();
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
@@ -88,6 +95,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: CircularProgressIndicator(),
               ));
         } else if (snapshot.hasError) {
+          if (snapshot.error is LogOutException) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Nastąpiło wylogowanie!'),
+                  dismissDirection: DismissDirection.horizontal,
+                  behavior: SnackBarBehavior.floating,
+                  showCloseIcon: true,
+                ),
+              );
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+            });
+          }
           return Scaffold(
               appBar: AppBar(
                 title: const Text('Welcome to Filman!'),
@@ -96,7 +120,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(right: 8.0),
                     child: IconButton(
                       onPressed: () {
-                        // Handle settings action
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.settings),
                     ),
@@ -105,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(right: 16.0),
                     child: IconButton(
                       onPressed: () {
-                        Provider.of<FilmanModel>(context, listen: false)
+                        Provider.of<FilmanNotifier>(context, listen: false)
                             .logout();
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
@@ -138,7 +166,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(right: 8.0),
                     child: IconButton(
                       onPressed: () {
-                        // Handle settings action
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.settings),
                     ),
@@ -147,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(right: 16.0),
                     child: IconButton(
                       onPressed: () {
-                        Provider.of<FilmanModel>(context, listen: false)
+                        Provider.of<FilmanNotifier>(context, listen: false)
                             .logout();
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
@@ -181,18 +213,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       RefreshIndicator(
                         onRefresh: () async {
                           setState(() {
-                            homePageLoader =
-                                Provider.of<FilmanModel>(context, listen: false)
-                                    .getFilmanPage();
+                            homePageLoader = Provider.of<FilmanNotifier>(
+                                    context,
+                                    listen: false)
+                                .getFilmanPage();
                           });
                         },
                         child: GridView.builder(
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: screenWidth > 1024 ? 3 : 2,
-                            crossAxisSpacing: 10,
+                            crossAxisSpacing: 6,
                             mainAxisSpacing: 10,
-                            childAspectRatio: 0.7,
+                            childAspectRatio: 0.8,
                           ),
                           padding: const EdgeInsets.all(10),
                           itemCount:
@@ -237,23 +270,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             horizontal: 8.0),
                                         child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                              CrossAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
-                                            Text(
-                                              film.title,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16.0,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 4.0),
-                                            Expanded(
-                                              child: Text(
-                                                film.desc,
+                                            Consumer<SettingsNotifier>(
+                                              builder:
+                                                  (context, value, child) =>
+                                                      Text(
+                                                film.title.contains("/")
+                                                    ? value.titleType ==
+                                                            TitleDisplayType
+                                                                .first
+                                                        ? film.title
+                                                            .split('/')
+                                                            .first
+                                                        : value.titleType ==
+                                                                TitleDisplayType
+                                                                    .second
+                                                            ? film.title
+                                                                .split('/')[1]
+                                                            : film.title
+                                                    : film.title,
                                                 style: const TextStyle(
-                                                    fontSize: 14.0),
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16.0,
+                                                ),
+                                                maxLines:
+                                                    screenWidth > 1024 ? 3 : 2,
                                                 overflow: TextOverflow.fade,
+                                                textAlign: TextAlign.center,
                                               ),
                                             )
                                           ],
