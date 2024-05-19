@@ -199,7 +199,13 @@ class FilmanNotifier extends ChangeNotifier {
     final document = parse(response.data);
 
     final title = document.querySelector("[itemprop='title']")?.text.trim() ??
-        "${document.querySelector("#item-headline")?.querySelector("h2")?.text.trim() ?? "Brak tytułu"} - ${document.querySelector("#item-headline")?.querySelector("h3")?.text.trim()}";
+        document
+            .querySelector("#item-headline")
+            ?.querySelector("h2")
+            ?.text
+            .trim() ??
+        "Brak tytułu";
+
     final desc =
         document.querySelector('p.description')?.text.trim() ?? 'Brak opisu';
 
@@ -229,7 +235,7 @@ class FilmanNotifier extends ChangeNotifier {
         .map((cat) => cat.text.trim())
         .toList();
 
-    final isSerialPage = link.contains("serial-online");
+    final isSerialPage = document.querySelector('#links') == null;
 
     if (isSerialPage) {
       List<Season> seasons = [];
@@ -260,7 +266,8 @@ class FilmanNotifier extends ChangeNotifier {
           country: country,
           categories: categories,
           isSerial: isSerialPage,
-          seasons: seasons);
+          seasons: seasons,
+          isEpisode: false);
     } else {
       List<Link> links = [];
 
@@ -293,6 +300,47 @@ class FilmanNotifier extends ChangeNotifier {
         ));
       });
 
+      final isEpisode =
+          document.querySelector("#item-headline")?.querySelector("h3") != null;
+
+      if (isEpisode) {
+        final seasonEpisodeTag = document
+            .querySelector("#item-headline")
+            ?.querySelector("h3")
+            ?.text
+            .trim();
+
+        final nextEpisodeUrl = document
+            .querySelector("#item-info")
+            ?.querySelectorAll("a")
+            .firstWhere(
+              (el) => el.text.trim() == 'Następny',
+            )
+            .attributes['href'];
+
+        final prevEpisodeUrl = document
+            .querySelector("#item-info")
+            ?.querySelectorAll("a")
+            .firstWhere(
+              (el) => el.text.trim() == 'Następny',
+            )
+            .attributes['href'];
+
+        return FilmDetails(
+            title: title,
+            desc: desc,
+            releaseDate: releaseDate,
+            viewCount: viewCount,
+            country: country,
+            categories: categories,
+            isSerial: isSerialPage,
+            links: links,
+            seasonEpisodeTag: seasonEpisodeTag,
+            prevEpisodeUrl: prevEpisodeUrl,
+            nextEpisodeUrl: nextEpisodeUrl,
+            isEpisode: isEpisode);
+      }
+
       return FilmDetails(
           title: title,
           desc: desc,
@@ -301,7 +349,8 @@ class FilmanNotifier extends ChangeNotifier {
           country: country,
           categories: categories,
           isSerial: isSerialPage,
-          links: links);
+          links: links,
+          isEpisode: isEpisode);
     }
   }
 }

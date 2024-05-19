@@ -40,6 +40,10 @@ class FilmDetails {
   final bool isSerial;
   final List<Season>? seasons;
   final List<Link>? links;
+  final bool isEpisode;
+  final String? seasonEpisodeTag;
+  final String? prevEpisodeUrl;
+  final String? nextEpisodeUrl;
 
   Future<List<DirectLink>> getDirect() async {
     List<DirectLink> directLinks = [];
@@ -70,15 +74,23 @@ class FilmDetails {
     return seasons;
   }
 
-  FilmDetails({
-    required this.title,
-    required this.desc,
-    required this.releaseDate,
-    required this.viewCount,
-    required this.country,
-    required this.categories,
-    required this.isSerial,
-    this.seasons,
-    this.links,
-  });
+  FilmDetails(
+      {required this.title,
+      required this.desc,
+      required this.releaseDate,
+      required this.viewCount,
+      required this.country,
+      required this.categories,
+      required this.isSerial,
+      required this.isEpisode,
+      this.seasons,
+      this.links,
+      this.seasonEpisodeTag,
+      this.prevEpisodeUrl,
+      this.nextEpisodeUrl});
+
+  @override
+  String toString() {
+    return 'FilmDetails(title: $title, desc: $desc, releaseDate: $releaseDate, viewCount: $viewCount, country: $country, categories: $categories, isSerial: $isSerial, isEpisode: $isEpisode, seasons: $seasons, links: $links, seasonEpisodeTag: $seasonEpisodeTag, prevEpisodeUrl: $prevEpisodeUrl, nextEpisodeUrl: $nextEpisodeUrl)';
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:filman_flutter/notifiers/filman.dart';
+import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/types/film_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,12 +14,12 @@ class FilmanPlayer extends StatefulWidget {
   final String targetUrl;
   final FilmDetails? filmDetails;
 
-  FilmanPlayer({super.key, required this.targetUrl}) : filmDetails = null;
-  FilmanPlayer.fromDetails({super.key, required this.filmDetails})
+  const FilmanPlayer({super.key, required this.targetUrl}) : filmDetails = null;
+  const FilmanPlayer.fromDetails({super.key, required this.filmDetails})
       : targetUrl = '';
 
   @override
-  _FilmanPlayerState createState() => _FilmanPlayerState();
+  State<FilmanPlayer> createState() => _FilmanPlayerState();
 }
 
 class _FilmanPlayerState extends State<FilmanPlayer> {
@@ -38,6 +39,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   Duration _duration = Duration.zero;
   FilmDetails? _filmDetails;
 
+  FilmDetails? _nextEpisode;
+
   @override
   void initState() {
     super.initState();
@@ -45,8 +48,15 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _controller = VideoController(_player);
     _brightnessPlugin = SystemScreenBrightness();
 
-    _initializeSubscriptions();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
+
     _checkBrightnessPermission();
+    _initializeSubscriptions();
     _initializePlayer();
   }
 
@@ -64,9 +74,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _playingSubscription = _controller.player.stream.playing.listen((playing) {
       setState(() {
         _isPlaying = playing;
-        if (playing) {
-          SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
-        }
       });
     });
 
@@ -85,6 +92,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       setState(() => _filmDetails = widget.filmDetails);
     }
 
+    if (_filmDetails?.isEpisode == true) {
+      _loadNextEpisode();
+    }
+
     final directs = await _filmDetails?.getDirect() ?? [];
     if (directs.length > 1) {
       _showLanguageSelectionDialog(directs);
@@ -92,6 +103,17 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       _player.open(Media(directs.first.link));
     } else {
       _showNoLinksSnackbar();
+    }
+  }
+
+  void _loadNextEpisode() async {
+    if (_filmDetails?.nextEpisodeUrl != null) {
+      FilmDetails next =
+          await Provider.of<FilmanNotifier>(context, listen: false)
+              .getFilmDetails(_filmDetails?.nextEpisodeUrl ?? '');
+      setState(() {
+        _nextEpisode = next;
+      });
     }
   }
 
@@ -127,6 +149,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
       ));
+      Navigator.of(context).pop();
     }
   }
 
@@ -201,6 +224,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             return Center(
               child: IconButton(
                 onPressed: () {
+                  if (!_isOverlayVisible) {
+                    _isOverlayVisible = true;
+                    return;
+                  }
                   _checkBrightnessPermission();
                   _requestPermissions();
                 },
@@ -248,23 +275,79 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       alignment: Alignment.topCenter,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
+        // duration: const Duration(milliseconds: 400),
+        // transform: Matrix4.translationValues(
+        //     0.0, _isOverlayVisible ? 0.0 : -48.0, 0.0),
+        // curve: Curves.easeInOut,
         width: double.infinity,
         height: 48,
-        child: Row(
+        child: Stack(
           children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  _filmDetails?.title ?? '',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
-                ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  if (!_isOverlayVisible) {
+                    _isOverlayVisible = true;
+                    return;
+                  }
+                  Navigator.of(context).pop();
+                },
               ),
             ),
+            Center(
+              child: Consumer<SettingsNotifier>(
+                builder: (context, settings, child) {
+                  final displayTitle =
+                      widget.filmDetails?.title.contains("/") == true
+                          ? settings.titleType == TitleDisplayType.first
+                              ? widget.filmDetails?.title.split('/').first
+                              : settings.titleType == TitleDisplayType.second
+                                  ? widget.filmDetails?.title.split('/')[1]
+                                  : widget.filmDetails?.title
+                          : widget.filmDetails?.title;
+
+                  return Text(
+                    widget.filmDetails?.isEpisode == true
+                        ? '$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}'
+                        : displayTitle ?? '',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  );
+                },
+              ),
+            ),
+            Align(
+                alignment: Alignment.centerRight,
+                child: AnimatedContainer(
+                  transform: Matrix4.translationValues(
+                      _nextEpisode != null ? 0.0 : 100.0, 0.0, 0.0),
+                  duration: const Duration(milliseconds: 300),
+                  child: AnimatedOpacity(
+                    opacity: _nextEpisode != null ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: OutlinedButton.icon(
+                      icon: Text(
+                          _nextEpisode?.seasonEpisodeTag ?? 'Następny odcinek'),
+                      label: const Icon(Icons.arrow_forward),
+                      onPressed: () {
+                        if (!_isOverlayVisible) {
+                          _isOverlayVisible = true;
+                          return;
+                        }
+                        if (_nextEpisode != null) {
+                          Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      FilmanPlayer.fromDetails(
+                                          filmDetails: _nextEpisode)));
+                        }
+                      },
+                    ),
+                  ),
+                )),
           ],
         ),
       ),
@@ -278,7 +361,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
           : IconButton(
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               iconSize: 48,
-              onPressed: () => _player.playOrPause(),
+              onPressed: () {
+                if (!_isOverlayVisible) {
+                  _isOverlayVisible = true;
+                  return;
+                }
+                _player.playOrPause();
+              },
             ),
     );
   }
@@ -301,6 +390,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               child: Slider(
                 value: _position.inSeconds.toDouble(),
                 onChanged: (value) {
+                  if (!_isOverlayVisible) {
+                    _isOverlayVisible = true;
+                    return;
+                  }
                   _controller.player.seek(Duration(seconds: value.toInt()));
                 },
                 min: 0,
@@ -309,12 +402,12 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 inactiveColor: Colors.white,
               ),
             ),
-            _duration == Duration.zero
-                ? const SizedBox()
-                : Text(
+            AnimatedOpacity(
+                opacity: _duration == Duration.zero ? 0 : 1,
+                duration: const Duration(milliseconds: 300),
+                child: Text(
                     '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                    style: const TextStyle(color: Colors.white))),
           ],
         ),
       ),

@@ -192,20 +192,19 @@ class _FilmScreenState extends State<FilmScreen> {
 
   Widget _buildTitleAndImage(BuildContext context, FilmDetails film) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        if (widget.image.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Image.network(
-              widget.image,
-              width: MediaQuery.of(context).size.width * 0.4,
-              height: MediaQuery.of(context).size.height * 0.25,
-              fit: BoxFit.cover,
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: Image.network(
+            widget.image,
+            width: MediaQuery.of(context).size.width * 0.3,
+            fit: BoxFit.cover,
           ),
+        ),
         const SizedBox(width: 16),
-        Expanded(
+        Flexible(
           child: Consumer<SettingsNotifier>(
             builder: (context, settings, child) {
               final displayTitle = widget.title.contains("/")
@@ -224,7 +223,7 @@ class _FilmScreenState extends State<FilmScreen> {
               );
             },
           ),
-        ),
+        )
       ],
     );
   }
@@ -235,15 +234,15 @@ class _FilmScreenState extends State<FilmScreen> {
       runSpacing: 8,
       children: [
         Chip(
-          label: Text(film.releaseDate ?? 'Brak informacji'),
+          label: Text(film.releaseDate),
           avatar: const Icon(Icons.calendar_today),
         ),
         Chip(
-          label: Text(film.viewCount ?? 'Brak informacji'),
+          label: Text(film.viewCount),
           avatar: const Icon(Icons.visibility),
         ),
         Chip(
-          label: Text(film.country ?? 'Brak informacji'),
+          label: Text(film.country),
           avatar: const Icon(Icons.flag),
         ),
       ],

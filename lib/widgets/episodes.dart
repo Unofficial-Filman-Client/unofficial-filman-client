@@ -17,7 +17,7 @@ class EpisodesModal extends StatefulWidget {
 }
 
 class _EpisodesModalState extends State<EpisodesModal> {
-  Map<String, Map<String, dynamic>> episodeDescriptions = {};
+  Map<String, FilmDetails> episodeDescriptions = {};
 
   @override
   void initState() {
@@ -34,11 +34,9 @@ class _EpisodesModalState extends State<EpisodesModal> {
   Future<void> loadEpisodeDescriptions() async {
     for (Season season in widget.seasons) {
       for (Episode episode in season.getEpisodes()) {
-        Map<String, dynamic> data =
+        FilmDetails data =
             await Provider.of<FilmanNotifier>(context, listen: false)
-                .getFilmDetails(episode.episodeUrl)
-                .then((value) =>
-                    {"description": value.desc, "direct": value.getDirect()});
+                .getFilmDetails(episode.episodeUrl);
         if (mounted) {
           setState(() {
             episodeDescriptions[episode.episodeName] = data;
@@ -90,11 +88,12 @@ class _EpisodesModalState extends State<EpisodesModal> {
                           const SizedBox(height: 4.0),
                           episodeDescriptions.isNotEmpty
                               ? episodeDescriptions[episode.episodeName]
-                                          ?.isNotEmpty ??
+                                          ?.desc
+                                          .isNotEmpty ??
                                       false
                                   ? Text(
                                       episodeDescriptions[episode.episodeName]
-                                              ?["description"] ??
+                                              ?.desc ??
                                           "Błąd pobierania opisu",
                                       style: const TextStyle(
                                         fontSize: 12.0,
@@ -109,10 +108,16 @@ class _EpisodesModalState extends State<EpisodesModal> {
                   ],
                 ),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) =>
-                        FilmanPlayer(targetUrl: episode.episodeUrl),
-                  ));
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(builder: (context) {
+                    if (episodeDescriptions[episode.episodeName] != null) {
+                      return FilmanPlayer.fromDetails(
+                          filmDetails:
+                              episodeDescriptions[episode.episodeName]);
+                    } else {
+                      return FilmanPlayer(targetUrl: episode.episodeUrl);
+                    }
+                  }));
                 },
               ),
           ],
