@@ -48,8 +48,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _controller = VideoController(_player);
     _brightnessPlugin = SystemScreenBrightness();
 
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
-
     _checkBrightnessPermission();
     _initializeSubscriptions();
     _initializePlayer();
@@ -146,6 +144,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       ));
       SystemChrome.setPreferredOrientations(
           [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       Navigator.of(context).pop();
     }
   }
@@ -286,6 +285,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                     DeviceOrientation.portraitUp,
                     DeviceOrientation.portraitDown
                   ]);
+                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
                   Navigator.of(context).pop();
                 },
               ),
