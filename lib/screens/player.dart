@@ -48,11 +48,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _controller = VideoController(_player);
     _brightnessPlugin = SystemScreenBrightness();
 
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
-
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
 
     _checkBrightnessPermission();
@@ -149,6 +144,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
       ));
+      SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
       Navigator.of(context).pop();
     }
   }
@@ -175,13 +172,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeRight,
-      DeviceOrientation.landscapeLeft,
-    ]);
-
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
-
     return Scaffold(
       body: Stack(
         children: [
@@ -292,6 +282,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                     _isOverlayVisible = true;
                     return;
                   }
+                  SystemChrome.setPreferredOrientations([
+                    DeviceOrientation.portraitUp,
+                    DeviceOrientation.portraitDown
+                  ]);
                   Navigator.of(context).pop();
                 },
               ),

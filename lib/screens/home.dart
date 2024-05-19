@@ -45,10 +45,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
     return FutureBuilder(
       future: homePageLoader,
       builder: (BuildContext context, AsyncSnapshot<HomePage> snapshot) {

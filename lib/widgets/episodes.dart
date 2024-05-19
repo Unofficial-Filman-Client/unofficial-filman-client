@@ -3,6 +3,7 @@ import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/types/film_details.dart';
 import 'package:filman_flutter/types/season.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class EpisodesModal extends StatefulWidget {
@@ -108,6 +109,10 @@ class _EpisodesModalState extends State<EpisodesModal> {
                   ],
                 ),
                 onTap: () {
+                  SystemChrome.setPreferredOrientations([
+                    DeviceOrientation.landscapeRight,
+                    DeviceOrientation.landscapeLeft
+                  ]);
                   Navigator.of(context)
                       .push(MaterialPageRoute(builder: (context) {
                     if (episodeDescriptions[episode.episodeName] != null) {
