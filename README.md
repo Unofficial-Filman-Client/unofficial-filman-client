@@ -18,11 +18,9 @@ Unofficial Filman Client is a client for filman.cc built using Flutter. It allow
 
 ## TODO
 
-- Allow users to choose the language and quality of the video.
 - Make a custom video overlay.
 - Add Google/Android TV support.
 - Check internet access.
-- Settings to choose title language and themes
 - Add film to "To watch List"
 - Save progress for watched films and episodes
 
