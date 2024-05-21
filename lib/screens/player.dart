@@ -6,6 +6,7 @@ import 'package:filman_flutter/types/film_details.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as Math;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,8 @@ class FilmanPlayer extends StatefulWidget {
   State<FilmanPlayer> createState() => _FilmanPlayerState();
 }
 
+enum SeekDirection { forward, backward }
+
 class _FilmanPlayerState extends State<FilmanPlayer> {
   late final Player _player;
   late final VideoController _controller;
@@ -39,6 +42,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   FilmDetails? _filmDetails;
+  SeekDirection? _seekDirection;
+  bool _isSeeking = false;
 
   FilmDetails? _nextEpisode;
 
@@ -185,17 +190,43 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   Widget _buildOverlay(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: _isOverlayVisible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 300),
-      child: Stack(
-        children: [
-          _buildDoubleTapControl(),
-          _buildBrightnessControl(context),
-          _buildTopBar(),
-          _buildCenterPlayPauseButton(),
-          _buildBottomBar(),
-        ],
+    return Stack(
+      children: [
+        _buildSeekingIcons(),
+        AnimatedOpacity(
+          opacity: _isOverlayVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 300),
+          child: Stack(
+            children: [
+              _buildDoubleTapControl(),
+              _buildBrightnessControl(context),
+              _buildTopBar(),
+              _buildCenterPlayPauseButton(),
+              _buildBottomBar(),
+            ],
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildSeekingIcons() {
+    return Center(
+      child: Transform(
+        transform: Matrix4.translationValues(
+            _seekDirection == SeekDirection.forward ? 100 : -100, 0, 0),
+        child: AnimatedOpacity(
+            opacity: _isSeeking ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: IconButton(
+              icon: Icon(
+                _seekDirection == SeekDirection.forward
+                    ? Icons.fast_forward
+                    : Icons.fast_rewind,
+                size: 52,
+              ),
+              onPressed: () {},
+            )),
       ),
     );
   }
@@ -215,6 +246,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             onDoubleTap: () {
               setState(() {
                 _isOverlayVisible = true;
+                _seekDirection = SeekDirection.backward;
+                _isSeeking = true;
+                Future.delayed(const Duration(milliseconds: 400), () {
+                  setState(() {
+                    _isSeeking = false;
+                  });
+                });
               });
               _player.seek(
                   Duration(seconds: Math.max(0, _position.inSeconds - 10)));
@@ -233,6 +271,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             onDoubleTap: () {
               setState(() {
                 _isOverlayVisible = true;
+                _seekDirection = SeekDirection.forward;
+                _isSeeking = true;
+                Future.delayed(const Duration(milliseconds: 400), () {
+                  setState(() {
+                    _isSeeking = false;
+                  });
+                });
               });
               _player.seek(Duration(
                   seconds:
@@ -397,7 +442,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
           ? const CircularProgressIndicator()
           : IconButton(
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              iconSize: 48,
+              iconSize: 72,
               onPressed: () {
                 if (!_isOverlayVisible) {
                   _isOverlayVisible = true;

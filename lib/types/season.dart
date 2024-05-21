@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class Episode {
   final String episodeName;
   final String episodeUrl;
