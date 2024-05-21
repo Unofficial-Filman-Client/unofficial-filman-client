@@ -4,6 +4,7 @@ import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/types/film_details.dart';
 import 'package:flutter/material.dart';
+import 'dart:math' as Math;
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -184,20 +185,62 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   Widget _buildOverlay(BuildContext context) {
-    return InkWell(
-      onTap: () => setState(() => _isOverlayVisible = !_isOverlayVisible),
-      child: AnimatedOpacity(
-        opacity: _isOverlayVisible ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 300),
-        child: Stack(
-          children: [
-            _buildBrightnessControl(context),
-            _buildTopBar(),
-            _buildCenterPlayPauseButton(),
-            _buildBottomBar(),
-          ],
-        ),
+    return AnimatedOpacity(
+      opacity: _isOverlayVisible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 300),
+      child: Stack(
+        children: [
+          _buildDoubleTapControl(),
+          _buildBrightnessControl(context),
+          _buildTopBar(),
+          _buildCenterPlayPauseButton(),
+          _buildBottomBar(),
+        ],
       ),
+    );
+  }
+
+  Widget _buildDoubleTapControl() {
+    return Row(
+      children: [
+        SizedBox(
+          height: double.infinity,
+          width: MediaQuery.of(context).size.width * 0.5,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isOverlayVisible = !_isOverlayVisible;
+              });
+            },
+            onDoubleTap: () {
+              setState(() {
+                _isOverlayVisible = true;
+              });
+              _player.seek(
+                  Duration(seconds: Math.max(0, _position.inSeconds - 10)));
+            },
+          ),
+        ),
+        SizedBox(
+          height: double.infinity,
+          width: MediaQuery.of(context).size.width * 0.5,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isOverlayVisible = !_isOverlayVisible;
+              });
+            },
+            onDoubleTap: () {
+              setState(() {
+                _isOverlayVisible = true;
+              });
+              _player.seek(Duration(
+                  seconds:
+                      Math.min(_position.inSeconds + 10, _duration.inSeconds)));
+            },
+          ),
+        ),
+      ],
     );
   }
 
