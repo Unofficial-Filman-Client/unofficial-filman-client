@@ -216,6 +216,12 @@ class FilmanNotifier extends ChangeNotifier {
         .replaceAll("\t", "")
         .replaceAll(" ", "");
 
+    final imageUrl = document
+            .querySelector("#single-poster")
+            ?.querySelector("img")
+            ?.attributes["src"] ??
+        '';
+
     Match? yearMatch =
         RegExp(r'(Rok:(\d+))|(Premiera:(\d+))').firstMatch(info ?? "");
 
@@ -259,8 +265,10 @@ class FilmanNotifier extends ChangeNotifier {
       });
 
       return FilmDetails(
+          url: link,
           title: title,
           desc: desc,
+          imageUrl: imageUrl,
           releaseDate: releaseDate,
           viewCount: viewCount,
           country: country,
@@ -316,7 +324,8 @@ class FilmanNotifier extends ChangeNotifier {
             .firstWhere(
               (el) => el.text.trim() == 'Następny',
             )
-            .attributes['href'];
+            .attributes['href']
+            ?.replaceAll("#single-poster", "");
 
         final prevEpisodeUrl = document
             .querySelector("#item-info")
@@ -324,11 +333,19 @@ class FilmanNotifier extends ChangeNotifier {
             .firstWhere(
               (el) => el.text.trim() == 'Następny',
             )
-            .attributes['href'];
+            .attributes['href']
+            ?.replaceAll("#single-poster", "");
+
+        final parentUrl = document
+            .querySelector("#single-poster")
+            ?.querySelector("a")
+            ?.attributes["href"];
 
         return FilmDetails(
+            url: link,
             title: title,
             desc: desc,
+            imageUrl: imageUrl,
             releaseDate: releaseDate,
             viewCount: viewCount,
             country: country,
@@ -336,14 +353,17 @@ class FilmanNotifier extends ChangeNotifier {
             isSerial: isSerialPage,
             links: links,
             seasonEpisodeTag: seasonEpisodeTag,
+            parentUrl: parentUrl,
             prevEpisodeUrl: prevEpisodeUrl,
             nextEpisodeUrl: nextEpisodeUrl,
             isEpisode: isEpisode);
       }
 
       return FilmDetails(
+          url: link,
           title: title,
           desc: desc,
+          imageUrl: imageUrl,
           releaseDate: releaseDate,
           viewCount: viewCount,
           country: country,

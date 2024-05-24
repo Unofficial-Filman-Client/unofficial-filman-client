@@ -2,7 +2,6 @@ import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/types/season.dart';
 import 'package:filman_flutter/widgets/episodes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,7 +33,7 @@ class _FilmScreenState extends State<FilmScreen> {
         .getFilmDetails(widget.url);
   }
 
-  void _showBottomSheet(List<Season> seasons) {
+  void _showBottomSheet(FilmDetails filmDetails) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -46,8 +45,7 @@ class _FilmScreenState extends State<FilmScreen> {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
           child: EpisodesModal(
-            seasons: seasons,
-            parentUrl: widget.url,
+            filmDetails: filmDetails,
           ),
         );
       },
@@ -96,10 +94,6 @@ class _FilmScreenState extends State<FilmScreen> {
               onPressed: Navigator.of(context).pop,
             ),
             IconButton(
-              icon: const Icon(Icons.bookmark_add_outlined),
-              onPressed: () {},
-            ),
-            IconButton(
               icon: const Icon(Icons.share_outlined),
               onPressed: () {
                 Share.share(
@@ -146,7 +140,7 @@ class _FilmScreenState extends State<FilmScreen> {
               onPressed: () async {
                 if (film.isSerial) {
                   if (film.seasons?.isNotEmpty == true) {
-                    _showBottomSheet(film.getSeasons() ?? []);
+                    _showBottomSheet(film);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('Brak dostępnych sezonów'),

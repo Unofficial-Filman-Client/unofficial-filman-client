@@ -7,6 +7,10 @@ class Episode {
     required this.episodeUrl,
   });
 
+  Episode.fromJSON(Map<String, dynamic> json)
+      : episodeName = json['episodeName'],
+        episodeUrl = json['episodeUrl'];
+
   int getEpisodeNumber() {
     final RegExp regex = RegExp(r'\[s\d+e(\d+)\]');
     final Match? match = regex.firstMatch(episodeName);
@@ -25,6 +29,13 @@ class Episode {
     } else {
       return episodeName;
     }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'episodeName': episodeName,
+      'episodeUrl': episodeUrl,
+    };
   }
 }
 
@@ -51,4 +62,16 @@ class Season {
     required this.seasonTitle,
     required this.episodes,
   });
+
+  Season.fromJSON(Map<String, dynamic> json)
+      : seasonTitle = json['seasonTitle'],
+        episodes = List<Episode>.from(
+            json['episodes'].map((e) => Episode.fromJSON(e)));
+
+  Map<String, dynamic> toMap() {
+    return {
+      'seasonTitle': seasonTitle,
+      'episodes': episodes.map((e) => e.toMap()).toList(),
+    };
+  }
 }

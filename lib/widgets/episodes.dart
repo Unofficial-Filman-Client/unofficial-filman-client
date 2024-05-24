@@ -7,11 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class EpisodesModal extends StatefulWidget {
-  final List<Season> seasons;
-  final String parentUrl;
+  final FilmDetails filmDetails;
 
-  const EpisodesModal(
-      {super.key, required this.seasons, required this.parentUrl});
+  const EpisodesModal({super.key, required this.filmDetails});
 
   @override
   State<EpisodesModal> createState() => _EpisodesModalState();
@@ -19,10 +17,14 @@ class EpisodesModal extends StatefulWidget {
 
 class _EpisodesModalState extends State<EpisodesModal> {
   Map<String, FilmDetails> episodeDescriptions = {};
+  List<Season> seasons = [];
 
   @override
   void initState() {
     super.initState();
+    setState(() {
+      seasons = widget.filmDetails.getSeasons();
+    });
     loadEpisodeDescriptions();
   }
 
@@ -33,7 +35,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
   }
 
   Future<void> loadEpisodeDescriptions() async {
-    for (Season season in widget.seasons) {
+    for (Season season in seasons) {
       for (Episode episode in season.getEpisodes()) {
         FilmDetails data =
             await Provider.of<FilmanNotifier>(context, listen: false)
@@ -50,10 +52,10 @@ class _EpisodesModalState extends State<EpisodesModal> {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      itemCount: widget.seasons.length,
+      itemCount: seasons.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16.0),
       itemBuilder: (context, index) {
-        Season season = widget.seasons[index];
+        Season season = seasons[index];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,10 +120,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
                       .push(MaterialPageRoute(builder: (context) {
                     if (episodeDescriptions[episode.episodeName] != null) {
                       return FilmanPlayer.fromDetails(
-                          filmDetails:
-                              episodeDescriptions[episode.episodeName]);
+                        filmDetails: episodeDescriptions[episode.episodeName],
+                        parentDetails: widget.filmDetails,
+                      );
                     } else {
-                      return FilmanPlayer(targetUrl: episode.episodeUrl);
+                      return FilmanPlayer(
+                          targetUrl: episode.episodeUrl,
+                          parentDetails: widget.filmDetails);
                     }
                   }));
                 },

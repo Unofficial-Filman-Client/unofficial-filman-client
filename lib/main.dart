@@ -1,5 +1,6 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:filman_flutter/notifiers/settings.dart';
+import 'package:filman_flutter/notifiers/watched.dart';
 import 'package:filman_flutter/screens/home.dart';
 import 'package:filman_flutter/screens/login.dart';
 import 'package:filman_flutter/notifiers/filman.dart';
@@ -18,15 +19,18 @@ void main() async {
 
   final filman = FilmanNotifier();
   final settings = SettingsNotifier();
+  final watched = WatchedNotifier();
 
   await filman.initPrefs();
   await settings.loadSettings();
+  await watched.loadWatched();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => filman),
         ChangeNotifierProvider(create: (_) => settings),
+        ChangeNotifierProvider(create: (_) => watched),
       ],
       child: MyApp(
         isAuth: cookies.isNotEmpty,

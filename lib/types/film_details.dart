@@ -16,6 +16,23 @@ class Link {
     required this.link,
     required this.hostingImgUrl,
   });
+
+  Link.fromJSON(Map<String, dynamic> json)
+      : main = json['main'],
+        qualityVersion = json['qualityVersion'],
+        language = json['language'],
+        link = json['link'],
+        hostingImgUrl = json['hostingImgUrl'];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'main': main,
+      'qualityVersion': qualityVersion,
+      'language': language,
+      'link': link,
+      'hostingImgUrl': hostingImgUrl,
+    };
+  }
 }
 
 class DirectLink {
@@ -31,8 +48,10 @@ class DirectLink {
 }
 
 class FilmDetails {
+  final String url;
   final String title;
   final String desc;
+  final String imageUrl;
   final String releaseDate;
   final String viewCount;
   final String country;
@@ -42,6 +61,7 @@ class FilmDetails {
   final List<Link>? links;
   final bool isEpisode;
   final String? seasonEpisodeTag;
+  final String? parentUrl;
   final String? prevEpisodeUrl;
   final String? nextEpisodeUrl;
 
@@ -69,25 +89,72 @@ class FilmDetails {
     return Uri.parse(link ?? '').toString();
   }
 
-  List<Season>? getSeasons() {
+  List<Season> getSeasons() {
     seasons?.sort((a, b) => a.seasonTitle.compareTo(b.seasonTitle));
-    return seasons;
+    return seasons ?? [];
   }
 
-  FilmDetails(
-      {required this.title,
-      required this.desc,
-      required this.releaseDate,
-      required this.viewCount,
-      required this.country,
-      required this.categories,
-      required this.isSerial,
-      required this.isEpisode,
-      this.seasons,
-      this.links,
-      this.seasonEpisodeTag,
-      this.prevEpisodeUrl,
-      this.nextEpisodeUrl});
+  FilmDetails({
+    required this.url,
+    required this.title,
+    required this.desc,
+    required this.imageUrl,
+    required this.releaseDate,
+    required this.viewCount,
+    required this.country,
+    required this.categories,
+    required this.isSerial,
+    required this.isEpisode,
+    this.seasons,
+    this.links,
+    this.seasonEpisodeTag,
+    this.parentUrl,
+    this.prevEpisodeUrl,
+    this.nextEpisodeUrl,
+  });
+
+  FilmDetails.fromJSON(Map<String, dynamic> json)
+      : url = json['url'],
+        title = json['title'],
+        desc = json['desc'],
+        imageUrl = json['imageUrl'],
+        releaseDate = json['releaseDate'],
+        viewCount = json['viewCount'],
+        country = json['country'],
+        categories = List<String>.from(json['categories']),
+        isSerial = json['isSerial'],
+        isEpisode = json['isEpisode'],
+        seasons = json['seasons'] != null
+            ? List<Season>.from(json['seasons'].map((e) => Season.fromJSON(e)))
+            : null,
+        links = json['links'] != null
+            ? List<Link>.from(json['links'].map((e) => Link.fromJSON(e)))
+            : null,
+        seasonEpisodeTag = json['seasonEpisodeTag'],
+        parentUrl = json['parentUrl'],
+        prevEpisodeUrl = json['prevEpisodeUrl'],
+        nextEpisodeUrl = json['nextEpisodeUrl'];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'url': url,
+      'title': title,
+      'desc': desc,
+      'imageUrl': imageUrl,
+      'releaseDate': releaseDate,
+      'viewCount': viewCount,
+      'country': country,
+      'categories': categories,
+      'isSerial': isSerial,
+      'isEpisode': isEpisode,
+      'seasons': seasons?.map((e) => e.toMap()).toList(),
+      'links': links?.map((e) => e.toMap()).toList(),
+      'seasonEpisodeTag': seasonEpisodeTag,
+      'parentUrl': parentUrl,
+      'prevEpisodeUrl': prevEpisodeUrl,
+      'nextEpisodeUrl': nextEpisodeUrl,
+    };
+  }
 
   @override
   String toString() {
