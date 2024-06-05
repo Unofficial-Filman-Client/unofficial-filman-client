@@ -1,8 +1,7 @@
 import 'package:filman_flutter/screens/home.dart';
 import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/types/login_response.dart';
+import 'package:filman_flutter/types/auth_response.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
       isLoading = true;
     });
 
-    final LoginResponse loginResponse =
+    final AuthResponse loginResponse =
         await Provider.of<FilmanNotifier>(context, listen: false)
             .loginToFilman(loginController.text, passwordController.text);
 
@@ -69,8 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SafeArea(
-      child: Padding(
+      appBar: AppBar(),
+      body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -125,6 +124,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
-    ));
+    );
   }
 }

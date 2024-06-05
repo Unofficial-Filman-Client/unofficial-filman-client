@@ -1,4 +1,4 @@
-class LoginResponse {
+class AuthResponse {
   final bool success;
   List<String> errors = [];
 
@@ -6,7 +6,7 @@ class LoginResponse {
     errors.add(error);
   }
 
-  LoginResponse({
+  AuthResponse({
     required this.success,
   });
 }

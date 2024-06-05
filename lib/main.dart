@@ -1,8 +1,8 @@
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/notifiers/watched.dart';
+import 'package:filman_flutter/screens/hello.dart';
 import 'package:filman_flutter/screens/home.dart';
-import 'package:filman_flutter/screens/login.dart';
 import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         themeMode: ThemeMode.system,
-        home: isAuth ? const HomeScreen() : const LoginScreen(),
+        home: isAuth ? const HomeScreen() : const HelloScreen(),
       );
     });
   }

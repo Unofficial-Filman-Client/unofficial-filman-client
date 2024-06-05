@@ -22,6 +22,7 @@ dependencies:
   system_screen_brightness: ^0.0.4
   url_launcher: ^6.2.5
   wakelock_plus: ^1.2.4
+  webview_flutter: ^4.8.0
 
 dev_dependencies:
   flutter_test:

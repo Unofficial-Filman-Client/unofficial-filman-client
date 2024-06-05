@@ -1,7 +1,7 @@
 import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/notifiers/watched.dart';
 import 'package:filman_flutter/screens/film.dart';
-import 'package:filman_flutter/screens/login.dart';
+import 'package:filman_flutter/screens/hello.dart';
 import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/screens/settings.dart';
@@ -67,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Provider.of<FilmanNotifier>(context, listen: false).logout();
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const LoginScreen(),
+                builder: (context) => const HelloScreen(),
               ),
             );
           },
@@ -97,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const LoginScreen(),
+            builder: (context) => const HelloScreen(),
           ),
         );
       });
@@ -310,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         .logout();
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
+                        builder: (context) => const HelloScreen(),
                       ),
                     );
                   },
