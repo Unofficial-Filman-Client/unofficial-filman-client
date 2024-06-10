@@ -1,59 +1,64 @@
 # Unofficial Filman Client
 
-Unofficial Filman Client is a client for filman.cc built using Flutter. It allows you to browse, search, and watch movies and TV shows available on filman.cc.
+[PL](https://github.com/majusss/unofficial-filman-flutter/blob/main/README_PL.md)
+
+Here is the unofficial client for the filman.cc website! This app, built using Flutter, lets you browse, search, and watch movies and TV shows available on filman.cc.
 
 ## Tech Stack
 
-- Flutter: A cross-platform framework for building mobile applications.
-- Flutter Material Components: A set of pre-designed UI components for Flutter apps.
-- Dio: A powerful HTTP client for Dart, used for making API requests to filman.cc.
-- HTML Parser: A library for parsing HTML content, used for extracting data from filman.cc's web pages.
+- **Flutter**: A cross-platform framework for building mobile applications.
+- **Flutter Material Components**: Pre-designed UI components for Flutter apps.
+- **Dio**: An HTTP client for Dart, used to make requests to filman.cc.
+- **HTML Parser**: A library for parsing HTML content, used to extract data from filman.cc's web pages.
 
 ## Features
 
-- Browse movies and TV shows available on filman.cc.
-- Search for specific movies or TV shows.
-- Watch movies and TV shows directly within the app.
-- View detailed information about each movie or TV show, including cast, ratings, and synopsis.
+- **Browse Movies and TV Shows**: Discover the wide range of content available on filman.cc.
+- **Search**: Quickly and easily find specific movies or TV shows.
+- **Watch**: Stream movies and TV shows directly within the app.
+- **Save Progress**: Continue watching from where you left off by saving your progress.
 
-## TODO
+## How to Install
 
-- Make a custom video overlay.
-- Add Google/Android TV support.
-- Check internet access.
-- Add film to "To watch List"
-- Save progress for watched films and episodes
+### On Android (APK)
 
-## Getting Started
+1. **Download the APK**: [Unofficial Filman Client APK](https://github.com/majusss/unofficial-filman-flutter/releases).
+2. **Install the APK**: Open the downloaded APK file and follow the on-screen instructions to install the app.
 
-To get started with Filman Flutter, follow these steps:
+### On iOS (IPA with UseScarlet.com)
 
-1. Clone the repository:
+1. **Download Scarlet**: Go to [UseScarlet](https://usescarlet.com) and follow the instructions to install the Scarlet app.
+2. **Download the IPA**: [Unofficial Filman Client IPA](https://github.com/majusss/unofficial-filman-flutter/releases).
+3. **Install the IPA**: In the Scarlet app, install the Unofficial Filman Client from the downloaded IPA file.
 
-```bash
-git clone https://github.com/majusss/unofficial-filman-flutter.git filman_flutter
-```
+## How to Build
 
-2. Change to the project directory:
+1. **Clone the Repository**:
 
-```bash
-cd filman_flutter
-```
+   ```bash
+   git clone https://github.com/majusss/unofficial-filman-flutter.git filman_flutter
+   ```
 
-3. Install the dependencies:
+2. **Navigate to the Project Directory**:
 
-```bash
-flutter pub get
-```
+   ```bash
+   cd filman_flutter
+   ```
 
-4. Run the app:
+3. **Install Dependencies**:
 
-```bash
-flutter run
-```
+   ```bash
+   flutter pub get
+   ```
+
+4. **Run the App**:
+
+   ```bash
+   flutter run
+   ```
 
 This will launch the app on your connected device or emulator.
 
-5. Start exploring and modifying the code to build your own Filman Client!
+## Disclaimer
 
-Happy coding!
+This is an unofficial application, not developed or maintained by, nor affiliated with, the administrators of filman.cc. The administrator of the FILMAN system is Organic Codesand.
