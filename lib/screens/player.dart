@@ -6,6 +6,7 @@ import 'package:filman_flutter/notifiers/watched.dart';
 import 'package:filman_flutter/types/film_details.dart';
 import 'package:filman_flutter/types/season.dart';
 import 'package:filman_flutter/types/watched.dart';
+import 'package:filman_flutter/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
@@ -82,7 +83,11 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   void _initializeSubscriptions() {
     _positionSubscription =
         _controller.player.stream.position.listen((position) {
-      if (position.inSeconds > widget.startFrom) {
+      if (widget.startFrom != 0) {
+        if (position.inSeconds != 0) {
+          setState(() => _position = position);
+        }
+      } else {
         setState(() => _position = position);
       }
     });
@@ -98,7 +103,9 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       }
       _saveWatched();
       Timer.periodic(const Duration(seconds: 5), (timer) {
-        _saveWatched();
+        if (mounted) {
+          _saveWatched();
+        }
       });
     });
 
@@ -459,19 +466,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             Center(
               child: Consumer<SettingsNotifier>(
                 builder: (context, settings, child) {
-                  final displayTitle =
-                      widget.filmDetails?.title.contains("/") == true
-                          ? settings.titleType == TitleDisplayType.first
-                              ? widget.filmDetails?.title.split('/').first
-                              : settings.titleType == TitleDisplayType.second
-                                  ? widget.filmDetails?.title.split('/')[1]
-                                  : widget.filmDetails?.title
-                          : widget.filmDetails?.title;
+                  final displayTitle = getDisplayTitle(
+                      widget.filmDetails?.title ?? '', settings);
 
                   return Text(
                     widget.filmDetails?.isEpisode == true
                         ? '$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}'
-                        : displayTitle ?? '',
+                        : displayTitle,
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,

@@ -1,7 +1,7 @@
 import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/types/film_details.dart';
+import 'package:filman_flutter/utils/titlte.dart';
 import 'package:filman_flutter/widgets/episodes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -199,23 +199,12 @@ class _FilmScreenState extends State<FilmScreen> {
         ),
         const SizedBox(width: 16),
         Flexible(
-          child: Consumer<SettingsNotifier>(
-            builder: (context, settings, child) {
-              final displayTitle = widget.title.contains("/")
-                  ? settings.titleType == TitleDisplayType.first
-                      ? widget.title.split('/').first
-                      : settings.titleType == TitleDisplayType.second
-                          ? widget.title.split('/')[1]
-                          : widget.title
-                  : widget.title;
-              return Text(
-                displayTitle,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            },
+          child: DisplayTitle(
+            title: widget.title,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         )
       ],

@@ -1,4 +1,5 @@
 import 'package:filman_flutter/notifiers/settings.dart';
+import 'package:filman_flutter/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -53,21 +54,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   .setCharacter(value);
             },
           ),
-          ListTile(
-              subtitle: RichText(
-                  text: TextSpan(
-            children: [
-              const TextSpan(
-                  text: 'Przykładowy tytuł: ',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              TextSpan(
-                  text: titleType == TitleDisplayType.first
-                      ? 'Szybcy i wściekli'
-                      : titleType == TitleDisplayType.second
-                          ? 'The Fast and the Furious'
-                          : 'Szybcy i wściekli / The Fast and the Furious')
-            ],
-          ))),
+          Consumer<SettingsNotifier>(
+              builder: (context, settings, child) => ListTile(
+                      subtitle: RichText(
+                          text: TextSpan(
+                    children: [
+                      const TextSpan(
+                          text: 'Przykładowy tytuł: ',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      TextSpan(
+                          text: getDisplayTitle(
+                              'Szybcy i wściekli / The Fast and the Furious',
+                              settings))
+                    ],
+                  )))),
           const Divider(),
         ],
       ),

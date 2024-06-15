@@ -1,4 +1,3 @@
-import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/notifiers/watched.dart';
 import 'package:filman_flutter/screens/film.dart';
 import 'package:filman_flutter/screens/hello.dart';
@@ -9,6 +8,7 @@ import 'package:filman_flutter/types/exceptions.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/home_page.dart';
 import 'package:filman_flutter/types/watched.dart';
+import 'package:filman_flutter/utils/titlte.dart';
 import 'package:filman_flutter/widgets/search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -145,28 +145,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Consumer<SettingsNotifier>(
-                      builder: (context, settings, child) {
-                        final displayTitle = film.title.contains("/")
-                            ? settings.titleType == TitleDisplayType.first
-                                ? film.title.split('/').first
-                                : settings.titleType == TitleDisplayType.second
-                                    ? film.title.split('/')[1]
-                                    : film.title
-                            : film.title;
-                        return Text(
-                          displayTitle,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16.0,
-                          ),
-                          maxLines:
-                              MediaQuery.of(context).size.width > 1024 ? 3 : 2,
-                          overflow: TextOverflow.fade,
-                          textAlign: TextAlign.center,
-                        );
-                      },
-                    ),
+                    DisplayTitle(
+                      title: film.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0,
+                      ),
+                      maxLines:
+                          MediaQuery.of(context).size.width > 1024 ? 3 : 2,
+                      overflow: TextOverflow.fade,
+                      textAlign: TextAlign.center,
+                    )
                   ],
                 ),
               ),
@@ -210,57 +199,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            Slider(
-              value: film.watchedInSec.toDouble(),
-              max: film.totalInSec.toDouble(),
-              onChanged: null,
+            LinearProgressIndicator(
+              value: film.watchedInSec / film.totalInSec,
             ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Consumer<SettingsNotifier>(
-                  builder: (context, settings, child) {
-                    final displayTitle = film.filmDetails.title.contains("/")
-                        ? settings.titleType == TitleDisplayType.first
-                            ? film.filmDetails.title.split('/').first
-                            : settings.titleType == TitleDisplayType.second
-                                ? film.filmDetails.title.split('/')[1]
-                                : film.filmDetails.title
-                        : film.filmDetails.title;
-
-                    return Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            displayTitle,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16.0,
-                            ),
-                            maxLines: MediaQuery.of(context).size.width > 1024
-                                ? 3
-                                : 2,
-                            overflow: TextOverflow.fade,
-                            textAlign: TextAlign.center,
-                          ),
-                          film.filmDetails.isEpisode
-                              ? Text(
-                                  '${film.parentSeason?.seasonTitle} - [${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)}/${film.parentSeason?.episodes.length}] ${film.filmDetails.seasonEpisodeTag?.split(' ')[1]}',
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      DisplayTitle(
+                        title: film.filmDetails.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.0,
+                        ),
+                        maxLines:
+                            MediaQuery.of(context).size.width > 1024 ? 3 : 2,
+                        overflow: TextOverflow.fade,
+                        textAlign: TextAlign.center,
+                      ),
+                      film.filmDetails.isEpisode
+                          ? Column(
+                              children: [
+                                Text((film.filmDetails.seasonEpisodeTag
+                                            ?.split(' ')
+                                          ?..removeAt(0))
+                                        ?.join(' ') ??
+                                    ''),
+                                Text(
+                                  'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
                                   style: const TextStyle(
                                     fontSize: 16.0,
                                   ),
-                                  maxLines:
-                                      MediaQuery.of(context).size.width > 1024
-                                          ? 3
-                                          : 2,
+                                  maxLines: 1,
                                   overflow: TextOverflow.fade,
                                   textAlign: TextAlign.center,
-                                )
-                              : const SizedBox(),
-                        ]);
-                  },
-                ),
+                                ),
+                              ],
+                            )
+                          : Text('Pozostało: ${film.totalInSec ~/ 60} min'),
+                    ]),
               ),
             ),
           ],

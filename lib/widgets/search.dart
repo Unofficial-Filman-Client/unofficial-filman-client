@@ -3,6 +3,7 @@ import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/film.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/search_results.dart';
+import 'package:filman_flutter/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -84,21 +85,7 @@ class _SearchModalState extends State<SearchModal> {
                                     margin: const EdgeInsets.symmetric(
                                         horizontal: 16.0, vertical: 3.0),
                                     child: ListTile(
-                                      title: Consumer<SettingsNotifier>(
-                                        builder: (context, value, child) =>
-                                            Text(
-                                          film.title.contains("/")
-                                              ? value.titleType ==
-                                                      TitleDisplayType.first
-                                                  ? film.title.split('/').first
-                                                  : value.titleType ==
-                                                          TitleDisplayType
-                                                              .second
-                                                      ? film.title.split('/')[1]
-                                                      : film.title
-                                              : film.title,
-                                        ),
-                                      ),
+                                      title: DisplayTitle(title: film.title),
                                       subtitle: Text(film.desc),
                                       leading: Image.network(film.imageUrl),
                                       onTap: () {
