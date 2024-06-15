@@ -1,3 +1,4 @@
+import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/notifiers/watched.dart';
 import 'package:filman_flutter/screens/film.dart';
 import 'package:filman_flutter/screens/hello.dart';
@@ -185,6 +186,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     )),
           );
         },
+        onLongPress: () => showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Usuwanie z historii'),
+              content: Consumer<SettingsNotifier>(
+                builder: (context, settings, child) => Text(
+                    'Czy na pewno chcesz usunąć postęp oglądania \'${getDisplayTitle(film.filmDetails.title, settings)}\' z historii?'),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Anuluj'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      Provider.of<WatchedNotifier>(context, listen: false)
+                          .remove(film);
+                    });
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Usuń'),
+                ),
+              ],
+            );
+          },
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -200,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             LinearProgressIndicator(
-              value: film.watchedInSec / film.totalInSec,
+              value: film.watchedPercentage,
             ),
             Expanded(
               child: Padding(
@@ -223,11 +254,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       film.filmDetails.isEpisode
                           ? Column(
                               children: [
-                                Text((film.filmDetails.seasonEpisodeTag
-                                            ?.split(' ')
-                                          ?..removeAt(0))
-                                        ?.join(' ') ??
-                                    ''),
+                                Text(
+                                  (film.filmDetails.seasonEpisodeTag?.split(' ')
+                                            ?..removeAt(0))
+                                          ?.join(' ') ??
+                                      '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.fade,
+                                  textAlign: TextAlign.center,
+                                ),
                                 Text(
                                   'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
                                   style: const TextStyle(
@@ -239,7 +274,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                               ],
                             )
-                          : Text('Pozostało: ${film.totalInSec ~/ 60} min'),
+                          : Text(
+                              'Pozostało: ${film.totalInSec ~/ 60} min',
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              textAlign: TextAlign.center,
+                            ),
                     ]),
               ),
             ),
@@ -358,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           crossAxisCount: screenWidth > 1024 ? 3 : 2,
                           crossAxisSpacing: 6,
                           mainAxisSpacing: 10,
-                          childAspectRatio: 0.8,
+                          childAspectRatio: 0.6,
                         ),
                         padding: const EdgeInsets.all(10),
                         itemCount: combined.length,

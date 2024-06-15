@@ -1,5 +1,4 @@
 import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/notifiers/settings.dart';
 import 'package:filman_flutter/screens/film.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/search_results.dart';
@@ -86,7 +85,8 @@ class _SearchModalState extends State<SearchModal> {
                                         horizontal: 16.0, vertical: 3.0),
                                     child: ListTile(
                                       title: DisplayTitle(title: film.title),
-                                      subtitle: Text(film.desc),
+                                      subtitle: Text(
+                                          '${(film.desc.split(' ').take(12)..last.replaceAll(',', '')).join(' ')}...'),
                                       leading: Image.network(film.imageUrl),
                                       onTap: () {
                                         Navigator.of(context).push(

@@ -39,6 +39,11 @@ class WatchedSingle {
     watchedAt = DateTime.now();
   }
 
+  double get watchedPercentage {
+    if (totalInSec == 0) return 0.0;
+    return watchedInSec / totalInSec;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'filmDetails': filmDetails.toMap(),
@@ -51,7 +56,7 @@ class WatchedSingle {
 
   @override
   String toString() {
-    return 'WatchedSingle(filmDetails: $filmDetails, watchedInSec: $watchedInSec, totalInSec: $totalInSec, watchedAt: $watchedAt)';
+    return 'WatchedSingle(filmDetails: $filmDetails, watchedInSec: $watchedInSec, totalInSec: $totalInSec, watchedAt: $watchedAt, parentSeason: $parentSeason)';
   }
 }
 

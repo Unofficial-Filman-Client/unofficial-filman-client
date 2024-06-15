@@ -37,6 +37,11 @@ class Episode {
       'episodeUrl': episodeUrl,
     };
   }
+
+  @override
+  String toString() {
+    return 'Episode{episodeName: $episodeName, episodeUrl: $episodeUrl}';
+  }
 }
 
 class Season {
@@ -73,5 +78,10 @@ class Season {
       'seasonTitle': seasonTitle,
       'episodes': episodes.map((e) => e.toMap()).toList(),
     };
+  }
+
+  @override
+  String toString() {
+    return 'Season{seasonTitle: $seasonTitle, episodes: $episodes}';
   }
 }

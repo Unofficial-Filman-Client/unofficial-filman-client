@@ -277,6 +277,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     return Stack(
       children: [
         _buildSeekingIcons(),
+        _buildLoadingIcon(),
         AnimatedOpacity(
           opacity: _isOverlayVisible ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 300),
@@ -292,6 +293,19 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         )
       ],
     );
+  }
+
+  Widget _buildLoadingIcon() {
+    if (_isBuffering) {
+      return Center(
+        child: AnimatedOpacity(
+          opacity: _isBuffering ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 300),
+          child: const CircularProgressIndicator(),
+        ),
+      );
+    }
+    return const SizedBox();
   }
 
   Widget _buildSeekingIcons() {
@@ -329,7 +343,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             },
             onDoubleTap: () {
               setState(() {
-                _isOverlayVisible = true;
                 _seekDirection = SeekDirection.backward;
                 _isSeeking = true;
                 Future.delayed(const Duration(milliseconds: 400), () {
@@ -354,7 +367,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             },
             onDoubleTap: () {
               setState(() {
-                _isOverlayVisible = true;
                 _seekDirection = SeekDirection.forward;
                 _isSeeking = true;
                 Future.delayed(const Duration(milliseconds: 400), () {
@@ -453,12 +465,12 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                     _isOverlayVisible = true;
                     return;
                   }
+                  _saveWatched();
                   SystemChrome.setPreferredOrientations([
                     DeviceOrientation.portraitUp,
                     DeviceOrientation.portraitDown
                   ]);
                   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-                  _saveWatched();
                   Navigator.of(context).pop();
                 },
               ),
@@ -518,7 +530,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   Widget _buildCenterPlayPauseButton() {
     return Center(
       child: _isBuffering
-          ? const CircularProgressIndicator()
+          ? const SizedBox()
           : IconButton(
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               iconSize: 72,
@@ -557,6 +569,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                     return;
                   }
                   _controller.player.seek(Duration(seconds: value.toInt()));
+                  _saveWatched();
                 },
                 min: 0,
                 max: _duration.inSeconds.toDouble(),

@@ -76,4 +76,14 @@ class WatchedNotifier extends ChangeNotifier {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
   }
+
+  void remove(WatchedSingle watched) {
+    if (watched.parentSeason != null) {
+      _serials.removeWhere(
+          (serial) => serial.filmDetails.url == watched.filmDetails.parentUrl);
+    } else {
+      _films.removeWhere(
+          (film) => film.filmDetails.url == watched.filmDetails.url);
+    }
+  }
 }
