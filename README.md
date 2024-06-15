@@ -4,6 +4,17 @@
 
 Here is the unofficial client for the filman.cc website! This app, built using Flutter, lets you browse, search, and watch movies and TV shows available on filman.cc.
 
+<details>
+ <summary>Screenshots</summary>
+  
+  ![Home Page](https://i.imgur.com/hD4gAN0.png "Home Page")
+  ![Search](https://i.imgur.com/9QKYVPM.png "Search")
+  ![Watch History](https://i.imgur.com/uvjI0ox.png "Watch History")
+  ![Movie Details](https://i.imgur.com/NlVu21l.png "Movie Details")
+  ![Episode List](https://i.imgur.com/n7leAiG.png "Episode List")
+  ![Player](https://i.imgur.com/5EwrYAs.png "Player")
+</details>
+
 ## Tech Stack
 
 - **Flutter**: A cross-platform framework for building mobile applications.

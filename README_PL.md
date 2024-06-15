@@ -4,6 +4,17 @@
 
 Oto nieoficjalny klient strony internetowej filman.cc! Ta aplikacja, stworzona przy użyciu Fluttera, pozwala przeglądać, wyszukiwać i oglądać filmy oraz seriale dostępne na filman.cc.
 
+<details>
+ <summary>Zrzuty ekranu</summary>
+  
+  ![Strona Główna](https://i.imgur.com/hD4gAN0.png "Strona Główna")
+  ![Wyszukiwarka](https://i.imgur.com/9QKYVPM.png "Wyszukiwarka")
+  ![Historia Oglądanych](https://i.imgur.com/uvjI0ox.png "Historia Oglądanych")
+  ![Szczegóły Filmu](https://i.imgur.com/NlVu21l.png "Szczegóły Filmu")
+  ![Lista Odcinków](https://i.imgur.com/n7leAiG.png "Lista Odcinków")
+  ![Odtwarzacz](https://i.imgur.com/5EwrYAs.png "Odtwarzacz")
+</details>
+
 ## Użyte Technologie
 
 - **Flutter**: Framework wieloplatformowy do tworzenia aplikacji mobilnych.
