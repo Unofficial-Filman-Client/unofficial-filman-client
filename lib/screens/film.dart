@@ -11,13 +11,23 @@ import 'package:share_plus/share_plus.dart';
 
 class FilmScreen extends StatefulWidget {
   final String url, title, image;
+  final FilmDetails? filmDetails;
 
   const FilmScreen({
     super.key,
     required this.url,
     required this.title,
     required this.image,
+    this.filmDetails,
   });
+
+  FilmScreen.fromDetails({
+    super.key,
+    required FilmDetails details,
+  })  : url = details.url,
+        title = details.title,
+        image = details.imageUrl,
+        filmDetails = details;
 
   @override
   State<FilmScreen> createState() => _FilmScreenState();
@@ -29,8 +39,12 @@ class _FilmScreenState extends State<FilmScreen> {
   @override
   void initState() {
     super.initState();
-    lazyFilm = Provider.of<FilmanNotifier>(context, listen: false)
-        .getFilmDetails(widget.url);
+    if (widget.filmDetails != null) {
+      lazyFilm = Future.value(widget.filmDetails);
+    } else {
+      lazyFilm = Provider.of<FilmanNotifier>(context, listen: false)
+          .getFilmDetails(widget.url);
+    }
   }
 
   void _showBottomSheet(FilmDetails filmDetails) {

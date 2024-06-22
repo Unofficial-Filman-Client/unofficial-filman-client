@@ -235,53 +235,93 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      DisplayTitle(
-                        title: film.filmDetails.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
-                        ),
-                        maxLines:
-                            MediaQuery.of(context).size.width > 1024 ? 3 : 2,
-                        overflow: TextOverflow.fade,
-                        textAlign: TextAlign.center,
-                      ),
-                      film.filmDetails.isEpisode
-                          ? Column(
-                              children: [
-                                Text(
-                                  (film.filmDetails.seasonEpisodeTag?.split(' ')
-                                            ?..removeAt(0))
-                                          ?.join(' ') ??
-                                      '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.fade,
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
-                                  style: const TextStyle(
-                                    fontSize: 16.0,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.fade,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            )
-                          : Text(
-                              'Pozostało: ${film.totalInSec ~/ 60} min',
-                              maxLines: 1,
+                      Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            DisplayTitle(
+                              title: film.filmDetails.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.0,
+                              ),
+                              maxLines: MediaQuery.of(context).size.width > 1024
+                                  ? 3
+                                  : 2,
                               overflow: TextOverflow.fade,
                               textAlign: TextAlign.center,
                             ),
-                    ]),
-              ),
+                            film.filmDetails.isEpisode
+                                ? Column(
+                                    children: [
+                                      Text(
+                                        (film.filmDetails.seasonEpisodeTag
+                                                    ?.split(' ')
+                                                  ?..removeAt(0))
+                                                ?.join(' ') ??
+                                            '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.fade,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      Text(
+                                        'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
+                                        style: const TextStyle(
+                                          fontSize: 16.0,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.fade,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    'Pozostało: ${film.totalInSec ~/ 60} min',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.fade,
+                                    textAlign: TextAlign.center,
+                                  ),
+                          ]),
+                      const SizedBox(width: 8.0),
+                      film.filmDetails.parentUrl != null
+                          ? FutureBuilder(
+                              future: Provider.of<FilmanNotifier>(context)
+                                  .getFilmDetails(film.filmDetails.parentUrl!),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const CircularProgressIndicator();
+                                } else if (snapshot.hasError) {
+                                  return const Icon(Icons.error);
+                                }
+
+                                return IconButton(
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              FilmScreen.fromDetails(
+                                                details: snapshot.data!,
+                                              )),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.info),
+                                );
+                              })
+                          : IconButton(
+                              onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          FilmScreen.fromDetails(
+                                            details: film.filmDetails,
+                                          ))),
+                              icon: const Icon(Icons.info)),
+                    ],
+                  )),
             ),
           ],
         ),
