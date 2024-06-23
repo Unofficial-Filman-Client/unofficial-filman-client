@@ -1,6 +1,7 @@
 import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/types/film_details.dart';
+import 'package:filman_flutter/utils/error_handling.dart';
 import 'package:filman_flutter/utils/titlte.dart';
 import 'package:filman_flutter/widgets/episodes.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,15 @@ class _FilmScreenState extends State<FilmScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return buildErrorContent(
+                snapshot.error!,
+                context,
+                (response) => Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (context) => FilmScreen(
+                            url: widget.url,
+                            title: widget.title,
+                            image: widget.image))));
           } else if (snapshot.hasData) {
             final film = snapshot.data!;
             return SafeArea(

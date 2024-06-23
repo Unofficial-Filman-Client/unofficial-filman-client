@@ -30,6 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (loginResponse.success) {
       if (mounted) {
+        Provider.of<FilmanNotifier>(context, listen: false).saveUser(
+          loginController.text,
+          passwordController.text,
+        );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),

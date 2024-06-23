@@ -7,26 +7,46 @@ import 'package:filman_flutter/types/home_page.dart';
 import 'package:filman_flutter/types/auth_response.dart';
 import 'package:filman_flutter/types/search_results.dart';
 import 'package:filman_flutter/types/season.dart';
+import 'package:filman_flutter/types/user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:html/parser.dart';
 
 class FilmanNotifier extends ChangeNotifier {
   final List<String> cookies = [];
 
-  SharedPreferences? prefs;
+  late final SharedPreferences prefs;
   late final Dio dio;
+  User? user;
+  late final FlutterSecureStorage secureStorage;
 
   Future<void> initPrefs() async {
     dio = Dio();
     prefs = await SharedPreferences.getInstance();
-    cookies.addAll(prefs?.getStringList('cookies') ?? []);
+    cookies.addAll(prefs.getStringList('cookies') ?? []);
+
+    secureStorage = const FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true));
+
+    final login = await secureStorage.read(key: 'login');
+    final password = await secureStorage.read(key: 'password');
+
+    if (login != null && password != null) {
+      user = User(login: login, password: password);
+    }
+  }
+
+  void saveUser(String login, String password) {
+    secureStorage.write(key: 'login', value: login);
+    secureStorage.write(key: 'password', value: password);
+    user = User(login: login, password: password);
   }
 
   void logout() {
     cookies.clear();
-    prefs?.remove('cookies');
+    prefs.remove('cookies');
   }
 
   Future<AuthResponse> createAccountOnFilmn(String login, String email,
@@ -96,7 +116,7 @@ class FilmanNotifier extends ChangeNotifier {
       if (cookiesHeader != null) {
         cookies.clear();
         cookies.addAll(cookiesHeader);
-        prefs?.setStringList('cookies', cookies);
+        prefs.setStringList('cookies', cookies);
       }
 
       AuthResponse loginResponse =

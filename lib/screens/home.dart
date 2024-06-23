@@ -5,10 +5,11 @@ import 'package:filman_flutter/screens/hello.dart';
 import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:filman_flutter/screens/player.dart';
 import 'package:filman_flutter/screens/settings.dart';
-import 'package:filman_flutter/types/exceptions.dart';
 import 'package:filman_flutter/types/film.dart';
 import 'package:filman_flutter/types/home_page.dart';
 import 'package:filman_flutter/types/watched.dart';
+import 'package:filman_flutter/utils/error_handling.dart';
+import 'package:filman_flutter/utils/greeting.dart';
 import 'package:filman_flutter/utils/titlte.dart';
 import 'package:filman_flutter/widgets/search.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +52,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   AppBar _buildAppBar(BuildContext context, {bool showProgress = false}) {
     return AppBar(
-      title: const Text('Welcome to Filman!'),
+      title: Text(createTimeBasedGreeting(
+          Provider.of<FilmanNotifier>(context).user?.login ?? '')),
       actions: [
         IconButton(
           onPressed: () {
@@ -82,31 +84,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: LinearProgressIndicator(),
             )
           : null,
-    );
-  }
-
-  Widget _buildErrorContent(Object error) {
-    if (error is LogOutException) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nastąpiło wylogowanie!'),
-            dismissDirection: DismissDirection.horizontal,
-            behavior: SnackBarBehavior.floating,
-            showCloseIcon: true,
-          ),
-        );
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const HelloScreen(),
-          ),
-        );
-      });
-      return const SizedBox.shrink();
-    }
-
-    return Center(
-      child: Text("Wystąpił błąd podczas ładowania strony ($error)"),
     );
   }
 
@@ -344,7 +321,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         } else if (snapshot.hasError) {
           return Scaffold(
             appBar: _buildAppBar(context, showProgress: true),
-            body: _buildErrorContent(snapshot.error!),
+            body: buildErrorContent(
+                snapshot.error!,
+                context,
+                (auth) => setState(() {
+                      homePageLoader =
+                          Provider.of<FilmanNotifier>(context, listen: false)
+                              .getFilmanPage();
+                    })),
           );
         }
 
@@ -352,7 +336,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           length: (snapshot.data?.categories.length ?? 0) + 1,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Welcome to Filman!'),
+              title: Text(createTimeBasedGreeting(
+                  Provider.of<FilmanNotifier>(context).user?.login ?? '')),
               actions: [
                 IconButton(
                   onPressed: () {
@@ -389,10 +374,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  const Text(
-                    "OGLĄDANE",
-                    textAlign: TextAlign.center,
-                  ),
+                  const Tab(
+                    child: Text(
+                      "OGLĄDANE",
+                      textAlign: TextAlign.center,
+                    ),
+                  )
                 ],
               ),
             ),
@@ -433,20 +420,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       combined
                           .sort((a, b) => b.watchedAt.compareTo(a.watchedAt));
 
-                      return (GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: screenWidth > 1024 ? 3 : 2,
-                          crossAxisSpacing: 6,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.6,
-                        ),
-                        padding: const EdgeInsets.all(10),
-                        itemCount: combined.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final film = combined[index];
-                          return _buildWatchedFilmCard(context, film, value);
-                        },
-                      ));
+                      return combined.isEmpty
+                          ? Center(
+                              child: Text('Brak filmów w historii oglądania',
+                                  style:
+                                      Theme.of(context).textTheme.labelLarge),
+                            )
+                          : (GridView.builder(
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: screenWidth > 1024 ? 3 : 2,
+                                crossAxisSpacing: 6,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 0.6,
+                              ),
+                              padding: const EdgeInsets.all(10),
+                              itemCount: combined.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                final film = combined[index];
+                                return _buildWatchedFilmCard(
+                                    context, film, value);
+                              },
+                            ));
                     },
                   )
                 ],

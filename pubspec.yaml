@@ -12,6 +12,7 @@ dependencies:
   dynamic_color: ^1.7.0
   flutter:
     sdk: flutter
+  flutter_secure_storage: ^9.2.2
   html: ^0.15.4
   media_kit: ^1.1.10+1
   media_kit_libs_video: ^1.0.4
