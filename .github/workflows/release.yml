@@ -1,0 +1,130 @@
+name: Build and Release Flutter App
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  android-build:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Release Version
+        id: extract_version
+        run: |
+          version=$(echo "${GITHUB_REF}" | sed -e 's|refs/heads/release/||')
+          echo "release_version=${version}" >> $GITHUB_ENV
+
+      - name: Update Version in pubspec.yaml
+        run: |
+          sed -i "s/^version:.*/version: ${release_version}/" pubspec.yaml
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add pubspec.yaml
+          git commit -m "Update version to ${release_version}"
+          git push
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.19.5
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk
+
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/unofficial-filman-android.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: unofficial-filman-android.apk
+          path: build/app/outputs/flutter-apk/unofficial-filman-android.apk
+
+  ios-build:
+    name: Build iOS IPA
+    runs-on: macos-latest
+    needs: android-build
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.19.5
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build iOS IPA
+        run: flutter build ios --release --no-codesign
+
+      - name: Create IPA File
+        run: |
+          mkdir -p Payload
+          mv build/ios/iphoneos/Runner.app Payload/
+          zip -qq -r -9 unofficial-filman-ios.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: unofficial-filman-ios.ipa
+          path: unofficial-filman-ios.ipa
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [android-build, ios-build]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: unofficial-filman-android.apk
+
+      - name: Download IPA Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: unofficial-filman-ios.ipa
+
+      - name: Generate Release Notes
+        id: generate_release_notes
+        run: |
+          release_version=${{ steps.extract_version.outputs.release_version }}
+          release_notes=$(git log --pretty=format:"* %h - %s" ${{ github.event.pull_request.base.sha }}..${{ github.sha }})
+          echo "release_notes=${release_notes}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_NOTES: ${{ steps.generate_release_notes.outputs.release_notes }}
+        run: |
+          release_name="Release ${release_version}"
+          release_tag="${release_version}"
+
+          gh release create "${release_tag}" \
+            --title "${release_name}" \
+            --notes "${RELEASE_NOTES}" \
+            "build/app/outputs/flutter-apk/unofficial-filman-android.apk" \
+            "unofficial-filman-ios.ipa"
