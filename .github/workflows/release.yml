@@ -1,15 +1,14 @@
 name: Build and Release Flutter App
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
 jobs:
-  android-build:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
-    name: Build Android APK
+  update-version:
+    if: startsWith(github.head_ref, 'release/')
+    name: Update Version Number
     runs-on: ubuntu-latest
 
     steps:
@@ -30,6 +29,15 @@ jobs:
           git add pubspec.yaml
           git commit -m "Update version to ${release_version}"
           git push
+
+  android-build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: update-version
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -112,7 +120,7 @@ jobs:
         id: generate_release_notes
         run: |
           release_version=${{ steps.extract_version.outputs.release_version }}
-          release_notes=$(git log --pretty=format:"* %h - %s" ${{ github.event.pull_request.base.sha }}..${{ github.sha }})
+          release_notes=$(git log --pretty=format:"* %h - %s" ${{ github.event.before }}..${{ github.sha }})
           echo "release_notes=${release_notes}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
@@ -126,5 +134,5 @@ jobs:
           gh release create "${release_tag}" \
             --title "${release_name}" \
             --notes "${RELEASE_NOTES}" \
-            "build/app/outputs/flutter-apk/unofficial-filman-android.apk" \
+            "unofficial-filman-android.apk" \
             "unofficial-filman-ios.ipa"
