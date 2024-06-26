@@ -7,7 +7,7 @@ on:
 
 jobs:
   update-version:
-    if: startsWith(github.head_ref, 'release/')
+    if: startsWith(github.ref, 'refs/heads/release/')
     name: Update Version Number
     runs-on: ubuntu-latest
 
@@ -68,7 +68,7 @@ jobs:
   ios-build:
     name: Build iOS IPA
     runs-on: macos-latest
-    needs: android-build
+    needs: update-version
 
     steps:
       - name: Checkout Repository
@@ -134,5 +134,5 @@ jobs:
           gh release create "${release_tag}" \
             --title "${release_name}" \
             --notes "${RELEASE_NOTES}" \
-            "unofficial-filman-android.apk" \
-            "unofficial-filman-ios.ipa"
+            unofficial-filman-android.apk \
+            unofficial-filman-ios.ipa
