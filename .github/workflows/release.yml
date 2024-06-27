@@ -122,7 +122,7 @@ jobs:
         id: generate_release_notes
         run: |
           release_version=${{ steps.extract_version.outputs.release_version }}
-          release_notes=$(git log --pretty=format:"* %h - %s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          release_notes=$(git log --pretty=format:"* %h - %s" origin/${{ github.event.pull_request.head.ref }})
           echo "release_notes=${release_notes}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
