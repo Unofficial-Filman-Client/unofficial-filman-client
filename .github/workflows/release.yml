@@ -118,23 +118,14 @@ jobs:
         with:
           name: unofficial-filman-ios.ipa
 
-      - name: Generate Release Notes
-        id: generate_release_notes
-        run: |
-          release_version=${{ steps.extract_version.outputs.release_version }}
-          release_notes=$(git log --pretty=format:"* %h - %s" main..${{ github.event.pull_request.head.ref }})
-          echo "release_notes=${release_notes}" >> $GITHUB_ENV
-
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: ${{ steps.generate_release_notes.outputs.release_notes }}
         run: |
           release_name="Release ${release_version}"
           release_tag="${release_version}"
 
           gh release create "${release_tag}" \
             --title "${release_name}" \
-            --notes "${RELEASE_NOTES}" \
             unofficial-filman-android.apk \
             unofficial-filman-ios.ipa
