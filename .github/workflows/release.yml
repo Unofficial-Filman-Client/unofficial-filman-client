@@ -121,6 +121,7 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          release_version: ${{ steps.extract_version.outputs.release_version }}
         run: |
           release_name="Release ${release_version}"
           release_tag="${release_version}"
