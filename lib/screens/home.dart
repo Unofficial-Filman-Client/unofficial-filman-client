@@ -11,6 +11,7 @@ import 'package:filman_flutter/types/watched.dart';
 import 'package:filman_flutter/utils/error_handling.dart';
 import 'package:filman_flutter/utils/greeting.dart';
 import 'package:filman_flutter/utils/titlte.dart';
+import 'package:filman_flutter/utils/updater.dart';
 import 'package:filman_flutter/widgets/search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     homePageLoader =
         Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
+    checkForUpdates(context);
   }
 
   void _showBottomSheet() {
