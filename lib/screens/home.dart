@@ -149,163 +149,160 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildWatchedFilmCard(
       BuildContext context, WatchedSingle film, WatchedNotifier all) {
     return Card(
-      child: InkWell(
-        onTap: () {
-          SystemChrome.setPreferredOrientations([
-            DeviceOrientation.landscapeRight,
-            DeviceOrientation.landscapeLeft
-          ]);
-          SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
-          Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (context) => FilmanPlayer.fromDetails(
-                      filmDetails: film.filmDetails,
-                      startFrom: film.watchedInSec,
-                      savedDuration: film.totalInSec,
-                    )),
-          );
-        },
-        onLongPress: () => showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: const Text('Usuwanie z historii'),
-              content: Consumer<SettingsNotifier>(
-                builder: (context, settings, child) => Text(
-                    'Czy na pewno chcesz usunąć postęp oglądania \'${getDisplayTitle(film.filmDetails.title, settings)}\' z historii?'),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Anuluj'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      Provider.of<WatchedNotifier>(context, listen: false)
-                          .remove(film);
-                    });
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Usuń'),
-                ),
-              ],
+        child: Stack(
+      children: [
+        InkWell(
+          onTap: () {
+            SystemChrome.setPreferredOrientations([
+              DeviceOrientation.landscapeRight,
+              DeviceOrientation.landscapeLeft
+            ]);
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (context) => FilmanPlayer.fromDetails(
+                        filmDetails: film.filmDetails,
+                        startFrom: film.watchedInSec,
+                        savedDuration: film.totalInSec,
+                      )),
             );
           },
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(4.0)),
-                child: Image.network(
-                  film.filmDetails.imageUrl,
-                  fit: BoxFit.cover,
+          onLongPress: () => showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('Usuwanie z historii'),
+                content: Consumer<SettingsNotifier>(
+                  builder: (context, settings, child) => Text(
+                      'Czy na pewno chcesz usunąć postęp oglądania \'${getDisplayTitle(film.filmDetails.title, settings)}\' z historii?'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Anuluj'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        Provider.of<WatchedNotifier>(context, listen: false)
+                            .remove(film);
+                      });
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Usuń'),
+                  ),
+                ],
+              );
+            },
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(4.0)),
+                  child: Image.network(
+                    film.filmDetails.imageUrl,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            LinearProgressIndicator(
-              value: film.watchedPercentage,
-            ),
-            Expanded(
-              child: Padding(
+              LinearProgressIndicator(
+                value: film.watchedPercentage,
+              ),
+              Expanded(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            DisplayTitle(
-                              title: film.filmDetails.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16.0,
-                              ),
-                              maxLines: MediaQuery.of(context).size.width > 1024
-                                  ? 3
-                                  : 2,
-                              overflow: TextOverflow.fade,
-                              textAlign: TextAlign.center,
-                            ),
-                            film.filmDetails.isEpisode
-                                ? Column(
-                                    children: [
-                                      Text(
-                                        (film.filmDetails.seasonEpisodeTag
-                                                    ?.split(' ')
-                                                  ?..removeAt(0))
-                                                ?.join(' ') ??
-                                            '',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.fade,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      Text(
-                                        'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
-                                        style: const TextStyle(
-                                          fontSize: 16.0,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.fade,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    'Pozostało: ${film.totalInSec ~/ 60} min',
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        DisplayTitle(
+                          title: film.filmDetails.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.0,
+                          ),
+                          maxLines:
+                              MediaQuery.of(context).size.width > 1024 ? 3 : 2,
+                          overflow: TextOverflow.fade,
+                          textAlign: TextAlign.center,
+                        ),
+                        film.filmDetails.isEpisode
+                            ? Column(
+                                children: [
+                                  Text(
+                                    (film.filmDetails.seasonEpisodeTag
+                                                ?.split(' ')
+                                              ?..removeAt(0))
+                                            ?.join(' ') ??
+                                        '',
                                     maxLines: 1,
                                     overflow: TextOverflow.fade,
                                     textAlign: TextAlign.center,
                                   ),
-                          ]),
-                      const SizedBox(width: 8.0),
-                      film.filmDetails.parentUrl != null
-                          ? FutureBuilder(
-                              future: Provider.of<FilmanNotifier>(context)
-                                  .getFilmDetails(film.filmDetails.parentUrl!),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const CircularProgressIndicator();
-                                } else if (snapshot.hasError) {
-                                  return const Icon(Icons.error);
-                                }
-
-                                return IconButton(
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              FilmScreen.fromDetails(
-                                                details: snapshot.data!,
-                                              )),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.info),
-                                );
-                              })
-                          : IconButton(
-                              onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          FilmScreen.fromDetails(
-                                            details: film.filmDetails,
-                                          ))),
-                              icon: const Icon(Icons.info)),
-                    ],
-                  )),
-            ),
-          ],
+                                  Text(
+                                    'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
+                                    style: const TextStyle(
+                                      fontSize: 16.0,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.fade,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                'Pozostało: ${film.totalInSec ~/ 60} min',
+                                maxLines: 1,
+                                overflow: TextOverflow.fade,
+                                textAlign: TextAlign.center,
+                              ),
+                      ]),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+        Positioned(
+          right: 0,
+          top: 0,
+          child: film.filmDetails.parentUrl != null
+              ? FutureBuilder(
+                  future: Provider.of<FilmanNotifier>(context)
+                      .getFilmDetails(film.filmDetails.parentUrl!),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      return const Icon(Icons.error);
+                    }
+
+                    return IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (context) => FilmScreen.fromDetails(
+                                    details: snapshot.data!,
+                                  )),
+                        );
+                      },
+                      icon: const Icon(Icons.info),
+                    );
+                  })
+              : IconButton(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => FilmScreen.fromDetails(
+                            details: film.filmDetails,
+                          ))),
+                  icon: const Icon(Icons.info)),
+        )
+      ],
+    ));
   }
 
   @override
