@@ -202,12 +202,23 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          title: const Text('Wybierz język'),
+          title: const Text('Wybierz treść'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: directs
                 .map((link) => ListTile(
-                      title: Text('${link.qualityVersion} ${link.language}'),
+                      title: Row(
+                        children: [
+                          Image.network(link.hostingImgUrl,
+                              width: 32, height: 32),
+                          const SizedBox(
+                            width: 4,
+                          ),
+                          Expanded(
+                              child: Text(
+                                  '${link.qualityVersion} ${link.language}')),
+                        ],
+                      ),
                       onTap: () {
                         _player.open(Media(link.link));
                         Navigator.of(context).pop();
