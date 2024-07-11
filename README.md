@@ -47,13 +47,13 @@ Here is the unofficial client for the filman.cc website! This app, built using F
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/majusss/unofficial-filman-flutter.git filman_flutter
+   git clone https://github.com/majusss/unofficial-filman-flutter.git unofficial_filman_client
    ```
 
 2. **Navigate to the Project Directory**:
 
    ```bash
-   cd filman_flutter
+   cd unofficial_filman_client
    ```
 
 3. **Install Dependencies**:

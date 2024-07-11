@@ -1,8 +1,8 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/film.dart';
-import 'package:filman_flutter/types/film.dart';
-import 'package:filman_flutter/types/search_results.dart';
-import 'package:filman_flutter/utils/titlte.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/screens/film.dart';
+import 'package:unofficial_filman_client/types/film.dart';
+import 'package:unofficial_filman_client/types/search_results.dart';
+import 'package:unofficial_filman_client/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

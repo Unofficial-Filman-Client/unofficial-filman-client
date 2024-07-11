@@ -1,14 +1,14 @@
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:filman_flutter/notifiers/settings.dart';
-import 'package:filman_flutter/notifiers/watched.dart';
-import 'package:filman_flutter/screens/hello.dart';
-import 'package:filman_flutter/screens/home.dart';
-import 'package:filman_flutter/notifiers/filman.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/notifiers/settings.dart';
+import 'package:unofficial_filman_client/notifiers/watched.dart';
+import 'package:unofficial_filman_client/screens/hello.dart';
+import 'package:unofficial_filman_client/screens/main.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         themeMode: ThemeMode.system,
-        home: isAuth ? const HomeScreen() : const HelloScreen(),
+        home: isAuth ? const MainScreen() : const HelloScreen(),
       );
     });
   }

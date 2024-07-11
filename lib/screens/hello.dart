@@ -1,5 +1,5 @@
-import 'package:filman_flutter/screens/login.dart';
-import 'package:filman_flutter/screens/register.dart';
+import 'package:unofficial_filman_client/screens/login.dart';
+import 'package:unofficial_filman_client/screens/register.dart';
 import 'package:flutter/material.dart';
 
 class HelloScreen extends StatelessWidget {

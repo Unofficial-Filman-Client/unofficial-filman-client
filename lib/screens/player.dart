@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/notifiers/settings.dart';
-import 'package:filman_flutter/notifiers/watched.dart';
-import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/types/season.dart';
-import 'package:filman_flutter/types/watched.dart';
-import 'package:filman_flutter/utils/titlte.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/notifiers/settings.dart';
+import 'package:unofficial_filman_client/notifiers/watched.dart';
+import 'package:unofficial_filman_client/types/film_details.dart';
+import 'package:unofficial_filman_client/types/season.dart';
+import 'package:unofficial_filman_client/types/watched.dart';
+import 'package:unofficial_filman_client/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';

@@ -1,5 +1,5 @@
-import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/types/season.dart';
+import 'package:unofficial_filman_client/types/film_details.dart';
+import 'package:unofficial_filman_client/types/season.dart';
 
 class WatchedSingle {
   FilmDetails filmDetails;

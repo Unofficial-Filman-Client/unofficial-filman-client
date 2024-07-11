@@ -47,13 +47,13 @@ Oto nieoficjalny klient strony internetowej filman.cc! Ta aplikacja, stworzona p
 1. **Sklonuj Repozytorium**:
 
    ```bash
-   git clone https://github.com/majusss/unofficial-filman-flutter.git filman_flutter
+   git clone https://github.com/majusss/unofficial-filman-flutter.git unofficial_filman_client
    ```
 
 2. **Przejdź do Katalogu Projektu**:
 
    ```bash
-   cd filman_flutter
+   cd unofficial_filman_client
    ```
 
 3. **Zainstaluj Zależności**:

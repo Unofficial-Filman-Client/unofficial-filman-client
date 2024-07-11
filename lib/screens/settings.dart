@@ -1,5 +1,5 @@
-import 'package:filman_flutter/notifiers/settings.dart';
-import 'package:filman_flutter/utils/titlte.dart';
+import 'package:unofficial_filman_client/notifiers/settings.dart';
+import 'package:unofficial_filman_client/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

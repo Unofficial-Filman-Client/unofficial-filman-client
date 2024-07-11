@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:filman_flutter/types/watched.dart';
+import 'package:unofficial_filman_client/types/watched.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:shared_preferences/shared_preferences.dart';

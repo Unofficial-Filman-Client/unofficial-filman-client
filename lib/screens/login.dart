@@ -1,6 +1,6 @@
-import 'package:filman_flutter/screens/home.dart';
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/types/auth_response.dart';
+import 'package:unofficial_filman_client/screens/main.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/types/auth_response.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       }
     } else {

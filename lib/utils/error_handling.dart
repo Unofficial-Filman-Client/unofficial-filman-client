@@ -1,18 +1,17 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/hello.dart';
-import 'package:filman_flutter/types/auth_response.dart';
-import 'package:filman_flutter/types/exceptions.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/screens/hello.dart';
+import 'package:unofficial_filman_client/types/auth_response.dart';
+import 'package:unofficial_filman_client/types/exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 Widget buildErrorContent(
   Object error,
   BuildContext context,
-  void onLogin(AuthResponse response),
+  void Function(AuthResponse response) onLogin,
 ) {
   if (error is LogOutException) {
     try {
-      debugPrint('Trying to log in again');
       final user = Provider.of<FilmanNotifier>(context, listen: false).user;
       if (user != null) {
         Provider.of<FilmanNotifier>(context, listen: false)

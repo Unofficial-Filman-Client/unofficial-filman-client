@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:filman_flutter/types/exceptions.dart';
-import 'package:filman_flutter/types/film.dart';
-import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/types/home_page.dart';
-import 'package:filman_flutter/types/auth_response.dart';
-import 'package:filman_flutter/types/search_results.dart';
-import 'package:filman_flutter/types/season.dart';
-import 'package:filman_flutter/types/user.dart';
+import 'package:unofficial_filman_client/types/exceptions.dart';
+import 'package:unofficial_filman_client/types/film.dart';
+import 'package:unofficial_filman_client/types/film_details.dart';
+import 'package:unofficial_filman_client/types/home_page.dart';
+import 'package:unofficial_filman_client/types/auth_response.dart';
+import 'package:unofficial_filman_client/types/search_results.dart';
+import 'package:unofficial_filman_client/types/season.dart';
+import 'package:unofficial_filman_client/types/user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -139,7 +139,7 @@ class FilmanNotifier extends ChangeNotifier {
     }
   }
 
-  Future<HomePage> getFilmanPage() async {
+  Future<HomePageResponse> getFilmanPage() async {
     final response = await dio.get(
       "https://filman.cc/",
       options: Options(
@@ -162,7 +162,7 @@ class FilmanNotifier extends ChangeNotifier {
 
     final document = parse(response.data);
 
-    final homePage = HomePage();
+    final homePage = HomePageResponse();
 
     for (final list in document.querySelectorAll('div[id=item-list]')) {
       for (final filmDOM in list.children) {

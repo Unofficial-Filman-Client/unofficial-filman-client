@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:filman_flutter/types/season.dart';
+import 'package:unofficial_filman_client/types/season.dart';
 import 'package:html/parser.dart';
 
 class Link {

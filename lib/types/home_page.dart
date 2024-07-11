@@ -1,6 +1,6 @@
-import 'package:filman_flutter/types/film.dart';
+import 'package:unofficial_filman_client/types/film.dart';
 
-class HomePage {
+class HomePageResponse {
   final Map<String, List<Film>> filmMap = {};
   final List<String> categories = [];
 

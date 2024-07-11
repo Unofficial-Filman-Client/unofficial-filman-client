@@ -1,6 +1,6 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/login.dart';
-import 'package:filman_flutter/widgets/recaptcha.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/screens/login.dart';
+import 'package:unofficial_filman_client/widgets/recaptcha.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

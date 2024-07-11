@@ -1,11 +1,10 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/player.dart';
-import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/utils/error_handling.dart';
-import 'package:filman_flutter/utils/titlte.dart';
-import 'package:filman_flutter/widgets/episodes.dart';
+import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/screens/player.dart';
+import 'package:unofficial_filman_client/types/film_details.dart';
+import 'package:unofficial_filman_client/utils/error_handling.dart';
+import 'package:unofficial_filman_client/utils/titlte.dart';
+import 'package:unofficial_filman_client/widgets/episodes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
