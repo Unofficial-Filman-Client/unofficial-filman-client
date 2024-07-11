@@ -153,11 +153,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       children: [
         InkWell(
           onTap: () {
-            SystemChrome.setPreferredOrientations([
-              DeviceOrientation.landscapeRight,
-              DeviceOrientation.landscapeLeft
-            ]);
-            SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
             Navigator.of(context).push(
               MaterialPageRoute(
                   builder: (context) => FilmanPlayer.fromDetails(

@@ -137,11 +137,6 @@ class _EpisodesModalState extends State<EpisodesModal> {
                     ],
                   ),
                   onTap: () {
-                    SystemChrome.setPreferredOrientations([
-                      DeviceOrientation.landscapeRight,
-                      DeviceOrientation.landscapeLeft
-                    ]);
-                    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
                     Navigator.of(context)
                         .push(MaterialPageRoute(builder: (context) {
                       if (episodeDescriptions[episode.episodeName] != null) {

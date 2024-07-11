@@ -173,11 +173,6 @@ class _FilmScreenState extends State<FilmScreen> {
                     ));
                   }
                 } else {
-                  SystemChrome.setPreferredOrientations([
-                    DeviceOrientation.landscapeRight,
-                    DeviceOrientation.landscapeLeft
-                  ]);
-                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) =>
                         FilmanPlayer.fromDetails(filmDetails: film),
