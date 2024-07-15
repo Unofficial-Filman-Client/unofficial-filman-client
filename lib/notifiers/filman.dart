@@ -376,7 +376,7 @@ class FilmanNotifier extends ChangeNotifier {
         links.add(Link(
           main: main,
           qualityVersion: qualityVersion,
-          language: language.replaceAll("Napisy_Tansl", "Napisy_Transl"),
+          language: language,
           link: link,
           hostingImgUrl: hostingImg,
         ));

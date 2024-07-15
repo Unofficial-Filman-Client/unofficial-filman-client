@@ -5,7 +5,7 @@ enum Language implements Comparable<Language> {
   lektor(language: 'Lektor'),
   lektorIVO(language: 'Lektor_IVO'),
   napisy(language: 'Napisy'),
-  napisyTransl(language: 'Napisy_Transl'),
+  napisyTansl(language: 'Napisy_Tansl'),
   pl(language: 'PL');
 
   const Language({
