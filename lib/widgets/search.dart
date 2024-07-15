@@ -35,12 +35,12 @@ class _SearchModalState extends State<SearchModal> {
       children: [
         SearchBar(
           controller: searchController,
-          padding: const MaterialStatePropertyAll<EdgeInsets>(
+          padding: const WidgetStatePropertyAll<EdgeInsets>(
               EdgeInsets.symmetric(horizontal: 16.0)),
           leading: const Icon(Icons.search),
           autoFocus: true,
           onChanged: (value) {
-            if (value.isNotEmpty) {
+            if (value.isNotEmpty && value.length > 1) {
               setState(() {
                 lazySearch = Provider.of<FilmanNotifier>(context, listen: false)
                     .searchInFilman(value);

@@ -1,52 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:unofficial_filman_client/types/links.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 import 'package:html/parser.dart';
-
-class Link {
-  final String main;
-  final String language;
-  final String qualityVersion;
-  final String link;
-  final String hostingImgUrl;
-
-  Link({
-    required this.main,
-    required this.qualityVersion,
-    required this.language,
-    required this.link,
-    required this.hostingImgUrl,
-  });
-
-  Link.fromJSON(Map<String, dynamic> json)
-      : main = json['main'],
-        qualityVersion = json['qualityVersion'],
-        language = json['language'],
-        link = json['link'],
-        hostingImgUrl = json['hostingImgUrl'];
-
-  Map<String, dynamic> toMap() {
-    return {
-      'main': main,
-      'qualityVersion': qualityVersion,
-      'language': language,
-      'link': link,
-      'hostingImgUrl': hostingImgUrl,
-    };
-  }
-}
-
-class DirectLink {
-  final String link;
-  final String qualityVersion;
-  final String language;
-  final String hostingImgUrl;
-
-  DirectLink(
-      {required this.link,
-      required this.qualityVersion,
-      required this.language,
-      required this.hostingImgUrl});
-}
 
 class FilmDetails {
   final String url;
@@ -66,9 +21,35 @@ class FilmDetails {
   final String? prevEpisodeUrl;
   final String? nextEpisodeUrl;
 
-  Future<List<DirectLink>> getDirect() async {
+  Future<List<Language>> getAvailableLanguages() async {
+    List<Language> languages = [];
+    for (Link link in links ?? []) {
+      if (!languages.contains(link.language)) {
+        languages.add(link.language);
+      }
+    }
+    return languages;
+  }
+
+  Future<List<Quality>> getAvaliableQualitiesForLanguage(Language lang) async {
+    List<Quality> qualities = [];
+    for (Link link in links ?? []) {
+      if (link.language == lang) {
+        if (!qualities.contains(link.qualityVersion)) {
+          qualities.add(link.qualityVersion);
+        }
+      }
+    }
+    qualities.sort();
+    return qualities;
+  }
+
+  Future<List<DirectLink>> getDirects(Language lang, Quality quality) async {
     List<DirectLink> directLinks = [];
     for (Link link in links ?? []) {
+      if (link.language != lang || link.qualityVersion != quality) {
+        continue;
+      }
       if (link.main.toString().contains("streamtape")) {
         directLinks.add(DirectLink(
             link: await scrapStreamtape(link.link),
@@ -93,9 +74,17 @@ class FilmDetails {
       final response = await dio.get(url);
       final document = parse(response.data);
 
+      if (document.body?.text == "File was deleted") {
+        throw Exception('File was deleted');
+      }
+
       final link = document.querySelector('source')?.attributes['src'];
 
-      return Uri.parse(link ?? '').toString();
+      if (link == null) {
+        throw Exception('No link found');
+      }
+
+      return Uri.parse(link).toString();
     } catch (e) {
       throw Exception('Error scraping Vidoza.net: ${e.toString()}');
     }

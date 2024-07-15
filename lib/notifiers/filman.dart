@@ -5,6 +5,7 @@ import 'package:unofficial_filman_client/types/film.dart';
 import 'package:unofficial_filman_client/types/film_details.dart';
 import 'package:unofficial_filman_client/types/home_page.dart';
 import 'package:unofficial_filman_client/types/auth_response.dart';
+import 'package:unofficial_filman_client/types/links.dart';
 import 'package:unofficial_filman_client/types/search_results.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 import 'package:unofficial_filman_client/types/user.dart';
@@ -300,8 +301,14 @@ class FilmanNotifier extends ChangeNotifier {
         RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "")?.group(1) ??
             "Brak informacji o ilości odsłon";
 
-    String country = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "")?.group(1) ??
-        "Brak informacji o kraju produkcji";
+    String? countries = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "")?.group(1);
+
+    String country = countries != null
+        ? RegExp(r'(?:[A-Z]+|^)[a-z]*')
+            .allMatches(countries)
+            .map((e) => e.group(0))
+            .join(", ")
+        : "Brak informacji o kraju produkcji";
 
     final categories = document
         .querySelectorAll('ul.categories a')
@@ -369,7 +376,7 @@ class FilmanNotifier extends ChangeNotifier {
         links.add(Link(
           main: main,
           qualityVersion: qualityVersion,
-          language: language,
+          language: language.replaceAll("Napisy_Tansl", "Napisy_Transl"),
           link: link,
           hostingImgUrl: hostingImg,
         ));
