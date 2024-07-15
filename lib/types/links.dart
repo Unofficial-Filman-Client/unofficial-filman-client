@@ -39,13 +39,13 @@ enum Quality implements Comparable<Quality> {
   String toString() => quality;
 }
 
-class Link {
+class Host {
   final String main;
   final Language language;
   final Quality qualityVersion;
   final String link;
 
-  Link({
+  Host({
     required this.main,
     required String qualityVersion,
     required String language,
@@ -54,7 +54,7 @@ class Link {
             Quality.values.firstWhere((e) => e.quality == qualityVersion),
         language = Language.values.firstWhere((e) => e.language == language);
 
-  Link.fromJSON(Map<String, dynamic> json)
+  Host.fromJSON(Map<String, dynamic> json)
       : main = json['main'],
         qualityVersion = Quality.values
             .firstWhere((e) => e.quality == json['qualityVersion']),

@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:unofficial_filman_client/types/links.dart';
 import 'package:unofficial_filman_client/utils/hosts.dart';
 
-Future<List<Language>> _getAvailableLanguages(List<Link> links) async {
+Future<List<Language>> _getAvailableLanguages(List<Host> links) async {
   List<Language> languages = [];
-  for (Link link in links) {
-    if (!languages.contains(link.language)) {
+  for (Host link in links) {
+    if (!languages.contains(link.language) && isSupportedHost(link)) {
       languages.add(link.language);
     }
   }
@@ -15,11 +15,11 @@ Future<List<Language>> _getAvailableLanguages(List<Link> links) async {
 }
 
 Future<List<Quality>> _getAvaliableQualitiesForLanguage(
-    Language lang, List<Link> links) async {
+    Language lang, List<Host> links) async {
   List<Quality> qualities = [];
-  for (Link link in links) {
+  for (Host link in links) {
     if (link.language == lang) {
-      if (!qualities.contains(link.qualityVersion)) {
+      if (!qualities.contains(link.qualityVersion) && isSupportedHost(link)) {
         qualities.add(link.qualityVersion);
       }
     }
@@ -28,12 +28,13 @@ Future<List<Quality>> _getAvaliableQualitiesForLanguage(
   return qualities;
 }
 
-Future<dynamic> _showSelectionDialog(List items, BuildContext context) {
+Future<dynamic> _showSelectionDialog(
+    BuildContext context, List items, String title) {
   return showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
-      title: const Text('Wybierz język'),
+      title: Text(title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: items
@@ -50,11 +51,15 @@ Future<dynamic> _showSelectionDialog(List items, BuildContext context) {
 }
 
 Future<DirectLink?> getUserSelectedVersion(
-    List<Link> links, BuildContext context) async {
+    List<Host> links, BuildContext context) async {
   final List<Language> languages = await _getAvailableLanguages(links);
   late Language lang;
   if (languages.length > 1 && context.mounted) {
-    lang = await _showSelectionDialog(languages, context);
+    lang = await _showSelectionDialog(
+      context,
+      languages,
+      "Wybierz język",
+    );
   } else if (languages.isNotEmpty) {
     lang = languages.first;
   } else {
@@ -64,7 +69,7 @@ Future<DirectLink?> getUserSelectedVersion(
       await _getAvaliableQualitiesForLanguage(lang, links);
   late Quality quality;
   if (qualities.length > 1 && context.mounted) {
-    quality = await _showSelectionDialog(qualities, context);
+    quality = await _showSelectionDialog(context, qualities, "Wybierz jakość");
   } else if (qualities.isNotEmpty) {
     quality = qualities.first;
   } else {

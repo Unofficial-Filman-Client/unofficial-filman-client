@@ -351,7 +351,7 @@ class FilmanNotifier extends ChangeNotifier {
           seasons: seasons,
           isEpisode: false);
     } else {
-      List<Link> links = [];
+      List<Host> links = [];
 
       document.querySelectorAll('tbody tr').forEach((row) {
         final main = row.querySelector('td')?.text.trim() ?? '';
@@ -367,12 +367,11 @@ class FilmanNotifier extends ChangeNotifier {
         }
 
         final tableData = row.querySelectorAll('td');
+        if (tableData.length < 3) return;
         final language = tableData[1].text.trim();
         final qualityVersion = tableData[2].text.trim();
 
-        debugPrint(language);
-
-        links.add(Link(
+        links.add(Host(
           main: main,
           qualityVersion: qualityVersion,
           language: language,

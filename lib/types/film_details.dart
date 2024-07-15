@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:unofficial_filman_client/types/links.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 
@@ -13,7 +12,7 @@ class FilmDetails {
   final List<String> categories;
   final bool isSerial;
   final List<Season>? seasons;
-  final List<Link>? links;
+  final List<Host>? links;
   final bool isEpisode;
   final String? seasonEpisodeTag;
   final String? parentUrl;
@@ -59,10 +58,10 @@ class FilmDetails {
             ? List<Season>.from(json['seasons'].map((e) => Season.fromJSON(e)))
             : null,
         links = json['links'] != null
-            ? List<Link>.from(json['links']
+            ? List<Host>.from(json['links']
                 .map((e) {
                   try {
-                    return Link.fromJSON(e);
+                    return Host.fromJSON(e);
                   } catch (err) {
                     return null;
                   }
