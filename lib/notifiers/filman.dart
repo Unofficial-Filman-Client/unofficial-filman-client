@@ -366,19 +366,17 @@ class FilmanNotifier extends ChangeNotifier {
           link = '';
         }
 
-        final hostingImg =
-            row.querySelector('td a img')?.attributes['src'] ?? '';
         final tableData = row.querySelectorAll('td');
-        final language = tableData.length > 1 ? tableData[1].text.trim() : '';
-        final qualityVersion =
-            tableData.length > 2 ? tableData[2].text.trim() : '';
+        final language = tableData[1].text.trim();
+        final qualityVersion = tableData[2].text.trim();
+
+        debugPrint(language);
 
         links.add(Link(
           main: main,
           qualityVersion: qualityVersion,
           language: language,
           link: link,
-          hostingImgUrl: hostingImg,
         ));
       });
 

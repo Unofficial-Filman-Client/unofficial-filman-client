@@ -6,6 +6,7 @@ import 'package:unofficial_filman_client/notifiers/watched.dart';
 import 'package:unofficial_filman_client/types/film_details.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 import 'package:unofficial_filman_client/types/watched.dart';
+import 'package:unofficial_filman_client/utils/select_dialog.dart';
 import 'package:unofficial_filman_client/utils/titlte.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -157,27 +158,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       _loadNextEpisode();
     }
 
-    final languages = await _filmDetails?.getAvailableLanguages() ?? [];
-
-    if (languages.length > 1) {
-      _showLanguageSelectionDialog(languages);
-    } else if (languages.isNotEmpty) {
-      List<Quality> qualities =
-          await _filmDetails!.getAvaliableQualitiesForLanguage(languages.first);
-      if (qualities.length > 1) {
-        _showQualitySelectionDialog(qualities, languages.first);
-      } else if (qualities.isNotEmpty) {
-        final link =
-            ((await _filmDetails!.getDirects(languages.first, qualities.first))
-                  ..shuffle())
-                .first
-                .link;
-        _player.open(Media(link));
-      } else {
-        _showNoLinksSnackbar();
-      }
+    if (_filmDetails?.links != null && mounted) {
+      DirectLink? direct =
+          await getUserSelectedVersion(_filmDetails!.links!, context);
+      if (direct == null) return _showNoLinksSnackbar();
+      _player.open(Media(direct.link));
     } else {
-      _showNoLinksSnackbar();
+      return _showNoLinksSnackbar();
     }
   }
 
@@ -214,78 +201,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       setState(() {
         _nextEpisode = next;
       });
-    }
-  }
-
-  void _showLanguageSelectionDialog(List<Language> languages) {
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Wybierz język'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: languages
-                .map((lang) => ListTile(
-                      title: Text(lang.language),
-                      onTap: () async {
-                        if (_filmDetails == null) return;
-                        final qualities = await _filmDetails!
-                            .getAvaliableQualitiesForLanguage(lang);
-                        if (context.mounted) {
-                          if (qualities.length > 1) {
-                            Navigator.of(context).pop();
-                            _showQualitySelectionDialog(qualities, lang);
-                          } else if (qualities.isEmpty) {
-                            Navigator.of(context).pop();
-                            _showNoLinksSnackbar();
-                            return;
-                          } else {
-                            Navigator.of(context).pop();
-                            final link = ((await _filmDetails!
-                                    .getDirects(lang, qualities.first))
-                                  ..shuffle())
-                                .first
-                                .link;
-                            _player.open(Media(link));
-                          }
-                        }
-                      },
-                    ))
-                .toList(),
-          ),
-        ),
-      );
-    }
-  }
-
-  void _showQualitySelectionDialog(
-      List<Quality> qualities, Language selectedLang) {
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Wybierz jakość'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: qualities
-                .map((quality) => ListTile(
-                      title: Text(quality.quality),
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        _player.open(Media(((await _filmDetails!
-                                .getDirects(selectedLang, qualities.first))
-                              ..shuffle())
-                            .first
-                            .link));
-                      },
-                    ))
-                .toList(),
-          ),
-        ),
-      );
     }
   }
 

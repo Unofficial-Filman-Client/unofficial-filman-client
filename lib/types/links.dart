@@ -44,14 +44,12 @@ class Link {
   final Language language;
   final Quality qualityVersion;
   final String link;
-  final String hostingImgUrl;
 
   Link({
     required this.main,
     required String qualityVersion,
     required String language,
     required this.link,
-    required this.hostingImgUrl,
   })  : qualityVersion =
             Quality.values.firstWhere((e) => e.quality == qualityVersion),
         language = Language.values.firstWhere((e) => e.language == language);
@@ -62,8 +60,7 @@ class Link {
             .firstWhere((e) => e.quality == json['qualityVersion']),
         language =
             Language.values.firstWhere((e) => e.language == json['language']),
-        link = json['link'],
-        hostingImgUrl = json['hostingImgUrl'];
+        link = json['link'];
 
   Map<String, dynamic> toMap() {
     return {
@@ -71,7 +68,6 @@ class Link {
       'qualityVersion': qualityVersion.quality,
       'language': language.language,
       'link': link,
-      'hostingImgUrl': hostingImgUrl,
     };
   }
 }
@@ -80,15 +76,14 @@ class DirectLink {
   final String link;
   final Quality qualityVersion;
   final Language language;
-  final String hostingImgUrl;
 
-  DirectLink(
-      {required this.link,
-      required this.qualityVersion,
-      required this.language,
-      required this.hostingImgUrl});
+  DirectLink({
+    required this.link,
+    required this.qualityVersion,
+    required this.language,
+  });
 
   @override
   String toString() =>
-      'DirectLink(link: $link, qualityVersion: $qualityVersion, language: $language, hostingImgUrl: $hostingImgUrl)';
+      'DirectLink(link: $link, qualityVersion: $qualityVersion, language: $language)';
 }
