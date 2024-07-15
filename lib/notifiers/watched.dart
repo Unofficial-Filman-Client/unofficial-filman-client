@@ -81,9 +81,18 @@ class WatchedNotifier extends ChangeNotifier {
     if (watched.parentSeason != null) {
       _serials.removeWhere(
           (serial) => serial.filmDetails.url == watched.filmDetails.parentUrl);
+      prefs?.setStringList(
+        'watchedSerials',
+        _serials.map((e) => jsonEncode(e.toMap())).toList(),
+      );
     } else {
       _films.removeWhere(
           (film) => film.filmDetails.url == watched.filmDetails.url);
+      prefs?.setStringList(
+        'watchedFilms',
+        _films.map((e) => jsonEncode(e.toMap())).toList(),
+      );
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
   }
 }
