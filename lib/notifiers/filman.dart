@@ -301,14 +301,14 @@ class FilmanNotifier extends ChangeNotifier {
         RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "")?.group(1) ??
             "Brak informacji o ilości odsłon";
 
-    String? countries = RegExp(r'Kraj:(\w+)').firstMatch(info ?? "")?.group(1);
+    String country = document
+        .querySelectorAll('ul.country  a')
+        .map((can) => can.text.trim())
+        .join(", ");
 
-    String country = countries != null
-        ? RegExp(r'(?:[A-Z]+|^)[a-z]*')
-            .allMatches(countries)
-            .map((e) => e.group(0))
-            .join(", ")
-        : "Brak informacji o kraju produkcji";
+    if (country.isEmpty) {
+      country = "Brak informacji o kraju produkcji";
+    }
 
     final categories = document
         .querySelectorAll('ul.categories a')
