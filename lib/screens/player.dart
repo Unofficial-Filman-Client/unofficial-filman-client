@@ -263,18 +263,19 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       children: [
         _buildSeekingIcons(),
         _buildLoadingIcon(),
-        AnimatedOpacity(
-          opacity: _isOverlayVisible ? 1.0 : 0.0,
+        _buildDoubleTapControl(),
+        AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: Stack(
-            children: [
-              _buildDoubleTapControl(),
-              _buildBrightnessControl(context),
-              _buildTopBar(),
-              _buildCenterPlayPauseButton(),
-              _buildBottomBar(),
-            ],
-          ),
+          child: _isOverlayVisible
+              ? Stack(
+                  children: [
+                    _buildBrightnessControl(context),
+                    _buildTopBar(),
+                    _buildCenterPlayPauseButton(),
+                    _buildBottomBar(),
+                  ],
+                )
+              : const SizedBox(),
         )
       ],
     );
@@ -382,10 +383,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             return Center(
               child: IconButton(
                 onPressed: () {
-                  if (!_isOverlayVisible) {
-                    _isOverlayVisible = true;
-                    return;
-                  }
                   _checkBrightnessPermission();
                   _requestPermissions();
                 },
@@ -448,10 +445,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
-                  if (!_isOverlayVisible) {
-                    _isOverlayVisible = true;
-                    return;
-                  }
                   _saveWatched();
                   Navigator.of(context).pop();
                 },
@@ -488,10 +481,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                           _nextEpisode?.seasonEpisodeTag ?? 'Następny odcinek'),
                       label: const Icon(Icons.arrow_forward),
                       onPressed: () {
-                        if (!_isOverlayVisible) {
-                          _isOverlayVisible = true;
-                          return;
-                        }
                         if (_nextEpisode != null) {
                           Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
@@ -517,10 +506,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               iconSize: 72,
               onPressed: () {
-                if (!_isOverlayVisible) {
-                  _isOverlayVisible = true;
-                  return;
-                }
                 _saveWatched();
                 _player.playOrPause();
               },
@@ -546,10 +531,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               child: Slider(
                 value: _position.inSeconds.toDouble(),
                 onChanged: (value) {
-                  if (!_isOverlayVisible) {
-                    _isOverlayVisible = true;
-                    return;
-                  }
                   _controller.player.seek(Duration(seconds: value.toInt()));
                   _saveWatched();
                 },
