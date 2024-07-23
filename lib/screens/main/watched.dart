@@ -175,7 +175,7 @@ class _WatchedPageState extends State<WatchedPage> {
     return Consumer<WatchedNotifier>(
       builder: (context, value, child) {
         List<WatchedSingle> combined =
-            value.films + value.serials.map((e) => e.episodes.last).toList();
+            value.films + value.serials.map((e) => e.lastWatched).toList();
         combined.sort((a, b) => b.watchedAt.compareTo(a.watchedAt));
 
         return combined.isEmpty

@@ -21,13 +21,13 @@ class WatchedNotifier extends ChangeNotifier {
     if (watchedSerials != null) {
       _serials.addAll(
         watchedSerials
-            .map((e) => WatchedSerial.fromJSON(jsonDecode(e)))
+            .map((e) => WatchedSerial.fromMap(jsonDecode(e)))
             .toList(),
       );
     }
     if (watchedFilms != null) {
       _films.addAll(
-        watchedFilms.map((e) => WatchedSingle.fromJSON(jsonDecode(e))).toList(),
+        watchedFilms.map((e) => WatchedSingle.fromMap(jsonDecode(e))).toList(),
       );
     }
 
@@ -37,7 +37,7 @@ class WatchedNotifier extends ChangeNotifier {
   void watch(WatchedSingle watchedSingle) {
     WatchedSingle? found = _films.firstWhereOrNull(
       (WatchedSingle film) =>
-          film.filmDetails.title == watchedSingle.filmDetails.title,
+          film.filmDetails.url == watchedSingle.filmDetails.url,
     );
     if (found != null) {
       found.watching(watchedSingle.watchedInSec);
@@ -54,8 +54,7 @@ class WatchedNotifier extends ChangeNotifier {
 
   void watchEpisode(WatchedSerial watchedSerial, WatchedSingle watchedSingle) {
     WatchedSerial? found = _serials.firstWhereOrNull(
-      (WatchedSerial serial) =>
-          serial.filmDetails.title == watchedSerial.filmDetails.title,
+      (serial) => serial.filmDetails.url == watchedSerial.filmDetails.url,
     );
     if (found != null) {
       found.watching(watchedSingle);

@@ -54,7 +54,7 @@ class Host {
             Quality.values.firstWhere((e) => e.quality == qualityVersion),
         language = Language.values.firstWhere((e) => e.language == language);
 
-  Host.fromJSON(Map<String, dynamic> json)
+  Host.fromMap(Map<String, dynamic> json)
       : main = json['main'],
         qualityVersion = Quality.values
             .firstWhere((e) => e.quality == json['qualityVersion']),

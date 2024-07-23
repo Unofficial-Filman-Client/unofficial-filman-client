@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:unofficial_filman_client/types/film_details.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 
@@ -25,13 +26,13 @@ class WatchedSingle {
         totalInSec = totalSec,
         watchedAt = DateTime.now();
 
-  WatchedSingle.fromJSON(Map<String, dynamic> json)
-      : filmDetails = FilmDetails.fromJSON(json['filmDetails']),
+  WatchedSingle.fromMap(Map<String, dynamic> json)
+      : filmDetails = FilmDetails.fromMap(json['filmDetails']),
         watchedInSec = json['watchedInSec'],
         totalInSec = json['totalInSec'],
         watchedAt = DateTime.parse(json['watchedAt']),
         parentSeason = json['parentSeason'] != null
-            ? Season.fromJSON(json['parentSeason'])
+            ? Season.fromMap(json['parentSeason'])
             : null;
 
   void watching(int sec) {
@@ -81,21 +82,24 @@ class WatchedSerial {
         lastWatched = lastWatchedFromDetails,
         watchedAt = DateTime.now();
 
-  WatchedSerial.fromJSON(Map<String, dynamic> json)
-      : filmDetails = FilmDetails.fromJSON(json['filmDetails']),
+  WatchedSerial.fromMap(Map<String, dynamic> json)
+      : filmDetails = FilmDetails.fromMap(json['filmDetails']),
         episodes = json['episodes'] != null
             ? List<WatchedSingle>.from(
-                json['episodes'].map((e) => WatchedSingle.fromJSON((e))),
+                json['episodes'].map((e) => WatchedSingle.fromMap((e))),
               )
             : [],
-        lastWatched = WatchedSingle.fromJSON(json['lastWatched']),
+        lastWatched = WatchedSingle.fromMap(json['lastWatched']),
         watchedAt = DateTime.parse(json['watchedAt']);
 
   void watching(WatchedSingle episode) {
-    if (!episodes.contains(episode)) {
+    final watchingNow = episodes.firstWhereOrNull(
+      (element) => element.filmDetails.url == episode.filmDetails.url,
+    );
+    if (watchingNow == null) {
       episodes.add(episode);
     } else {
-      episodes[episodes.indexOf(episode)].watching(episode.watchedInSec);
+      watchingNow.watching(episode.watchedInSec);
     }
     episodes.sort((a, b) =>
         a.filmDetails.seasonEpisodeTag

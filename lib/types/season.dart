@@ -7,7 +7,7 @@ class Episode {
     required this.episodeUrl,
   });
 
-  Episode.fromJSON(Map<String, dynamic> json)
+  Episode.fromMap(Map<String, dynamic> json)
       : episodeName = json['episodeName'],
         episodeUrl = json['episodeUrl'];
 
@@ -68,10 +68,10 @@ class Season {
     required this.episodes,
   });
 
-  Season.fromJSON(Map<String, dynamic> json)
+  Season.fromMap(Map<String, dynamic> json)
       : seasonTitle = json['seasonTitle'],
-        episodes = List<Episode>.from(
-            json['episodes'].map((e) => Episode.fromJSON(e)));
+        episodes =
+            List<Episode>.from(json['episodes'].map((e) => Episode.fromMap(e)));
 
   Map<String, dynamic> toMap() {
     return {

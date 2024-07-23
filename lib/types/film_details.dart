@@ -43,7 +43,7 @@ class FilmDetails {
     this.nextEpisodeUrl,
   });
 
-  FilmDetails.fromJSON(Map<String, dynamic> json)
+  FilmDetails.fromMap(Map<String, dynamic> json)
       : url = json['url'],
         title = json['title'],
         desc = json['desc'],
@@ -55,13 +55,13 @@ class FilmDetails {
         isSerial = json['isSerial'],
         isEpisode = json['isEpisode'],
         seasons = json['seasons'] != null
-            ? List<Season>.from(json['seasons'].map((e) => Season.fromJSON(e)))
+            ? List<Season>.from(json['seasons'].map((e) => Season.fromMap(e)))
             : null,
         links = json['links'] != null
             ? List<Host>.from(json['links']
                 .map((e) {
                   try {
-                    return Host.fromJSON(e);
+                    return Host.fromMap(e);
                   } catch (err) {
                     return null;
                   }
