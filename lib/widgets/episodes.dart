@@ -6,6 +6,7 @@ import 'package:unofficial_filman_client/screens/player.dart';
 import 'package:unofficial_filman_client/types/film_details.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 import 'package:provider/provider.dart';
+import 'package:unofficial_filman_client/types/watched.dart';
 
 class EpisodesModal extends StatefulWidget {
   final FilmDetails filmDetails;
@@ -61,6 +62,36 @@ class _EpisodesModalState extends State<EpisodesModal> {
     }
   }
 
+  Widget _buildProgressBar(WatchedSingle currentEpisode) {
+    Duration watched = Duration(seconds: currentEpisode.watchedInSec);
+    Duration total = Duration(seconds: currentEpisode.totalInSec);
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            '${watched.inMinutes}:${(watched.inSeconds % 60).toString().padLeft(2, '0')}',
+          ),
+          const SizedBox(
+            width: 5,
+          ),
+          Expanded(
+              child: LinearProgressIndicator(
+            value: currentEpisode.watchedPercentage,
+          )),
+          const SizedBox(
+            width: 5,
+          ),
+          Text(
+            '${total.inMinutes}:${(total.inSeconds % 60).toString().padLeft(2, '0')}',
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<WatchedNotifier>(
@@ -86,117 +117,109 @@ class _EpisodesModalState extends State<EpisodesModal> {
                 ),
               ),
               for (Episode episode in season.getEpisodes())
-                ListTile(
-                  title: Row(
-                    children: [
-                      Text(
-                        episode.getEpisodeNumber().toString(),
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 50),
+                Builder(
+                  builder: (context) {
+                    final currentSerial = watchedNotifier.serials
+                        .firstWhereOrNull(
+                            (s) => s.filmDetails.url == widget.filmDetails.url);
+
+                    final currentEpisode = currentSerial?.episodes
+                        .firstWhereOrNull((e) =>
+                            e.filmDetails.url == episode.episodeUrl &&
+                            e.watchedInSec > 0);
+                    return ListTile(
+                      title: Row(
+                        children: [
+                          Text(
+                            episode.getEpisodeNumber().toString(),
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 50),
+                          ),
+                          const SizedBox(width: 12.0),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(episode.getEpisodeTitle()),
+                                const SizedBox(height: 4.0),
+                                episodeDescriptions.isNotEmpty
+                                    ? episodeDescriptions[episode.episodeName]
+                                                ?.desc
+                                                .isNotEmpty ==
+                                            true
+                                        ? episodeDescriptions[
+                                                        episode.episodeName]!
+                                                    .desc ==
+                                                widget.filmDetails.desc
+                                            ? const Text(
+                                                'Brak opisu odcinka',
+                                                style: TextStyle(
+                                                  fontSize: 12.0,
+                                                  color: Colors.grey,
+                                                ),
+                                              )
+                                            : Text(
+                                                episodeDescriptions[
+                                                        episode.episodeName]!
+                                                    .desc,
+                                                style: const TextStyle(
+                                                  fontSize: 12.0,
+                                                  color: Colors.grey,
+                                                ),
+                                              )
+                                        : const LinearProgressIndicator()
+                                    : const LinearProgressIndicator(),
+                                currentEpisode != null
+                                    ? _buildProgressBar(currentEpisode)
+                                    : const SizedBox(),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12.0),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(episode.getEpisodeTitle()),
-                            const SizedBox(height: 4.0),
-                            episodeDescriptions.isNotEmpty
-                                ? episodeDescriptions[episode.episodeName]
-                                            ?.desc
-                                            .isNotEmpty ==
-                                        true
-                                    ? episodeDescriptions[episode.episodeName]!
-                                                .desc ==
-                                            widget.filmDetails.desc
-                                        ? const Text(
-                                            'Brak opisu odcinka',
-                                            style: TextStyle(
-                                              fontSize: 12.0,
-                                              color: Colors.grey,
-                                            ),
-                                          )
-                                        : Text(
-                                            episodeDescriptions[
-                                                    episode.episodeName]!
-                                                .desc,
-                                            style: const TextStyle(
-                                              fontSize: 12.0,
-                                              color: Colors.grey,
-                                            ),
-                                          )
-                                    : const LinearProgressIndicator()
-                                : const LinearProgressIndicator(),
-                            _buildProgressBar(
-                                episode.episodeUrl, watchedNotifier),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    Navigator.of(context)
-                        .push(MaterialPageRoute(builder: (context) {
-                      if (episodeDescriptions[episode.episodeName] != null) {
-                        return FilmanPlayer.fromDetails(
-                          filmDetails: episodeDescriptions[episode.episodeName],
-                          parentDetails: widget.filmDetails,
-                        );
-                      } else {
-                        return FilmanPlayer(
-                            targetUrl: episode.episodeUrl,
-                            parentDetails: widget.filmDetails);
-                      }
-                    }));
+                      onTap: () {
+                        Navigator.of(context)
+                            .push(MaterialPageRoute(builder: (context) {
+                          if (episodeDescriptions[episode.episodeName] !=
+                              null) {
+                            if (currentEpisode != null) {
+                              return FilmanPlayer.fromDetails(
+                                filmDetails:
+                                    episodeDescriptions[episode.episodeName],
+                                parentDetails: widget.filmDetails,
+                                startFrom: currentEpisode.watchedInSec,
+                                savedDuration: currentEpisode.totalInSec,
+                              );
+                            }
+                            return FilmanPlayer.fromDetails(
+                              filmDetails:
+                                  episodeDescriptions[episode.episodeName],
+                              parentDetails: widget.filmDetails,
+                            );
+                          }
+
+                          if (currentEpisode != null) {
+                            return FilmanPlayer(
+                              targetUrl: episode.episodeUrl,
+                              parentDetails: widget.filmDetails,
+                              startFrom: currentEpisode.watchedInSec,
+                              savedDuration: currentEpisode.totalInSec,
+                            );
+                          }
+
+                          return FilmanPlayer(
+                              targetUrl: episode.episodeUrl,
+                              parentDetails: widget.filmDetails);
+                        }));
+                      },
+                    );
                   },
-                ),
+                )
             ],
           );
         },
       ),
     );
-  }
-
-  Widget _buildProgressBar(String episodeUrl, WatchedNotifier watchedNotifier) {
-    final currentSerial = watchedNotifier.serials.firstWhereOrNull(
-        (serial) => serial.filmDetails.url == widget.filmDetails.url);
-
-    if (currentSerial != null) {
-      final currentEpisode = currentSerial.episodes.firstWhereOrNull(
-          (episode) =>
-              episode.filmDetails.url == episodeUrl &&
-              episode.watchedInSec > 0);
-      if (currentEpisode != null) {
-        Duration watched = Duration(seconds: currentEpisode.watchedInSec);
-        Duration total = Duration(seconds: currentEpisode.totalInSec);
-        return Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                '${watched.inMinutes}:${(watched.inSeconds % 60).toString().padLeft(2, '0')}',
-              ),
-              const SizedBox(
-                width: 5,
-              ),
-              Expanded(
-                  child: LinearProgressIndicator(
-                value: currentEpisode.watchedPercentage,
-              )),
-              const SizedBox(
-                width: 5,
-              ),
-              Text(
-                '${total.inMinutes}:${(total.inSeconds % 60).toString().padLeft(2, '0')}',
-              ),
-            ],
-          ),
-        );
-      }
-    }
-    return const SizedBox();
   }
 }

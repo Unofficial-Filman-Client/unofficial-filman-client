@@ -1,7 +1,11 @@
+import 'package:collection/collection.dart';
 import 'package:unofficial_filman_client/notifiers/filman.dart';
+import 'package:unofficial_filman_client/notifiers/settings.dart';
+import 'package:unofficial_filman_client/notifiers/watched.dart';
 import 'package:unofficial_filman_client/screens/player.dart';
 import 'package:unofficial_filman_client/types/film_details.dart';
 import 'package:unofficial_filman_client/utils/error_handling.dart';
+import 'package:unofficial_filman_client/utils/select_dialog.dart';
 import 'package:unofficial_filman_client/utils/titlte.dart';
 import 'package:unofficial_filman_client/widgets/episodes.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +49,18 @@ class _FilmScreenState extends State<FilmScreen> {
       lazyFilm = Provider.of<FilmanNotifier>(context, listen: false)
           .getFilmDetails(widget.url);
     }
+  }
+
+  Widget _buildProgressBar(WatchedNotifier watchedNotifier) {
+    final watched = watchedNotifier.films
+        .firstWhereOrNull((element) => element.filmDetails.url == widget.url);
+    if (watched == null) return const SizedBox();
+    return Transform(
+      transform: Matrix4.translationValues(-16, -12, 0),
+      child: LinearProgressIndicator(
+        value: watched.watchedPercentage,
+      ),
+    );
   }
 
   void _showBottomSheet(FilmDetails filmDetails) {
@@ -109,39 +125,44 @@ class _FilmScreenState extends State<FilmScreen> {
         },
       ),
       bottomNavigationBar: BottomAppBar(
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: Navigator.of(context).pop,
-            ),
-            IconButton(
-              icon: const Icon(Icons.share_outlined),
-              onPressed: () {
-                Share.share(
-                    "Oglądaj '${widget.title}' za darmo na ${widget.url}");
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.open_in_new),
-              onPressed: () async {
-                final Uri uri = Uri.parse(widget.url);
-                if (!await launchUrl(uri,
-                    mode: LaunchMode.externalApplication)) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Nie można otworzyć linku w przeglądarce'),
-                      dismissDirection: DismissDirection.horizontal,
-                      behavior: SnackBarBehavior.floating,
-                      showCloseIcon: true,
-                    ));
+          child: Stack(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: Navigator.of(context).pop,
+              ),
+              IconButton(
+                icon: const Icon(Icons.share_outlined),
+                onPressed: () {
+                  Share.share(
+                      "Oglądaj '${widget.title}' za darmo na ${widget.url}");
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.open_in_new),
+                onPressed: () async {
+                  final Uri uri = Uri.parse(widget.url);
+                  if (!await launchUrl(uri,
+                      mode: LaunchMode.externalApplication)) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content:
+                            Text('Nie można otworzyć linku w przeglądarce'),
+                        dismissDirection: DismissDirection.horizontal,
+                        behavior: SnackBarBehavior.floating,
+                        showCloseIcon: true,
+                      ));
+                    }
                   }
-                }
-              },
-            ),
-          ],
-        ),
-      ),
+                },
+              ),
+            ],
+          ),
+          _buildProgressBar(Provider.of<WatchedNotifier>(context))
+        ],
+      )),
       floatingActionButton: FutureBuilder<FilmDetails>(
         future: lazyFilm,
         builder: (context, snapshot) {
@@ -157,6 +178,10 @@ class _FilmScreenState extends State<FilmScreen> {
             );
           } else if (snapshot.hasData) {
             final film = snapshot.data!;
+            final watched = Provider.of<WatchedNotifier>(context, listen: false)
+                .films
+                .firstWhereOrNull(
+                    (element) => element.filmDetails.url == film.url);
             return FloatingActionButton(
               child: Icon(film.isSerial ? Icons.list : Icons.play_arrow),
               onPressed: () async {
@@ -173,8 +198,13 @@ class _FilmScreenState extends State<FilmScreen> {
                   }
                 } else {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) =>
-                        FilmanPlayer.fromDetails(filmDetails: film),
+                    builder: (context) => watched != null
+                        ? FilmanPlayer.fromDetails(
+                            filmDetails: film,
+                            startFrom: watched.watchedInSec,
+                            savedDuration: watched.totalInSec,
+                          )
+                        : FilmanPlayer.fromDetails(filmDetails: film),
                   ));
                 }
               },
