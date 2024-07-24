@@ -10,14 +10,12 @@ import 'package:unofficial_filman_client/types/search_results.dart';
 import 'package:unofficial_filman_client/types/season.dart';
 import 'package:unofficial_filman_client/types/user.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:html/parser.dart';
 
 class FilmanNotifier extends ChangeNotifier {
   final List<String> cookies = [];
-
   late final SharedPreferences prefs;
   late final Dio dio;
   User? user;
@@ -27,9 +25,9 @@ class FilmanNotifier extends ChangeNotifier {
     dio = Dio();
     prefs = await SharedPreferences.getInstance();
     cookies.addAll(prefs.getStringList('cookies') ?? []);
-
     secureStorage = const FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    );
 
     final login = await secureStorage.read(key: 'login');
     final password = await secureStorage.read(key: 'password');
@@ -50,6 +48,14 @@ class FilmanNotifier extends ChangeNotifier {
     prefs.remove('cookies');
   }
 
+  Options _buildDioOptions({required String contentType}) {
+    return Options(
+      headers: {'Content-Type': contentType, 'cookie': cookies.join('; ')},
+      followRedirects: false,
+      validateStatus: (status) => true,
+    );
+  }
+
   Future<AuthResponse> createAccountOnFilmn(String login, String email,
       String password, String password2, String recaptchatoken) async {
     try {
@@ -63,24 +69,21 @@ class FilmanNotifier extends ChangeNotifier {
           'g-recaptcha-response': recaptchatoken,
           'submit': '',
         },
-        options: Options(
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            followRedirects: false,
-            validateStatus: (status) {
-              return true;
-            }),
+        options:
+            _buildDioOptions(contentType: 'application/x-www-form-urlencoded'),
       );
+
       final registerResponse =
           AuthResponse(success: response.statusCode == 302);
       final document = parse(response.data);
+
       document.querySelectorAll(".alert div").forEach((element) {
         final error = element.text.trim();
         if (error.isNotEmpty) {
           registerResponse.addError(error);
         }
       });
+
       if (registerResponse.errors.isEmpty) {
         document.querySelectorAll(".alert").forEach((element) {
           final error = element.text.trim();
@@ -89,11 +92,11 @@ class FilmanNotifier extends ChangeNotifier {
           }
         });
       }
+
       return registerResponse;
     } catch (e) {
-      final registerResponse = AuthResponse(success: false);
-      registerResponse.addError('Error occurred while registering: $e');
-      return registerResponse;
+      return AuthResponse(success: false)
+        ..addError('Error occurred while registering: $e');
     }
   }
 
@@ -101,28 +104,20 @@ class FilmanNotifier extends ChangeNotifier {
     try {
       final response = await dio.post(
         "https://filman.cc/logowanie",
-        data: {'login': login, 'password': password, 'submit': ""},
-        options: Options(
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            followRedirects: false,
-            validateStatus: (status) {
-              return true;
-            }),
+        data: {'login': login, 'password': password, 'submit': ''},
+        options:
+            _buildDioOptions(contentType: 'application/x-www-form-urlencoded'),
       );
 
-      final cookiesHeader = response.headers["set-cookie"];
-
+      final cookiesHeader = response.headers['set-cookie'];
       if (cookiesHeader != null) {
-        cookies.clear();
-        cookies.addAll(cookiesHeader);
+        cookies
+          ..clear()
+          ..addAll(cookiesHeader);
         prefs.setStringList('cookies', cookies);
       }
 
-      AuthResponse loginResponse =
-          AuthResponse(success: response.statusCode == 302);
-
+      final loginResponse = AuthResponse(success: response.statusCode == 302);
       final document = parse(response.data);
 
       document.querySelectorAll('.alert').forEach((element) {
@@ -133,58 +128,41 @@ class FilmanNotifier extends ChangeNotifier {
       });
 
       return loginResponse;
-    } catch (identifier) {
-      AuthResponse loginResponse = AuthResponse(success: false);
-      loginResponse.addError('Error occurred while logging in: $identifier');
-      return loginResponse;
+    } catch (e) {
+      return AuthResponse(success: false)
+        ..addError('Error occurred while logging in: $e');
     }
   }
 
   Future<HomePageResponse> getFilmanPage() async {
     final response = await dio.get(
       "https://filman.cc/",
-      options: Options(
-        followRedirects: false,
-        validateStatus: (status) {
-          return true;
-        },
-        headers: {'cookie': cookies.join('; ')},
-      ),
+      options: _buildDioOptions(contentType: 'application/json'),
     );
 
-    if (response.headers['location'] != null) {
-      if (response.headers['location']
-              ?.contains("https://filman.cc/logowanie") ==
-          true) {
-        logout();
-        throw const LogOutException();
-      }
+    if (response.headers['location']?.contains("https://filman.cc/logowanie") ??
+        false) {
+      logout();
+      throw const LogOutException();
     }
 
     final document = parse(response.data);
-
     final homePage = HomePageResponse();
 
     for (final list in document.querySelectorAll('div[id=item-list]')) {
       for (final filmDOM in list.children) {
         final poster = filmDOM.querySelector('.poster');
-        final String title =
-            poster?.querySelector('a')?.attributes['title']?.trim() ??
-                "Brak danych";
-        final String imageUrl =
-            poster?.querySelector('img')?.attributes['src'] ?? "Brak danych";
-        // final String qualityVersion =
-        //     poster?.querySelector('.quality-version')?.text.trim() ??
-        //         "Brak danych o jakości";
-        // final String viewCount = poster?.querySelector('.view')?.text.trim() ??
-        //     "Brak danych o ilości odsłon";
-        final String link =
-            poster?.querySelector('a')?.attributes['href'] ?? "Brak danych";
-
+        final title = poster?.querySelector('a')?.attributes['title']?.trim() ??
+            'Brak danych';
+        final imageUrl =
+            poster?.querySelector('img')?.attributes['src'] ?? 'Brak danych';
+        final link =
+            poster?.querySelector('a')?.attributes['href'] ?? 'Brak danych';
         final category =
-            list.parent?.querySelector("h3")?.text.trim() ?? "INNE";
-        homePage.addFilm(category,
-            Film(title: title, desc: "", imageUrl: imageUrl, link: link));
+            list.parent?.querySelector("h3")?.text.trim() ?? 'INNE';
+
+        homePage.addFilm(
+            category, Film(title: title, imageUrl: imageUrl, link: link));
       }
     }
 
@@ -194,51 +172,35 @@ class FilmanNotifier extends ChangeNotifier {
   Future<SearchResults> searchInFilman(String query) async {
     final response = await dio.get(
       "https://filman.cc/item",
-      queryParameters: {"phrase": query},
-      options: Options(
-        followRedirects: false,
-        validateStatus: (status) {
-          return true;
-        },
-        headers: {'cookie': cookies.join('; ')},
-      ),
+      queryParameters: {'phrase': query},
+      options: _buildDioOptions(contentType: 'application/json'),
     );
 
-    if (response.headers['location'] != null) {
-      if (response.headers['location']
-              ?.contains("https://filman.cc/logowanie") ==
-          true) {
-        logout();
-        throw const LogOutException();
-      }
+    if (response.headers['location']?.contains("https://filman.cc/logowanie") ??
+        false) {
+      logout();
+      throw const LogOutException();
     }
 
     final document = parse(response.data);
-
     final searchResults = SearchResults();
-    final films = document.querySelectorAll('.col-xs-6.col-sm-3.col-lg-2');
 
-    for (final filmDOM in films) {
+    document.querySelectorAll('.col-xs-6.col-sm-3.col-lg-2').forEach((filmDOM) {
       final poster = filmDOM.querySelector('.poster');
       final title =
           filmDOM.querySelector('.film_title')?.text.trim() ?? 'Brak danych';
       final desc =
           poster?.querySelector('a')?.attributes['data-text']?.trim() ??
               'Brak danych';
-      // final releaseDate = filmDOM.querySelector('.film_year')?.text.trim();
       final imageUrl =
           poster?.querySelector('img')?.attributes['src']?.trim() ??
               'Brak danych';
-      // final qualityVersion =
-      //     poster?.querySelector('a .quality-version')?.text.trim() ??
-      //         'Brak danych o jakości';
-      // final rating = poster?.querySelector('a .rate')?.text.trim();
       final link =
           poster?.querySelector('a')?.attributes['href'] ?? 'Brak danych';
 
       searchResults.addFilm(
           Film(title: title, desc: desc, imageUrl: imageUrl, link: link));
-    }
+    });
 
     return searchResults;
   }
@@ -246,125 +208,97 @@ class FilmanNotifier extends ChangeNotifier {
   Future<FilmDetails> getFilmDetails(String link) async {
     final response = await dio.get(
       link,
-      options: Options(
-        followRedirects: false,
-        validateStatus: (status) {
-          return true;
-        },
-        headers: {'cookie': cookies.join('; ')},
-      ),
+      options: _buildDioOptions(contentType: 'application/json'),
     );
 
-    if (response.headers['location'] != null) {
-      if (response.headers['location']
-              ?.contains("https://filman.cc/logowanie") ==
-          true) {
-        logout();
-        throw const LogOutException();
-      }
+    if (response.headers['location']?.contains("https://filman.cc/logowanie") ??
+        false) {
+      logout();
+      throw const LogOutException();
     }
 
     final document = parse(response.data);
-
     final title = document.querySelector("[itemprop='title']")?.text.trim() ??
-        document
-            .querySelector("#item-headline")
-            ?.querySelector("h2")
-            ?.text
-            .trim() ??
-        "Brak tytułu";
-
+        document.querySelector("#item-headline h2")?.text.trim() ??
+        'Brak tytułu';
     final desc =
         document.querySelector('p.description')?.text.trim() ?? 'Brak opisu';
-
     final info = document
-        .querySelector('div.info')
-        ?.text
-        .replaceAll("\n", "")
-        .replaceAll("\t", "")
-        .replaceAll(" ", "");
-
-    final imageUrl = document
-            .querySelector("#single-poster")
-            ?.querySelector("img")
-            ?.attributes["src"] ??
+            .querySelector('div.info')
+            ?.text
+            .replaceAll(RegExp(r'\s+'), '') ??
         '';
-
-    Match? yearMatch =
-        RegExp(r'(Rok:(\d+))|(Premiera:(\d+))').firstMatch(info ?? "");
-
-    String releaseDate = yearMatch?.group(2) ??
-        yearMatch?.group(4) ??
-        "Brak informacji o roku produkcji";
-
-    String viewCount =
-        RegExp(r'Odsłony:(\d+)').firstMatch(info ?? "")?.group(1) ??
-            "Brak informacji o ilości odsłon";
-
+    final imageUrl =
+        document.querySelector("#single-poster img")?.attributes['src'] ??
+            'https://placehold.co/250x370?font=roboto&text=?';
+    final releaseDate = RegExp(r'(Rok:(\d+))|(Premiera:(\d+))')
+            .firstMatch(info)
+            ?.group(2) ??
+        RegExp(r'(Rok:(\d+))|(Premiera:(\d+))').firstMatch(info)?.group(4) ??
+        'Brak informacji o roku produkcji';
+    final viewCount = RegExp(r'Odsłony:(\d+)').firstMatch(info)?.group(1) ??
+        'Brak informacji o ilości odsłon';
     String country = document
-        .querySelectorAll('ul.country  a')
+        .querySelectorAll('ul.country a')
         .map((can) => can.text.trim())
-        .join(", ");
+        .join(', ');
 
     if (country.isEmpty) {
-      country = "Brak informacji o kraju produkcji";
+      country = 'Brak informacji o kraju produkcji';
     }
 
     final categories = document
         .querySelectorAll('ul.categories a')
         .map((cat) => cat.text.trim())
         .toList();
-
     final isSerialPage = document.querySelector('#links') == null;
 
     if (isSerialPage) {
-      List<Season> seasons = [];
+      final List<Season> seasons = [];
       document.querySelectorAll('#episode-list li').forEach((li) {
         final seasonTitle = li.querySelector('span')?.text.trim() ?? '';
-
         if (seasonTitle.isNotEmpty) {
           final season = Season(seasonTitle: seasonTitle, episodes: []);
-
           li.querySelectorAll('ul li').forEach((episode) {
             final episodeUrl =
                 episode.querySelector('a')?.attributes['href'] ?? '';
             final episodeName = episode.querySelector('a')?.text.trim() ?? '';
-
             season.addEpisode(
                 Episode(episodeName: episodeName, episodeUrl: episodeUrl));
           });
-
           seasons.add(season);
         }
       });
 
       return FilmDetails(
-          url: link,
-          title: title,
-          desc: desc,
-          imageUrl: imageUrl,
-          releaseDate: releaseDate,
-          viewCount: viewCount,
-          country: country,
-          categories: categories,
-          isSerial: isSerialPage,
-          seasons: seasons,
-          isEpisode: false);
+        url: link,
+        title: title,
+        desc: desc,
+        imageUrl: imageUrl,
+        releaseDate: releaseDate,
+        viewCount: viewCount,
+        country: country,
+        categories: categories,
+        isSerial: isSerialPage,
+        seasons: seasons,
+        isEpisode: false,
+      );
     } else {
-      List<Host> links = [];
+      final List<Host> links = [];
 
       document.querySelectorAll('tbody tr').forEach((row) {
         final main = row.querySelector('td')?.text.trim() ?? '';
-        String link;
+        String? link;
 
         try {
-          Codec<String, String> stringToBase64 = utf8.fuse(base64);
-          String decoded = stringToBase64.decode(
-              (row.querySelector('td a')?.attributes['data-iframe'] ?? ''));
-          link = jsonDecode(decoded)["src"] ?? '';
-        } catch (error) {
-          link = '';
+          final decoded = base64Decode(
+              row.querySelector('td a')?.attributes['data-iframe'] ?? '');
+          link = jsonDecode(utf8.decode(decoded))['src'];
+        } catch (_) {
+          link = null;
         }
+
+        if (link?.isEmpty ?? true) return;
 
         final tableData = row.querySelectorAll('td');
         if (tableData.length < 3) return;
@@ -372,65 +306,37 @@ class FilmanNotifier extends ChangeNotifier {
         final qualityVersion = tableData[2].text.trim();
 
         links.add(Host(
-          main: main,
-          qualityVersion: qualityVersion,
-          language: language,
-          link: link,
-        ));
+            main: main,
+            qualityVersion: qualityVersion,
+            language: language,
+            link: link!));
       });
 
-      final isEpisode =
-          document.querySelector("#item-headline")?.querySelector("h3") != null;
-
+      final isEpisode = document.querySelector('#item-headline h3') != null;
       if (isEpisode) {
-        final seasonEpisodeTag = document
-            .querySelector("#item-headline")
-            ?.querySelector("h3")
-            ?.text
-            .trim();
-
+        final seasonEpisodeTag =
+            document.querySelector('#item-headline h3')?.text.trim();
         final nextEpisodeUrl = document
-            .querySelector("#item-info")
-            ?.querySelectorAll("a")
+            .querySelectorAll('#item-info a')
             .firstWhere(
               (el) => el.text.trim() == 'Następny',
+              orElse: () => throw ArgumentError('No next episode link found'),
             )
             .attributes['href']
-            ?.replaceAll("#single-poster", "");
-
+            ?.replaceAll('#single-poster', '');
         final prevEpisodeUrl = document
-            .querySelector("#item-info")
-            ?.querySelectorAll("a")
+            .querySelectorAll('#item-info a')
             .firstWhere(
               (el) => el.text.trim() == 'Następny',
+              orElse: () =>
+                  throw ArgumentError('No previous episode link found'),
             )
             .attributes['href']
-            ?.replaceAll("#single-poster", "");
-
-        final parentUrl = document
-            .querySelector("#single-poster")
-            ?.querySelector("a")
-            ?.attributes["href"];
+            ?.replaceAll('#single-poster', '');
+        final parentUrl =
+            document.querySelector('#single-poster a')?.attributes['href'];
 
         return FilmDetails(
-            url: link,
-            title: title,
-            desc: desc,
-            imageUrl: imageUrl,
-            releaseDate: releaseDate,
-            viewCount: viewCount,
-            country: country,
-            categories: categories,
-            isSerial: isSerialPage,
-            links: links,
-            seasonEpisodeTag: seasonEpisodeTag,
-            parentUrl: parentUrl,
-            prevEpisodeUrl: prevEpisodeUrl,
-            nextEpisodeUrl: nextEpisodeUrl,
-            isEpisode: isEpisode);
-      }
-
-      return FilmDetails(
           url: link,
           title: title,
           desc: desc,
@@ -441,7 +347,27 @@ class FilmanNotifier extends ChangeNotifier {
           categories: categories,
           isSerial: isSerialPage,
           links: links,
-          isEpisode: isEpisode);
+          seasonEpisodeTag: seasonEpisodeTag,
+          parentUrl: parentUrl,
+          prevEpisodeUrl: prevEpisodeUrl,
+          nextEpisodeUrl: nextEpisodeUrl,
+          isEpisode: isEpisode,
+        );
+      }
+
+      return FilmDetails(
+        url: link,
+        title: title,
+        desc: desc,
+        imageUrl: imageUrl,
+        releaseDate: releaseDate,
+        viewCount: viewCount,
+        country: country,
+        categories: categories,
+        isSerial: isSerialPage,
+        links: links,
+        isEpisode: isEpisode,
+      );
     }
   }
 }

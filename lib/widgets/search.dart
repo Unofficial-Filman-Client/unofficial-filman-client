@@ -86,7 +86,7 @@ class _SearchModalState extends State<SearchModal> {
                                     child: ListTile(
                                       title: DisplayTitle(title: film.title),
                                       subtitle: Text(
-                                          '${(film.desc.split(' ').take(12)..last.replaceAll(',', '')).join(' ')}...'),
+                                          '${(film.desc?.split(' ').take(12)?..last.replaceAll(',', ''))?.join(' ')}...'),
                                       leading: Image.network(film.imageUrl),
                                       onTap: () {
                                         Navigator.of(context).push(
