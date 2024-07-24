@@ -1,10 +1,10 @@
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/screens/film.dart';
-import 'package:unofficial_filman_client/types/film.dart';
-import 'package:unofficial_filman_client/types/search_results.dart';
-import 'package:unofficial_filman_client/utils/titlte.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/screens/film.dart";
+import "package:unofficial_filman_client/types/film.dart";
+import "package:unofficial_filman_client/types/search_results.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 
 class SearchModal extends StatefulWidget {
   const SearchModal({super.key});
@@ -30,7 +30,7 @@ class _SearchModalState extends State<SearchModal> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Column(
       children: [
         SearchBar(
@@ -39,7 +39,7 @@ class _SearchModalState extends State<SearchModal> {
               EdgeInsets.symmetric(horizontal: 16.0)),
           leading: const Icon(Icons.search),
           autoFocus: true,
-          onChanged: (value) {
+          onChanged: (final value) {
             if (value.isNotEmpty && value.length > 1) {
               setState(() {
                 lazySearch = Provider.of<FilmanNotifier>(context, listen: false)
@@ -53,7 +53,7 @@ class _SearchModalState extends State<SearchModal> {
           child: searchController.text.isNotEmpty
               ? FutureBuilder(
                   future: lazySearch,
-                  builder: (context, snapshot) {
+                  builder: (final context, final snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Container(
                         padding: EdgeInsets.only(
@@ -91,7 +91,7 @@ class _SearchModalState extends State<SearchModal> {
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (context) => FilmScreen(
+                                            builder: (final context) => FilmScreen(
                                               url: film.link,
                                               title: film.title,
                                               image: film.imageUrl,

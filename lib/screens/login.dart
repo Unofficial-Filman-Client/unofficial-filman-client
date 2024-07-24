@@ -1,8 +1,8 @@
-import 'package:unofficial_filman_client/screens/main.dart';
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/types/auth_response.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/screens/main.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/types/auth_response.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
+          MaterialPageRoute(builder: (final context) => const MainScreen()),
         );
       }
     } else {
@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const Align(
                           alignment: Alignment.centerLeft,
-                          child: Text('Zacznij logując się do filman.cc!',
+                          child: Text("Zacznij logując się do filman.cc!",
                               style: TextStyle(
                                 fontSize: 32,
                               )),
@@ -94,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 23.0),
                         TextField(
                           decoration: const InputDecoration(
-                            labelText: 'Nazwa użytkownika',
+                            labelText: "Nazwa użytkownika",
                             border: OutlineInputBorder(),
                           ),
                           controller: loginController,
@@ -104,11 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextField(
                           obscureText: true,
                           decoration: const InputDecoration(
-                            labelText: 'Hasło',
+                            labelText: "Hasło",
                             border: OutlineInputBorder(),
                           ),
                           controller: passwordController,
-                          onSubmitted: (_) {
+                          onSubmitted: (final _) {
                             _submitForm();
                           },
                         ),
@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               _submitForm();
                             },
-                            child: const Text('Zaloguj się'),
+                            child: const Text("Zaloguj się"),
                           ),
                         ),
                       ],

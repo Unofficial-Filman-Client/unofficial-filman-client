@@ -1,12 +1,12 @@
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/screens/hello.dart';
-import 'package:unofficial_filman_client/screens/main/home.dart';
-import 'package:unofficial_filman_client/screens/main/offline.dart';
-import 'package:unofficial_filman_client/screens/main/watched.dart';
-import 'package:unofficial_filman_client/screens/settings.dart';
-import 'package:unofficial_filman_client/utils/greeting.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/screens/hello.dart";
+import "package:unofficial_filman_client/screens/main/home.dart";
+import "package:unofficial_filman_client/screens/main/offline.dart";
+import "package:unofficial_filman_client/screens/main/watched.dart";
+import "package:unofficial_filman_client/screens/settings.dart";
+import "package:unofficial_filman_client/utils/greeting.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -23,16 +23,16 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
   }
 
-  AppBar _buildAppBar(BuildContext context, {bool showProgress = false}) {
+  AppBar _buildAppBar(final BuildContext context, {final bool showProgress = false}) {
     return AppBar(
       title: Text(createTimeBasedGreeting(
-          Provider.of<FilmanNotifier>(context).user?.login ?? '')),
+          Provider.of<FilmanNotifier>(context).user?.login ?? "")),
       actions: [
         IconButton(
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => const SettingsScreen(),
+                builder: (final context) => const SettingsScreen(),
               ),
             );
           },
@@ -43,7 +43,7 @@ class _MainScreenState extends State<MainScreen> {
             Provider.of<FilmanNotifier>(context, listen: false).logout();
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (context) => const HelloScreen(),
+                builder: (final context) => const HelloScreen(),
               ),
             );
           },
@@ -61,11 +61,11 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(context),
       bottomNavigationBar: NavigationBar(
-        onDestinationSelected: (int index) {
+        onDestinationSelected: (final int index) {
           setState(() {
             currentPageIndex = index;
           });
@@ -76,17 +76,17 @@ class _MainScreenState extends State<MainScreen> {
           NavigationDestination(
             selectedIcon: Icon(Icons.home),
             icon: Icon(Icons.home_outlined),
-            label: 'Strona Główna',
+            label: "Strona Główna",
           ),
           NavigationDestination(
             selectedIcon: Icon(Icons.watch_later),
             icon: Icon(Icons.watch_later_outlined),
-            label: 'Oglądane',
+            label: "Oglądane",
           ),
           NavigationDestination(
             selectedIcon: Icon(Icons.download),
             icon: Icon(Icons.download_outlined),
-            label: 'Pobrane',
+            label: "Pobrane",
           ),
         ],
       ),

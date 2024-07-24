@@ -1,21 +1,21 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/notifiers/settings.dart';
-import 'package:unofficial_filman_client/notifiers/watched.dart';
-import 'package:unofficial_filman_client/types/film_details.dart';
-import 'package:unofficial_filman_client/types/season.dart';
-import 'package:unofficial_filman_client/types/watched.dart';
-import 'package:unofficial_filman_client/utils/select_dialog.dart';
-import 'package:unofficial_filman_client/utils/titlte.dart';
-import 'package:flutter/material.dart';
-import 'dart:math' as math;
-import 'package:flutter/services.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:provider/provider.dart';
-import 'package:system_screen_brightness/system_screen_brightness.dart';
-import 'package:unofficial_filman_client/types/links.dart';
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/notifiers/watched.dart";
+import "package:unofficial_filman_client/types/film_details.dart";
+import "package:unofficial_filman_client/types/season.dart";
+import "package:unofficial_filman_client/types/watched.dart";
+import "package:unofficial_filman_client/utils/select_dialog.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:flutter/material.dart";
+import "dart:math" as math;
+import "package:flutter/services.dart";
+import "package:media_kit/media_kit.dart";
+import "package:media_kit_video/media_kit_video.dart";
+import "package:provider/provider.dart";
+import "package:system_screen_brightness/system_screen_brightness.dart";
+import "package:unofficial_filman_client/types/links.dart";
 
 class FilmanPlayer extends StatefulWidget {
   final String targetUrl;
@@ -37,7 +37,7 @@ class FilmanPlayer extends StatefulWidget {
       this.parentDetails,
       this.startFrom = 0,
       this.savedDuration = 0})
-      : targetUrl = '';
+      : targetUrl = "";
 
   @override
   State<FilmanPlayer> createState() => _FilmanPlayerState();
@@ -90,7 +90,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   void _initializeSubscriptions() {
     _positionSubscription =
-        _controller.player.stream.position.listen((position) {
+        _controller.player.stream.position.listen((final position) {
       if (widget.startFrom != 0) {
         if (position.inSeconds != 0) {
           setState(() => _position = position);
@@ -101,7 +101,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     });
 
     _durationSubscription =
-        _controller.player.stream.duration.listen((duration) {
+        _controller.player.stream.duration.listen((final duration) {
       if (duration.inSeconds > widget.savedDuration) {
         setState(() => _duration = duration);
       }
@@ -110,21 +110,21 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         _controller.player.seek(Duration(seconds: widget.startFrom));
       }
       _saveWatched();
-      Timer.periodic(const Duration(seconds: 5), (timer) {
+      Timer.periodic(const Duration(seconds: 5), (final timer) {
         if (mounted) {
           _saveWatched();
         }
       });
     });
 
-    _playingSubscription = _controller.player.stream.playing.listen((playing) {
+    _playingSubscription = _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
       });
     });
 
     _bufferingSubscription =
-        _controller.player.stream.buffering.listen((buffering) {
+        _controller.player.stream.buffering.listen((final buffering) {
       setState(() => _isBuffering = buffering);
     });
   }
@@ -143,13 +143,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         _parentDetails = widget.parentDetails;
       } else if (_filmDetails?.parentUrl != null && mounted) {
         final parent = await Provider.of<FilmanNotifier>(context, listen: false)
-            .getFilmDetails(_filmDetails?.parentUrl ?? '');
+            .getFilmDetails(_filmDetails?.parentUrl ?? "");
         setState(() => _parentDetails = parent);
       }
 
       setState(() {
-        _currentSeason = _parentDetails!.seasons!.firstWhere((element) =>
-            element.episodes.any((element) =>
+        _currentSeason = _parentDetails!.seasons!.firstWhere((final element) =>
+            element.episodes.any((final element) =>
                 element.episodeName == _filmDetails?.seasonEpisodeTag));
       });
     }
@@ -159,7 +159,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     }
 
     if (_filmDetails?.links != null && mounted) {
-      DirectLink? direct =
+      final DirectLink? direct =
           await getUserSelectedVersion(_filmDetails!.links!, context);
       if (direct == null) return _showNoLinksSnackbar();
       _player.open(Media(direct.link));
@@ -173,7 +173,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     if (_filmDetails != null &&
         _parentDetails != null &&
         _filmDetails?.isEpisode == true) {
-      WatchedSingle lastWatched = WatchedSingle.fromFilmDetails(
+      final WatchedSingle lastWatched = WatchedSingle.fromFilmDetails(
           filmDetailsFrom: _filmDetails!,
           sec: _position.inSeconds,
           totalSec: _duration.inSeconds,
@@ -195,9 +195,9 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   void _loadNextEpisode() async {
     if (_filmDetails?.nextEpisodeUrl != null) {
-      FilmDetails next =
+      final FilmDetails next =
           await Provider.of<FilmanNotifier>(context, listen: false)
-              .getFilmDetails(_filmDetails?.nextEpisodeUrl ?? '');
+              .getFilmDetails(_filmDetails?.nextEpisodeUrl ?? "");
       setState(() {
         _nextEpisode = next;
       });
@@ -207,7 +207,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   void _showNoLinksSnackbar() {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Brak dostępnych linków'),
+        content: Text("Brak dostępnych linków"),
         dismissDirection: DismissDirection.horizontal,
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
@@ -245,7 +245,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
@@ -258,7 +258,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  Widget _buildOverlay(BuildContext context) {
+  Widget _buildOverlay(final BuildContext context) {
     return Stack(
       children: [
         _buildSeekingIcons(),
@@ -371,14 +371,14 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  Widget _buildBrightnessControl(BuildContext context) {
+  Widget _buildBrightnessControl(final BuildContext context) {
     return Positioned(
       left: 10,
       top: -10,
       height: MediaQuery.of(context).size.height,
       child: FutureBuilder<double>(
         future: _brightnessPlugin.currentBrightness,
-        builder: (context, snapshot) {
+        builder: (final context, final snapshot) {
           if (!_hasBrightnessPermission) {
             return Center(
               child: IconButton(
@@ -400,7 +400,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   value: snapshot.data ?? 0,
                   min: 0,
                   max: 1,
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     setState(() {
                       _brightnessPlugin
                           .setSystemScreenBrightness((value * 255).toInt());
@@ -416,7 +416,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  IconData _getBrightnessIcon(double brightness) {
+  IconData _getBrightnessIcon(final double brightness) {
     if (brightness >= 0.875) return Icons.brightness_7;
     if (brightness >= 0.75) return Icons.brightness_6;
     if (brightness >= 0.625) return Icons.brightness_5;
@@ -452,13 +452,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             ),
             Center(
               child: Consumer<SettingsNotifier>(
-                builder: (context, settings, child) {
+                builder: (final context, final settings, final child) {
                   final displayTitle = getDisplayTitle(
-                      widget.filmDetails?.title ?? '', settings);
+                      widget.filmDetails?.title ?? "", settings);
 
                   return Text(
                     widget.filmDetails?.isEpisode == true
-                        ? '$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}'
+                        ? "$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}"
                         : displayTitle,
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
@@ -478,13 +478,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                     duration: const Duration(milliseconds: 300),
                     child: OutlinedButton.icon(
                       icon: Text(
-                          _nextEpisode?.seasonEpisodeTag ?? 'Następny odcinek'),
+                          _nextEpisode?.seasonEpisodeTag ?? "Następny odcinek"),
                       label: const Icon(Icons.arrow_forward),
                       onPressed: () {
                         if (_nextEpisode != null) {
                           Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                  builder: (context) =>
+                                  builder: (final context) =>
                                       FilmanPlayer.fromDetails(
                                           filmDetails: _nextEpisode)));
                         }
@@ -530,7 +530,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             Expanded(
               child: Slider(
                 value: _position.inSeconds.toDouble(),
-                onChanged: (value) {
+                onChanged: (final value) {
                   _controller.player.seek(Duration(seconds: value.toInt()));
                   _saveWatched();
                 },

@@ -1,17 +1,18 @@
-import 'package:collection/collection.dart';
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/notifiers/settings.dart';
-import 'package:unofficial_filman_client/notifiers/watched.dart';
-import 'package:unofficial_filman_client/screens/player.dart';
-import 'package:unofficial_filman_client/types/film_details.dart';
-import 'package:unofficial_filman_client/utils/error_handling.dart';
-import 'package:unofficial_filman_client/utils/select_dialog.dart';
-import 'package:unofficial_filman_client/utils/titlte.dart';
-import 'package:unofficial_filman_client/widgets/episodes.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
+import "package:collection/collection.dart";
+import "package:unofficial_filman_client/notifiers/download.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/notifiers/watched.dart";
+import "package:unofficial_filman_client/screens/player.dart";
+import "package:unofficial_filman_client/types/film_details.dart";
+import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/utils/select_dialog.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/widgets/episodes.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
+import "package:url_launcher/url_launcher.dart";
+import "package:share_plus/share_plus.dart";
 
 class FilmScreen extends StatefulWidget {
   final String url, title, image;
@@ -27,7 +28,7 @@ class FilmScreen extends StatefulWidget {
 
   FilmScreen.fromDetails({
     super.key,
-    required FilmDetails details,
+    required final FilmDetails details,
   })  : url = details.url,
         title = details.title,
         image = details.imageUrl,
@@ -51,9 +52,9 @@ class _FilmScreenState extends State<FilmScreen> {
     }
   }
 
-  Widget _buildProgressBar(WatchedNotifier watchedNotifier) {
+  Widget _buildProgressBar(final WatchedNotifier watchedNotifier) {
     final watched = watchedNotifier.films
-        .firstWhereOrNull((element) => element.filmDetails.url == widget.url);
+        .firstWhereOrNull((final element) => element.filmDetails.url == widget.url);
     if (watched == null) return const SizedBox();
     return Transform(
       transform: Matrix4.translationValues(-16, -12, 0),
@@ -63,7 +64,7 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  void _showBottomSheet(FilmDetails filmDetails) {
+  void _showBottomSheet(final FilmDetails filmDetails) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -71,7 +72,7 @@ class _FilmScreenState extends State<FilmScreen> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      builder: (context) {
+      builder: (final context) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
           child: EpisodesModal(
@@ -83,20 +84,20 @@ class _FilmScreenState extends State<FilmScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       body: FutureBuilder<FilmDetails>(
         future: lazyFilm,
-        builder: (context, snapshot) {
+        builder: (final context, final snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return buildErrorContent(
                 snapshot.error!,
                 context,
-                (response) => Navigator.of(context).pushReplacement(
+                (final response) => Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                        builder: (context) => FilmScreen(
+                        builder: (final context) => FilmScreen(
                             url: widget.url,
                             title: widget.title,
                             image: widget.image))));
@@ -120,7 +121,7 @@ class _FilmScreenState extends State<FilmScreen> {
               ),
             );
           } else {
-            return const Center(child: Text('Brak danych'));
+            return const Center(child: Text("Brak danych"));
           }
         },
       ),
@@ -149,7 +150,7 @@ class _FilmScreenState extends State<FilmScreen> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content:
-                            Text('Nie można otworzyć linku w przeglądarce'),
+                            Text("Nie można otworzyć linku w przeglądarce"),
                         dismissDirection: DismissDirection.horizontal,
                         behavior: SnackBarBehavior.floating,
                         showCloseIcon: true,
@@ -158,6 +159,42 @@ class _FilmScreenState extends State<FilmScreen> {
                   }
                 },
               ),
+              FutureBuilder<FilmDetails>(
+                future: lazyFilm,
+                builder: (final context, final snapshot) => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: snapshot.data?.isSerial == false && snapshot.hasData
+                        ? IconButton(
+                            onPressed: () async {
+                              final direct = await getUserSelectedVersion(
+                                  snapshot.data?.links ?? [], context);
+                              if (direct == null) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text("Brak dostępnych linków"),
+                                    dismissDirection:
+                                        DismissDirection.horizontal,
+                                    behavior: SnackBarBehavior.floating,
+                                    showCloseIcon: true,
+                                  ));
+                                  return;
+                                }
+                              }
+                              if (context.mounted) {
+                                Provider.of<DownloadNotifier>(context,
+                                        listen: false)
+                                    .addFilmToDownload(
+                                        snapshot.data!,
+                                        direct!.language,
+                                        direct.qualityVersion,
+                                        Provider.of<SettingsNotifier>(context,
+                                            listen: false));
+                              }
+                            },
+                            icon: const Icon(Icons.download))
+                        : const SizedBox()),
+              )
             ],
           ),
           _buildProgressBar(Provider.of<WatchedNotifier>(context))
@@ -165,7 +202,7 @@ class _FilmScreenState extends State<FilmScreen> {
       )),
       floatingActionButton: FutureBuilder<FilmDetails>(
         future: lazyFilm,
-        builder: (context, snapshot) {
+        builder: (final context, final snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return FloatingActionButton(
               onPressed: () {},
@@ -181,7 +218,7 @@ class _FilmScreenState extends State<FilmScreen> {
             final watched = Provider.of<WatchedNotifier>(context, listen: false)
                 .films
                 .firstWhereOrNull(
-                    (element) => element.filmDetails.url == film.url);
+                    (final element) => element.filmDetails.url == film.url);
             return FloatingActionButton(
               child: Icon(film.isSerial ? Icons.list : Icons.play_arrow),
               onPressed: () async {
@@ -190,7 +227,7 @@ class _FilmScreenState extends State<FilmScreen> {
                     _showBottomSheet(film);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Brak dostępnych sezonów'),
+                      content: Text("Brak dostępnych sezonów"),
                       dismissDirection: DismissDirection.horizontal,
                       behavior: SnackBarBehavior.floating,
                       showCloseIcon: true,
@@ -198,7 +235,7 @@ class _FilmScreenState extends State<FilmScreen> {
                   }
                 } else {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => watched != null
+                    builder: (final context) => watched != null
                         ? FilmanPlayer.fromDetails(
                             filmDetails: film,
                             startFrom: watched.watchedInSec,
@@ -218,10 +255,10 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildCategoryTags(List<String>? categories) {
+  Widget _buildCategoryTags(final List<String>? categories) {
     return Text(
       categories?.isNotEmpty == true
-          ? categories!.join(' ').toUpperCase()
+          ? categories!.join(" ").toUpperCase()
           : "Brak kategorii",
       style: const TextStyle(
         fontWeight: FontWeight.bold,
@@ -231,7 +268,7 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildTitleAndImage(BuildContext context, FilmDetails film) {
+  Widget _buildTitleAndImage(final BuildContext context, final FilmDetails film) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -258,7 +295,7 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildFilmDetailsChips(FilmDetails film) {
+  Widget _buildFilmDetailsChips(final FilmDetails film) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -279,9 +316,9 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildDescription(String? description) {
+  Widget _buildDescription(final String? description) {
     return Text(
-      description ?? 'Brak opisu',
+      description ?? "Brak opisu",
       style: const TextStyle(
         fontSize: 16,
         height: 1.5,

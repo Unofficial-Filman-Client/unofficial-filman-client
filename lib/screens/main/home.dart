@@ -1,13 +1,13 @@
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/types/home_page.dart';
-import 'package:unofficial_filman_client/utils/error_handling.dart';
-import 'package:unofficial_filman_client/utils/updater.dart';
-import 'package:flutter/material.dart';
-import 'package:unofficial_filman_client/screens/film.dart';
-import 'package:unofficial_filman_client/types/film.dart';
-import 'package:unofficial_filman_client/utils/titlte.dart';
-import 'package:unofficial_filman_client/widgets/search.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/types/home_page.dart";
+import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/utils/updater.dart";
+import "package:flutter/material.dart";
+import "package:unofficial_filman_client/screens/film.dart";
+import "package:unofficial_filman_client/types/film.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/widgets/search.dart";
+import "package:provider/provider.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      builder: (context) {
+      builder: (final context) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
           child: const SearchModal(),
@@ -44,13 +44,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFilmCard(BuildContext context, Film film) {
+  Widget _buildFilmCard(final BuildContext context, final Film film) {
     return Card(
       child: InkWell(
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => FilmScreen(
+              builder: (final context) => FilmScreen(
                 url: film.link,
                 title: film.title,
                 image: film.imageUrl,
@@ -102,18 +102,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return FutureBuilder<HomePageResponse>(
       future: homePageLoader,
       builder:
-          (BuildContext context, AsyncSnapshot<HomePageResponse> snapshot) {
+          (final BuildContext context, final AsyncSnapshot<HomePageResponse> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return buildErrorContent(
               snapshot.error!,
               context,
-              (auth) => setState(() {
+              (final auth) => setState(() {
                     homePageLoader =
                         Provider.of<FilmanNotifier>(context, listen: false)
                             .getFilmanPage();
@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         padding: const EdgeInsets.all(10),
                         itemCount:
                             snapshot.data?.getFilms(category)?.length ?? 0,
-                        itemBuilder: (BuildContext context, int index) {
+                        itemBuilder: (final BuildContext context, final int index) {
                           final film =
                               snapshot.data?.getFilms(category)?[index];
                           if (film == null) return const SizedBox();

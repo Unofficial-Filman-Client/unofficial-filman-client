@@ -1,36 +1,40 @@
-import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/notifiers/settings.dart';
-import 'package:unofficial_filman_client/notifiers/watched.dart';
-import 'package:unofficial_filman_client/screens/hello.dart';
-import 'package:unofficial_filman_client/screens/main.dart';
+import "package:dynamic_color/dynamic_color.dart";
+import "package:flutter/material.dart";
+import "package:flutter/services.dart";
+import "package:media_kit/media_kit.dart";
+import "package:provider/provider.dart";
+import "package:shared_preferences/shared_preferences.dart";
+import "package:unofficial_filman_client/notifiers/download.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/notifiers/watched.dart";
+import "package:unofficial_filman_client/screens/hello.dart";
+import "package:unofficial_filman_client/screens/main.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
-  final cookies = prefs.getStringList('cookies') ?? [];
+  final cookies = prefs.getStringList("cookies") ?? [];
 
   final filman = FilmanNotifier();
   final settings = SettingsNotifier();
   final watched = WatchedNotifier();
+  final download = DownloadNotifier();
 
   await filman.initPrefs();
   await settings.loadSettings();
   await watched.loadWatched();
+  await download.loadDownloads();
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => filman),
-        ChangeNotifierProvider(create: (_) => settings),
-        ChangeNotifierProvider(create: (_) => watched),
+        ChangeNotifierProvider(create: (final _) => filman),
+        ChangeNotifierProvider(create: (final _) => settings),
+        ChangeNotifierProvider(create: (final _) => watched),
+        ChangeNotifierProvider(create: (final _) => download),
       ],
       child: MyApp(
         isAuth: cookies.isNotEmpty,
@@ -51,14 +55,14 @@ class MyApp extends StatelessWidget {
       primarySwatch: Colors.blue, brightness: Brightness.dark);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-    return DynamicColorBuilder(builder: (lightColorScheme, darkColorScheme) {
+    return DynamicColorBuilder(builder: (final lightColorScheme, final darkColorScheme) {
       return MaterialApp(
-        title: 'Unofficial Filman.cc App',
+        title: "Unofficial Filman.cc App",
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: lightColorScheme ?? _defaultLightColorScheme,

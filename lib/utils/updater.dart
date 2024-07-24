@@ -1,30 +1,30 @@
-import 'dart:io';
-import 'dart:async';
+import "dart:io";
+import "dart:async";
 
-import 'package:collection/collection.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:open_file/open_file.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:version/version.dart';
-import 'package:permission_handler/permission_handler.dart';
+import "package:collection/collection.dart";
+import "package:dio/dio.dart";
+import "package:flutter/material.dart";
+import "package:open_file/open_file.dart";
+import "package:package_info_plus/package_info_plus.dart";
+import "package:path_provider/path_provider.dart";
+import "package:url_launcher/url_launcher.dart";
+import "package:version/version.dart";
+import "package:permission_handler/permission_handler.dart";
 
-Future<void> checkForUpdates(BuildContext context) async {
-  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+Future<void> checkForUpdates(final BuildContext context) async {
+  final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
     "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
   );
 
-  Version currentVersion = Version.parse(packageInfo.version);
-  Version latestVersion = Version.parse(response.data["tag_name"]);
+  final Version currentVersion = Version.parse(packageInfo.version);
+  final Version latestVersion = Version.parse(response.data["tag_name"]);
 
   if (currentVersion < latestVersion) {
     if (context.mounted) {
       showDialog(
         context: context,
-        builder: (context) {
+        builder: (final context) {
           return AlertDialog(
             title: const Text("Dostępna jest nowa wersja aplikacji"),
             content: Text(
@@ -39,7 +39,7 @@ Future<void> checkForUpdates(BuildContext context) async {
                   ? TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        downloadAndInstallApk(context, response, (e) {
+                        downloadAndInstallApk(context, response, (final e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -67,7 +67,7 @@ Future<void> checkForUpdates(BuildContext context) async {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Nie można otworzyć linku w przeglądarce'),
+                                    "Nie można otworzyć linku w przeglądarce"),
                                 dismissDirection: DismissDirection.horizontal,
                                 behavior: SnackBarBehavior.floating,
                                 showCloseIcon: true,
@@ -87,9 +87,9 @@ Future<void> checkForUpdates(BuildContext context) async {
 }
 
 Future<void> downloadAndInstallApk(
-  BuildContext context,
-  Response<dynamic> response,
-  Function(Exception) onError,
+  final BuildContext context,
+  final Response<dynamic> response,
+  final Function(Exception) onError,
 ) async {
   final permissionStatus = await Permission.requestInstallPackages.status;
 
@@ -102,7 +102,7 @@ Future<void> downloadAndInstallApk(
     final assets = response.data["assets"];
     if (assets is List) {
       final apkAsset = assets.firstWhereOrNull(
-        (asset) => asset["name"] == "unofficial-filman-android.apk",
+        (final asset) => asset["name"] == "unofficial-filman-android.apk",
       );
 
       if (apkAsset != null && apkAsset["browser_download_url"] is String) {
@@ -125,14 +125,14 @@ Future<void> downloadAndInstallApk(
 }
 
 void _showExistingFileDialog(
-  BuildContext context,
-  dynamic version,
-  String savePath,
+  final BuildContext context,
+  final dynamic version,
+  final String savePath,
 ) {
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) {
+    builder: (final context) {
       return AlertDialog(
         title: const Text("Pobierana wersja już istnieje"),
         content: const Text("Plik instalacyjny został już wcześniej pobrany"),
@@ -155,31 +155,31 @@ void _showExistingFileDialog(
 }
 
 void _downloadAndDisplayProgress(
-    BuildContext context, dynamic version, String savePath) {
+    final BuildContext context, final dynamic version, final String savePath) {
   final downloadProgress = StreamController<double>();
 
   Dio().download(
     version["browser_download_url"],
     savePath,
-    onReceiveProgress: (received, total) {
+    onReceiveProgress: (final received, final total) {
       if (total > 0) {
         downloadProgress.add(received / total);
       }
     },
     deleteOnError: true,
-  ).then((_) async {
+  ).then((final _) async {
     await OpenFile.open(savePath);
   });
 
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) {
+    builder: (final context) {
       return AlertDialog(
         title: const Text("Pobieranie pliku"),
         content: StreamBuilder<double>(
           stream: downloadProgress.stream,
-          builder: (context, snapshot) {
+          builder: (final context, final snapshot) {
             final progress = snapshot.data ?? 0.0;
             return Row(
               crossAxisAlignment: CrossAxisAlignment.center,

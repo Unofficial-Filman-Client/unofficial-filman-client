@@ -1,11 +1,11 @@
-import 'dart:async';
+import "dart:async";
 
-import 'package:flutter/material.dart';
-import 'package:unofficial_filman_client/types/links.dart';
-import 'package:unofficial_filman_client/utils/hosts.dart';
+import "package:flutter/material.dart";
+import "package:unofficial_filman_client/types/links.dart";
+import "package:unofficial_filman_client/utils/hosts.dart";
 
-Future<List<Language>> _getAvailableLanguages(List<Host> links) async {
-  List<Language> languages = [];
+Future<List<Language>> _getAvailableLanguages(final List<Host> links) async {
+  final List<Language> languages = [];
   for (Host link in links) {
     if (!languages.contains(link.language) && isSupportedHost(link)) {
       languages.add(link.language);
@@ -15,8 +15,8 @@ Future<List<Language>> _getAvailableLanguages(List<Host> links) async {
 }
 
 Future<List<Quality>> _getAvaliableQualitiesForLanguage(
-    Language lang, List<Host> links) async {
-  List<Quality> qualities = [];
+    final Language lang, final List<Host> links) async {
+  final List<Quality> qualities = [];
   for (Host link in links) {
     if (link.language == lang) {
       if (!qualities.contains(link.qualityVersion) && isSupportedHost(link)) {
@@ -29,16 +29,16 @@ Future<List<Quality>> _getAvaliableQualitiesForLanguage(
 }
 
 Future<dynamic> _showSelectionDialog(
-    BuildContext context, List items, String title) {
+    final BuildContext context, final List items, final String title) {
   return showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AlertDialog(
+    builder: (final context) => AlertDialog(
       title: Text(title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: items
-            .map((item) => ListTile(
+            .map((final item) => ListTile(
                   title: Text(item.toString()),
                   onTap: () {
                     Navigator.pop(context, item);
@@ -51,7 +51,7 @@ Future<dynamic> _showSelectionDialog(
 }
 
 Future<DirectLink?> getUserSelectedVersion(
-    List<Host> links, BuildContext context) async {
+    final List<Host> links, final BuildContext context) async {
   final List<Language> languages = await _getAvailableLanguages(links);
   late Language lang;
   if (languages.length > 1 && context.mounted) {
@@ -75,6 +75,6 @@ Future<DirectLink?> getUserSelectedVersion(
   } else {
     return null;
   }
-  List<DirectLink> directs = await getDirects(links, lang, quality);
+  final List<DirectLink> directs = await getDirects(links, lang, quality);
   return (directs..shuffle()).first;
 }

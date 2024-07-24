@@ -1,9 +1,9 @@
-import 'dart:convert';
+import "dart:convert";
 
-import 'package:unofficial_filman_client/types/watched.dart';
-import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import "package:unofficial_filman_client/types/watched.dart";
+import "package:flutter/material.dart";
+import "package:collection/collection.dart";
+import "package:shared_preferences/shared_preferences.dart";
 
 class WatchedNotifier extends ChangeNotifier {
   final List<WatchedSerial> _serials = [];
@@ -16,27 +16,27 @@ class WatchedNotifier extends ChangeNotifier {
 
   Future loadWatched() async {
     prefs = await SharedPreferences.getInstance();
-    final watchedSerials = prefs?.getStringList('watchedSerials');
-    final watchedFilms = prefs?.getStringList('watchedFilms');
+    final watchedSerials = prefs?.getStringList("watchedSerials");
+    final watchedFilms = prefs?.getStringList("watchedFilms");
     if (watchedSerials != null) {
       _serials.addAll(
         watchedSerials
-            .map((e) => WatchedSerial.fromMap(jsonDecode(e)))
+            .map((final e) => WatchedSerial.fromMap(jsonDecode(e)))
             .toList(),
       );
     }
     if (watchedFilms != null) {
       _films.addAll(
-        watchedFilms.map((e) => WatchedSingle.fromMap(jsonDecode(e))).toList(),
+        watchedFilms.map((final e) => WatchedSingle.fromMap(jsonDecode(e))).toList(),
       );
     }
 
     notifyListeners();
   }
 
-  void watch(WatchedSingle watchedSingle) {
-    WatchedSingle? found = _films.firstWhereOrNull(
-      (WatchedSingle film) =>
+  void watch(final WatchedSingle watchedSingle) {
+    final WatchedSingle? found = _films.firstWhereOrNull(
+      (final WatchedSingle film) =>
           film.filmDetails.url == watchedSingle.filmDetails.url,
     );
     if (found != null) {
@@ -46,15 +46,15 @@ class WatchedNotifier extends ChangeNotifier {
     }
 
     prefs?.setStringList(
-      'watchedFilms',
-      _films.map((e) => jsonEncode(e.toMap())).toList(),
+      "watchedFilms",
+      _films.map((final e) => jsonEncode(e.toMap())).toList(),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
+    WidgetsBinding.instance.addPostFrameCallback((final _) => notifyListeners());
   }
 
-  void watchEpisode(WatchedSerial watchedSerial, WatchedSingle watchedSingle) {
-    WatchedSerial? found = _serials.firstWhereOrNull(
-      (serial) => serial.filmDetails.url == watchedSerial.filmDetails.url,
+  void watchEpisode(final WatchedSerial watchedSerial, final WatchedSingle watchedSingle) {
+    final WatchedSerial? found = _serials.firstWhereOrNull(
+      (final serial) => serial.filmDetails.url == watchedSerial.filmDetails.url,
     );
     if (found != null) {
       found.watching(watchedSingle);
@@ -70,28 +70,28 @@ class WatchedNotifier extends ChangeNotifier {
     }
 
     prefs?.setStringList(
-      'watchedSerials',
-      _serials.map((e) => jsonEncode(e.toMap())).toList(),
+      "watchedSerials",
+      _serials.map((final e) => jsonEncode(e.toMap())).toList(),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
+    WidgetsBinding.instance.addPostFrameCallback((final _) => notifyListeners());
   }
 
-  void remove(WatchedSingle watched) {
+  void remove(final WatchedSingle watched) {
     if (watched.parentSeason != null) {
       _serials.removeWhere(
-          (serial) => serial.filmDetails.url == watched.filmDetails.parentUrl);
+          (final serial) => serial.filmDetails.url == watched.filmDetails.parentUrl);
       prefs?.setStringList(
-        'watchedSerials',
-        _serials.map((e) => jsonEncode(e.toMap())).toList(),
+        "watchedSerials",
+        _serials.map((final e) => jsonEncode(e.toMap())).toList(),
       );
     } else {
       _films.removeWhere(
-          (film) => film.filmDetails.url == watched.filmDetails.url);
+          (final film) => film.filmDetails.url == watched.filmDetails.url);
       prefs?.setStringList(
-        'watchedFilms',
-        _films.map((e) => jsonEncode(e.toMap())).toList(),
+        "watchedFilms",
+        _films.map((final e) => jsonEncode(e.toMap())).toList(),
       );
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => notifyListeners());
+    WidgetsBinding.instance.addPostFrameCallback((final _) => notifyListeners());
   }
 }

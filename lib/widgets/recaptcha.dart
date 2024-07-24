@@ -1,7 +1,7 @@
 // library flutter_recaptcha_v2_compat_compat; original from https://github.com/corgivn/flutter_recaptcha_v2
 
-import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import "package:flutter/material.dart";
+import "package:webview_flutter/webview_flutter.dart";
 
 class RecaptchaV2 extends StatefulWidget {
   final String siteUrl;
@@ -44,12 +44,12 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
     webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
-      ..addJavaScriptChannel("Captcha", onMessageReceived: (token) {
+      ..addJavaScriptChannel("Captcha", onMessageReceived: (final token) {
         widget.onToken?.call(token.message);
         controller.hide();
       })
       ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (String url) {
+        onPageFinished: (final String url) {
           webViewController.runJavaScript('''
             document.body.style.visibility="hidden"
             document.querySelector(".g-recaptcha").scrollIntoView(true)
@@ -68,7 +68,7 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
   }
 
   @override
-  void didUpdateWidget(RecaptchaV2 oldWidget) {
+  void didUpdateWidget(final RecaptchaV2 oldWidget) {
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller.removeListener(onListen);
       controller = widget.controller;
@@ -85,7 +85,7 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return controller.visible
         ? Stack(
             children: [
@@ -141,13 +141,13 @@ class RecaptchaV2Controller extends ChangeNotifier {
   }
 
   @override
-  void addListener(listener) {
+  void addListener(final listener) {
     _listeners.add(listener);
     super.addListener(listener);
   }
 
   @override
-  void removeListener(listener) {
+  void removeListener(final listener) {
     _listeners.remove(listener);
     super.removeListener(listener);
   }

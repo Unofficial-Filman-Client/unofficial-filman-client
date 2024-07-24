@@ -7,6 +7,7 @@ environment:
   sdk: ">=3.3.3 <4.0.0"
 
 dependencies:
+  background_downloader: ^8.5.2
   collection: ^1.18.0
   dio: ^5.4.2+1
   dynamic_color: ^1.7.0

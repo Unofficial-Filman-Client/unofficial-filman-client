@@ -1,12 +1,12 @@
-import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
-import 'package:unofficial_filman_client/notifiers/filman.dart';
-import 'package:unofficial_filman_client/notifiers/watched.dart';
-import 'package:unofficial_filman_client/screens/player.dart';
-import 'package:unofficial_filman_client/types/film_details.dart';
-import 'package:unofficial_filman_client/types/season.dart';
-import 'package:provider/provider.dart';
-import 'package:unofficial_filman_client/types/watched.dart';
+import "package:collection/collection.dart";
+import "package:flutter/material.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/notifiers/watched.dart";
+import "package:unofficial_filman_client/screens/player.dart";
+import "package:unofficial_filman_client/types/film_details.dart";
+import "package:unofficial_filman_client/types/season.dart";
+import "package:provider/provider.dart";
+import "package:unofficial_filman_client/types/watched.dart";
 
 class EpisodesModal extends StatefulWidget {
   final FilmDetails filmDetails;
@@ -40,18 +40,18 @@ class _EpisodesModalState extends State<EpisodesModal> {
     final savedSerial = Provider.of<WatchedNotifier>(context, listen: false)
         .serials
         .firstWhereOrNull(
-            (element) => element.filmDetails.url == widget.filmDetails.url);
+            (final element) => element.filmDetails.url == widget.filmDetails.url);
 
     for (Season season in seasons) {
       for (Episode episode in season.getEpisodes()) {
         final watched = savedSerial?.episodes.firstWhereOrNull(
-            (element) => element.filmDetails.url == episode.episodeUrl);
+            (final element) => element.filmDetails.url == episode.episodeUrl);
         if (watched != null) {
           setState(() {
             episodeDescriptions[episode.episodeName] = watched.filmDetails;
           });
         } else {
-          FilmDetails data =
+          final FilmDetails data =
               await Provider.of<FilmanNotifier>(context, listen: false)
                   .getFilmDetails(episode.episodeUrl);
           setState(() {
@@ -62,9 +62,9 @@ class _EpisodesModalState extends State<EpisodesModal> {
     }
   }
 
-  Widget _buildProgressBar(WatchedSingle currentEpisode) {
-    Duration watched = Duration(seconds: currentEpisode.watchedInSec);
-    Duration total = Duration(seconds: currentEpisode.totalInSec);
+  Widget _buildProgressBar(final WatchedSingle currentEpisode) {
+    final Duration watched = Duration(seconds: currentEpisode.watchedInSec);
+    final Duration total = Duration(seconds: currentEpisode.totalInSec);
     return Padding(
       padding: const EdgeInsets.only(top: 2),
       child: Row(
@@ -93,13 +93,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Consumer<WatchedNotifier>(
-      builder: (context, watchedNotifier, child) => ListView.separated(
+      builder: (final context, final watchedNotifier, final child) => ListView.separated(
         itemCount: seasons.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 16.0),
-        itemBuilder: (context, index) {
-          Season season = seasons[index];
+        separatorBuilder: (final context, final index) => const SizedBox(height: 16.0),
+        itemBuilder: (final context, final index) {
+          final Season season = seasons[index];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -118,13 +118,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
               ),
               for (Episode episode in season.getEpisodes())
                 Builder(
-                  builder: (context) {
+                  builder: (final context) {
                     final currentSerial = watchedNotifier.serials
                         .firstWhereOrNull(
-                            (s) => s.filmDetails.url == widget.filmDetails.url);
+                            (final s) => s.filmDetails.url == widget.filmDetails.url);
 
                     final currentEpisode = currentSerial?.episodes
-                        .firstWhereOrNull((e) =>
+                        .firstWhereOrNull((final e) =>
                             e.filmDetails.url == episode.episodeUrl &&
                             e.watchedInSec > 0);
                     return ListTile(
@@ -153,7 +153,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                                                     .desc ==
                                                 widget.filmDetails.desc
                                             ? const Text(
-                                                'Brak opisu odcinka',
+                                                "Brak opisu odcinka",
                                                 style: TextStyle(
                                                   fontSize: 12.0,
                                                   color: Colors.grey,
@@ -180,7 +180,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                       ),
                       onTap: () {
                         Navigator.of(context)
-                            .push(MaterialPageRoute(builder: (context) {
+                            .push(MaterialPageRoute(builder: (final context) {
                           if (episodeDescriptions[episode.episodeName] !=
                               null) {
                             if (currentEpisode != null) {
