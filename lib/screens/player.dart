@@ -1,5 +1,8 @@
 import "dart:async";
+import "dart:math";
 
+import "package:flutter_cast_framework/cast.dart";
+import "package:flutter_cast_framework/widgets.dart";
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
@@ -9,12 +12,11 @@ import "package:unofficial_filman_client/types/watched.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
 import "package:unofficial_filman_client/utils/titlte.dart";
 import "package:flutter/material.dart";
-import "dart:math" as math;
 import "package:flutter/services.dart";
-import "package:media_kit/media_kit.dart";
+import "package:media_kit/media_kit.dart" hide PlayerState;
 import "package:media_kit_video/media_kit_video.dart";
 import "package:provider/provider.dart";
-import "package:system_screen_brightness/system_screen_brightness.dart";
+import "package:screen_brightness/screen_brightness.dart";
 import "package:unofficial_filman_client/types/links.dart";
 
 class FilmanPlayer extends StatefulWidget {
@@ -23,20 +25,23 @@ class FilmanPlayer extends StatefulWidget {
   final FilmDetails? parentDetails;
   final int startFrom;
   final int savedDuration;
+  final FlutterCastFramework? castFramework;
 
   const FilmanPlayer(
       {super.key,
       required this.targetUrl,
       this.parentDetails,
       this.startFrom = 0,
-      this.savedDuration = 0})
+      this.savedDuration = 0,
+      this.castFramework})
       : filmDetails = null;
   const FilmanPlayer.fromDetails(
       {super.key,
       required this.filmDetails,
       this.parentDetails,
       this.startFrom = 0,
-      this.savedDuration = 0})
+      this.savedDuration = 0,
+      this.castFramework})
       : targetUrl = "";
 
   @override
@@ -48,7 +53,6 @@ enum SeekDirection { forward, backward }
 class _FilmanPlayerState extends State<FilmanPlayer> {
   late final Player _player;
   late final VideoController _controller;
-  late final SystemScreenBrightness _brightnessPlugin;
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<bool> _playingSubscription;
@@ -57,16 +61,22 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   bool _isOverlayVisible = true;
   bool _isBuffering = true;
   bool _isPlaying = false;
-  bool _hasBrightnessPermission = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
-  FilmDetails? _filmDetails;
+
+  late FilmDetails _filmDetails;
+
   FilmDetails? _parentDetails;
   Season? _currentSeason;
   SeekDirection? _seekDirection;
   bool _isSeeking = false;
-
   FilmDetails? _nextEpisode;
+
+  late FlutterCastFramework _castFramework;
+  DirectLink? _direct;
+  CastState? _castState;
+  SessionState? _castSessionState;
+  PlayerState? _castPlayerState;
 
   @override
   void initState() {
@@ -76,19 +86,66 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    _player = Player();
-    _controller = VideoController(_player);
-    _brightnessPlugin = SystemScreenBrightness();
-    _position = Duration(seconds: widget.startFrom);
-    _duration = Duration(seconds: widget.savedDuration);
-
-    _checkBrightnessPermission();
-    _initializeSubscriptions();
-    _initializePlayer();
+    _initMediaKit();
+    _initSubscriptions();
+    _initPlayer();
+    _initCast();
     super.initState();
   }
 
-  void _initializeSubscriptions() {
+  void _initCast() {
+    if (widget.castFramework != null) {
+      _castFramework = widget.castFramework!;
+    } else {
+      _castFramework = FlutterCastFramework.create([
+        "urn:x-cast:majusss-unofficial-filman-client",
+      ]);
+    }
+    _castFramework.castContext.state.addListener(
+      () async {
+        setState(() {
+          _castState = _castFramework.castContext.state.value;
+        });
+        switch (_castFramework.castContext.state.value) {
+          case CastState.connected:
+            _castVideo();
+            break;
+          case CastState.idle:
+          default:
+            break;
+        }
+      },
+    );
+
+    final sessionManager = _castFramework.castContext.sessionManager;
+    sessionManager.state.addListener(
+      () {
+        setState(() {
+          _castSessionState = sessionManager.state.value;
+        });
+      },
+    );
+    sessionManager.remoteMediaClient.playerState.addListener(() {
+      setState(() {
+        _castPlayerState = sessionManager.remoteMediaClient.playerState.value;
+      });
+    });
+    sessionManager.remoteMediaClient.onProgressUpdated =
+        (final progressMs, final durationMs) {
+      setState(() {
+        _position = Duration(milliseconds: progressMs);
+      });
+    };
+  }
+
+  void _initMediaKit() {
+    _player = Player();
+    _controller = VideoController(_player);
+    _position = Duration(seconds: widget.startFrom);
+    _duration = Duration(seconds: widget.savedDuration);
+  }
+
+  void _initSubscriptions() {
     _positionSubscription =
         _controller.player.stream.position.listen((final position) {
       if (widget.startFrom != 0) {
@@ -117,7 +174,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       });
     });
 
-    _playingSubscription = _controller.player.stream.playing.listen((final playing) {
+    _playingSubscription =
+        _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
       });
@@ -129,39 +187,42 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     });
   }
 
-  Future<void> _initializePlayer() async {
+  Future<void> _initPlayer() async {
     if (widget.filmDetails == null) {
       final details = await Provider.of<FilmanNotifier>(context, listen: false)
           .getFilmDetails(widget.targetUrl);
       setState(() => _filmDetails = details);
     } else {
-      setState(() => _filmDetails = widget.filmDetails);
+      setState(() => _filmDetails = widget.filmDetails!);
     }
 
-    if (_filmDetails?.isEpisode == true) {
+    if (_filmDetails.isEpisode == true) {
       if (widget.parentDetails != null) {
         _parentDetails = widget.parentDetails;
-      } else if (_filmDetails?.parentUrl != null && mounted) {
+      } else if (_filmDetails.parentUrl != null && mounted) {
         final parent = await Provider.of<FilmanNotifier>(context, listen: false)
-            .getFilmDetails(_filmDetails?.parentUrl ?? "");
+            .getFilmDetails(_filmDetails.parentUrl ?? "");
         setState(() => _parentDetails = parent);
       }
 
       setState(() {
         _currentSeason = _parentDetails!.seasons!.firstWhere((final element) =>
             element.episodes.any((final element) =>
-                element.episodeName == _filmDetails?.seasonEpisodeTag));
+                element.episodeName == _filmDetails.seasonEpisodeTag));
       });
     }
 
-    if (_filmDetails?.isEpisode == true) {
+    if (_filmDetails.isEpisode == true) {
       _loadNextEpisode();
     }
 
-    if (_filmDetails?.links != null && mounted) {
+    if (_filmDetails.links != null && mounted) {
       final DirectLink? direct =
-          await getUserSelectedVersion(_filmDetails!.links!, context);
+          await getUserSelectedVersion(_filmDetails.links!, context);
       if (direct == null) return _showNoLinksSnackbar();
+      setState(() {
+        _direct = direct;
+      });
       _player.open(Media(direct.link));
     } else {
       return _showNoLinksSnackbar();
@@ -170,11 +231,9 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   void _saveWatched() {
     if (_duration.inSeconds == 0) return;
-    if (_filmDetails != null &&
-        _parentDetails != null &&
-        _filmDetails?.isEpisode == true) {
+    if (_parentDetails != null && _filmDetails.isEpisode == true) {
       final WatchedSingle lastWatched = WatchedSingle.fromFilmDetails(
-          filmDetailsFrom: _filmDetails!,
+          filmDetailsFrom: _filmDetails,
           sec: _position.inSeconds,
           totalSec: _duration.inSeconds,
           parentSeason: _currentSeason);
@@ -184,20 +243,20 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             lastWatchedFromDetails: lastWatched,
           ),
           lastWatched);
-    } else if (_filmDetails != null && _filmDetails?.isEpisode == false) {
+    } else if (_filmDetails.isEpisode == false) {
       Provider.of<WatchedNotifier>(context, listen: false).watch(
           WatchedSingle.fromFilmDetails(
-              filmDetailsFrom: _filmDetails!,
+              filmDetailsFrom: _filmDetails,
               sec: _position.inSeconds,
               totalSec: _duration.inSeconds));
     }
   }
 
   void _loadNextEpisode() async {
-    if (_filmDetails?.nextEpisodeUrl != null) {
+    if (_filmDetails.nextEpisodeUrl != null) {
       final FilmDetails next =
           await Provider.of<FilmanNotifier>(context, listen: false)
-              .getFilmDetails(_filmDetails?.nextEpisodeUrl ?? "");
+              .getFilmDetails(_filmDetails.nextEpisodeUrl ?? "");
       setState(() {
         _nextEpisode = next;
       });
@@ -216,20 +275,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     }
   }
 
-  Future<void> _checkBrightnessPermission() async {
-    try {
-      final hasPermission = await _brightnessPlugin.checkSystemWritePermission;
-      setState(() => _hasBrightnessPermission = hasPermission);
-    } catch (e) {
-      setState(() => _hasBrightnessPermission = false);
-    }
-  }
-
-  void _requestPermissions() async {
-    await _brightnessPlugin.openAndroidPermissionsMenu();
-    setState(() {});
-  }
-
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations(
@@ -242,6 +287,32 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _player.dispose();
 
     super.dispose();
+  }
+
+  void _castVideo() async {
+    _player.pause();
+    _castFramework.castContext.sessionManager.remoteMediaClient.load(
+        MediaLoadRequestData(
+            currentTime: _position.inMilliseconds,
+            shouldAutoplay: true,
+            mediaInfo: MediaInfo(
+                streamDuration: _duration.inMilliseconds,
+                streamType: StreamType.buffered,
+                contentType: "videos/mp4",
+                contentId: _direct!.link,
+                mediaMetadata: MediaMetadata(
+                    mediaType: MediaType.movie,
+                    strings: _filmDetails.isEpisode
+                        ? {
+                            MediaMetadataKey.title.name:
+                                _filmDetails.seasonEpisodeTag,
+                            MediaMetadataKey.subtitle.name: _filmDetails.title,
+                          }
+                        : {MediaMetadataKey.title.name: _filmDetails.title},
+                    webImages: [
+                      WebImage(url: _filmDetails.imageUrl),
+                      WebImage(url: _filmDetails.imageUrl)
+                    ]))));
   }
 
   @override
@@ -263,15 +334,16 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       children: [
         _buildSeekingIcons(),
         _buildLoadingIcon(),
-        _buildDoubleTapControl(),
+        _buildDoubleTapControls(),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: _isOverlayVisible
               ? Stack(
                   children: [
-                    _buildBrightnessControl(context),
                     _buildTopBar(),
                     _buildCenterPlayPauseButton(),
+                    _buildIconsBar(context),
+                    _buildBrightnessControl(context),
                     _buildBottomBar(),
                   ],
                 )
@@ -279,6 +351,26 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         )
       ],
     );
+  }
+
+  Widget _buildIconsBar(final BuildContext context) {
+    return Positioned(
+        height: MediaQuery.of(context).size.height,
+        right: 10,
+        top: -10,
+        child: Expanded(
+            child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _castState != CastState.unavailable
+                ? CastButton(
+                    castFramework: _castFramework,
+                    color: Colors.white,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                  )
+                : const SizedBox()
+          ],
+        )));
   }
 
   Widget _buildLoadingIcon() {
@@ -302,20 +394,17 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         child: AnimatedOpacity(
             opacity: _isSeeking ? 1 : 0,
             duration: const Duration(milliseconds: 300),
-            child: IconButton(
-              icon: Icon(
-                _seekDirection == SeekDirection.forward
-                    ? Icons.fast_forward
-                    : Icons.fast_rewind,
-                size: 52,
-              ),
-              onPressed: () {},
+            child: Icon(
+              _seekDirection == SeekDirection.forward
+                  ? Icons.fast_forward
+                  : Icons.fast_rewind,
+              size: 52,
             )),
       ),
     );
   }
 
-  Widget _buildDoubleTapControl() {
+  Widget _buildDoubleTapControls() {
     return Row(
       children: [
         SizedBox(
@@ -337,8 +426,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   });
                 });
               });
-              _player.seek(
-                  Duration(seconds: math.max(0, _position.inSeconds - 10)));
+              _player.seek(Duration(seconds: max(0, _position.inSeconds - 10)));
             },
           ),
         ),
@@ -362,8 +450,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 });
               });
               _player.seek(Duration(
-                  seconds:
-                      math.min(_position.inSeconds + 10, _duration.inSeconds)));
+                  seconds: min(_position.inSeconds + 10, _duration.inSeconds)));
             },
           ),
         ),
@@ -377,20 +464,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       top: -10,
       height: MediaQuery.of(context).size.height,
       child: FutureBuilder<double>(
-        future: _brightnessPlugin.currentBrightness,
+        future: ScreenBrightness().current,
         builder: (final context, final snapshot) {
-          if (!_hasBrightnessPermission) {
-            return Center(
-              child: IconButton(
-                onPressed: () {
-                  _checkBrightnessPermission();
-                  _requestPermissions();
-                },
-                icon: const Icon(Icons.no_cell),
-              ),
-            );
-          }
-
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -402,8 +477,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   max: 1,
                   onChanged: (final value) {
                     setState(() {
-                      _brightnessPlugin
-                          .setSystemScreenBrightness((value * 255).toInt());
+                      ScreenBrightness().setScreenBrightness(value);
                     });
                   },
                 ),
