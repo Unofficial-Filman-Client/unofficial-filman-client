@@ -60,7 +60,8 @@ class MyApp extends StatelessWidget {
         [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-    return DynamicColorBuilder(builder: (final lightColorScheme, final darkColorScheme) {
+    return DynamicColorBuilder(
+        builder: (final lightColorScheme, final darkColorScheme) {
       return MaterialApp(
         title: "Unofficial Filman.cc App",
         debugShowCheckedModeBanner: false,
@@ -72,7 +73,7 @@ class MyApp extends StatelessWidget {
           colorScheme: darkColorScheme ?? _defaultDarkColorScheme,
           useMaterial3: true,
         ),
-        themeMode: ThemeMode.system,
+        themeMode: Provider.of<SettingsNotifier>(context).theme,
         home: isAuth ? const MainScreen() : const HelloScreen(),
       );
     });
