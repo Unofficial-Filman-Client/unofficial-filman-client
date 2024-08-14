@@ -1,12 +1,12 @@
-import 'package:filman_flutter/screens/login.dart';
-import 'package:filman_flutter/screens/register.dart';
-import 'package:flutter/material.dart';
+import "package:unofficial_filman_client/screens/login.dart";
+import "package:unofficial_filman_client/screens/register.dart";
+import "package:flutter/material.dart";
 
 class HelloScreen extends StatelessWidget {
   const HelloScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
         body: SafeArea(
             child: Padding(
@@ -37,7 +37,7 @@ class HelloScreen extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
+                      builder: (final context) => const LoginScreen(),
                     )),
                 child: const Text("Zaloguj się")),
           ),
@@ -48,7 +48,7 @@ class HelloScreen extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton(
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const RegisterScreen(),
+                      builder: (final context) => const RegisterScreen(),
                     )),
                 child: const Text("Stwórz konto")),
           ),

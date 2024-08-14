@@ -1,10 +1,10 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/film.dart';
-import 'package:filman_flutter/types/film.dart';
-import 'package:filman_flutter/types/search_results.dart';
-import 'package:filman_flutter/utils/titlte.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/screens/film.dart";
+import "package:unofficial_filman_client/types/film.dart";
+import "package:unofficial_filman_client/types/search_results.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 
 class SearchModal extends StatefulWidget {
   const SearchModal({super.key});
@@ -30,17 +30,17 @@ class _SearchModalState extends State<SearchModal> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Column(
       children: [
         SearchBar(
           controller: searchController,
-          padding: const MaterialStatePropertyAll<EdgeInsets>(
+          padding: const WidgetStatePropertyAll<EdgeInsets>(
               EdgeInsets.symmetric(horizontal: 16.0)),
           leading: const Icon(Icons.search),
           autoFocus: true,
-          onChanged: (value) {
-            if (value.isNotEmpty) {
+          onChanged: (final value) {
+            if (value.isNotEmpty && value.length > 1) {
               setState(() {
                 lazySearch = Provider.of<FilmanNotifier>(context, listen: false)
                     .searchInFilman(value);
@@ -53,7 +53,7 @@ class _SearchModalState extends State<SearchModal> {
           child: searchController.text.isNotEmpty
               ? FutureBuilder(
                   future: lazySearch,
-                  builder: (context, snapshot) {
+                  builder: (final context, final snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Container(
                         padding: EdgeInsets.only(
@@ -86,12 +86,12 @@ class _SearchModalState extends State<SearchModal> {
                                     child: ListTile(
                                       title: DisplayTitle(title: film.title),
                                       subtitle: Text(
-                                          '${(film.desc.split(' ').take(12)..last.replaceAll(',', '')).join(' ')}...'),
+                                          '${(film.desc?.split(' ').take(12)?..last.replaceAll(',', ''))?.join(' ')}...'),
                                       leading: Image.network(film.imageUrl),
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (context) => FilmScreen(
+                                            builder: (final context) => FilmScreen(
                                               url: film.link,
                                               title: film.title,
                                               image: film.imageUrl,

@@ -1,9 +1,9 @@
-import 'package:filman_flutter/types/film.dart';
+import "package:unofficial_filman_client/types/film.dart";
 
 class SearchResults {
   final List<Film> resuls = [];
 
-  void addFilm(Film film) {
+  void addFilm(final Film film) {
     resuls.add(film);
   }
 

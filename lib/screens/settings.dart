@@ -1,7 +1,7 @@
-import 'package:filman_flutter/notifiers/settings.dart';
-import 'package:filman_flutter/utils/titlte.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,63 +12,83 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   @override
-  Widget build(BuildContext context) {
-    TitleDisplayType? titleType =
-        Provider.of<SettingsNotifier>(context).titleType;
+  Widget build(final BuildContext context) {
+    final TitleDisplayType? titleType =
+        Provider.of<SettingsNotifier>(context).titleDisplayType;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ustawienia'),
+        title: const Text("Ustawienia"),
       ),
       body: ListView(
         children: [
+          ListTile(
+            title: const Text("Tryb ciemny"),
+            onTap: () {
+              Provider.of<SettingsNotifier>(context, listen: false).setTheme(
+                  Theme.of(context).brightness == Brightness.light
+                      ? ThemeMode.dark
+                      : ThemeMode.light);
+            },
+            trailing: Switch(
+              value: Theme.of(context).brightness == Brightness.dark,
+              onChanged: (final bool value) {
+                Provider.of<SettingsNotifier>(context, listen: false)
+                    .setTheme(value ? ThemeMode.dark : ThemeMode.light);
+              },
+            ),
+          ),
+          const Divider(),
           const ListTile(
-            title: Text('Wyświetlanie tytułów'),
+            title: Text("Wyświetlanie tytułów"),
             subtitle: Text(
-                'Tytuły na filamn.cc są dzielone \'/\' na człony, w zależności od języka. Wybierz, które tytuły chcesz wyświetlać:'),
+                "Tytuły na filamn.cc są dzielone '/' na człony, w zależności od języka. Wybierz, które tytuły chcesz wyświetlać:"),
           ),
           RadioListTile<TitleDisplayType>(
-            title: const Text('Cały tytuł'),
+            title: const Text("Cały tytuł"),
             value: TitleDisplayType.all,
             groupValue: titleType,
-            onChanged: (TitleDisplayType? value) {
+            onChanged: (final TitleDisplayType? value) {
               Provider.of<SettingsNotifier>(context, listen: false)
-                  .setCharacter(value);
+                  .setTitleDisplayType(value);
             },
           ),
           RadioListTile<TitleDisplayType>(
-            title: const Text('Pierwszy człon tytułu'),
+            title: const Text("Pierwszy człon tytułu"),
             value: TitleDisplayType.first,
             groupValue: titleType,
-            onChanged: (TitleDisplayType? value) {
+            onChanged: (final TitleDisplayType? value) {
               Provider.of<SettingsNotifier>(context, listen: false)
-                  .setCharacter(value);
+                  .setTitleDisplayType(value);
             },
           ),
           RadioListTile<TitleDisplayType>(
-            title: const Text('Drugi człon tytułu'),
+            title: const Text("Drugi człon tytułu"),
             value: TitleDisplayType.second,
             groupValue: titleType,
-            onChanged: (TitleDisplayType? value) {
+            onChanged: (final TitleDisplayType? value) {
               Provider.of<SettingsNotifier>(context, listen: false)
-                  .setCharacter(value);
+                  .setTitleDisplayType(value);
             },
           ),
           Consumer<SettingsNotifier>(
-              builder: (context, settings, child) => ListTile(
+              builder: (final context, final settings, final child) => ListTile(
                       subtitle: RichText(
                           text: TextSpan(
                     children: [
-                      const TextSpan(
-                          text: 'Przykładowy tytuł: ',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
                       TextSpan(
+                          text: "Przykładowy tytuł: ",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      TextSpan(
+                          style: Theme.of(context).textTheme.bodyMedium,
                           text: getDisplayTitle(
-                              'Szybcy i wściekli / The Fast and the Furious',
+                              "Szybcy i wściekli / The Fast and the Furious",
                               settings))
                     ],
                   )))),
-          const Divider(),
         ],
       ),
     );

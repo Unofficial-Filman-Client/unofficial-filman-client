@@ -7,12 +7,12 @@ class Episode {
     required this.episodeUrl,
   });
 
-  Episode.fromJSON(Map<String, dynamic> json)
-      : episodeName = json['episodeName'],
-        episodeUrl = json['episodeUrl'];
+  Episode.fromMap(final Map<String, dynamic> json)
+      : episodeName = json["episodeName"],
+        episodeUrl = json["episodeUrl"];
 
   int getEpisodeNumber() {
-    final RegExp regex = RegExp(r'\[s\d+e(\d+)\]');
+    final RegExp regex = RegExp(r"\[s\d+e(\d+)\]");
     final Match? match = regex.firstMatch(episodeName);
     if (match != null && match.group(1) != null) {
       return int.parse(match.group(1)!);
@@ -22,7 +22,7 @@ class Episode {
   }
 
   String getEpisodeTitle() {
-    final RegExp regex = RegExp(r'\[s\d+e\d+\] (.*)');
+    final RegExp regex = RegExp(r"\[s\d+e\d+\] (.*)");
     final Match? match = regex.firstMatch(episodeName);
     if (match != null && match.group(1) != null) {
       return match.group(1)!;
@@ -33,14 +33,14 @@ class Episode {
 
   Map<String, dynamic> toMap() {
     return {
-      'episodeName': episodeName,
-      'episodeUrl': episodeUrl,
+      "episodeName": episodeName,
+      "episodeUrl": episodeUrl,
     };
   }
 
   @override
   String toString() {
-    return 'Episode{episodeName: $episodeName, episodeUrl: $episodeUrl}';
+    return "Episode{episodeName: $episodeName, episodeUrl: $episodeUrl}";
   }
 }
 
@@ -48,12 +48,12 @@ class Season {
   final String seasonTitle;
   final List<Episode> episodes;
 
-  void addEpisode(Episode episode) {
+  void addEpisode(final Episode episode) {
     episodes.add(episode);
   }
 
   List<Episode> getEpisodes() {
-    episodes.sort((a, b) => a.episodeName
+    episodes.sort((final a, final b) => a.episodeName
         .split(" ")[0]
         .split("e")[1]
         .replaceAll("]", "")
@@ -68,20 +68,20 @@ class Season {
     required this.episodes,
   });
 
-  Season.fromJSON(Map<String, dynamic> json)
-      : seasonTitle = json['seasonTitle'],
-        episodes = List<Episode>.from(
-            json['episodes'].map((e) => Episode.fromJSON(e)));
+  Season.fromMap(final Map<String, dynamic> json)
+      : seasonTitle = json["seasonTitle"],
+        episodes =
+            List<Episode>.from(json["episodes"].map((final e) => Episode.fromMap(e)));
 
   Map<String, dynamic> toMap() {
     return {
-      'seasonTitle': seasonTitle,
-      'episodes': episodes.map((e) => e.toMap()).toList(),
+      "seasonTitle": seasonTitle,
+      "episodes": episodes.map((final e) => e.toMap()).toList(),
     };
   }
 
   @override
   String toString() {
-    return 'Season{seasonTitle: $seasonTitle, episodes: $episodes}';
+    return "Season{seasonTitle: $seasonTitle, episodes: $episodes}";
   }
 }

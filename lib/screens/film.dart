@@ -1,14 +1,18 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/player.dart';
-import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/utils/error_handling.dart';
-import 'package:filman_flutter/utils/titlte.dart';
-import 'package:filman_flutter/widgets/episodes.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
+import "package:collection/collection.dart";
+import "package:unofficial_filman_client/notifiers/download.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/notifiers/watched.dart";
+import "package:unofficial_filman_client/screens/player.dart";
+import "package:unofficial_filman_client/types/film_details.dart";
+import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/utils/select_dialog.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/widgets/episodes.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
+import "package:url_launcher/url_launcher.dart";
+import "package:share_plus/share_plus.dart";
 
 class FilmScreen extends StatefulWidget {
   final String url, title, image;
@@ -24,7 +28,7 @@ class FilmScreen extends StatefulWidget {
 
   FilmScreen.fromDetails({
     super.key,
-    required FilmDetails details,
+    required final FilmDetails details,
   })  : url = details.url,
         title = details.title,
         image = details.imageUrl,
@@ -48,7 +52,19 @@ class _FilmScreenState extends State<FilmScreen> {
     }
   }
 
-  void _showBottomSheet(FilmDetails filmDetails) {
+  Widget _buildProgressBar(final WatchedNotifier watchedNotifier) {
+    final watched = watchedNotifier.films.firstWhereOrNull(
+        (final element) => element.filmDetails.url == widget.url);
+    if (watched == null) return const SizedBox();
+    return Transform(
+      transform: Matrix4.translationValues(-16, -12, 0),
+      child: LinearProgressIndicator(
+        value: watched.watchedPercentage,
+      ),
+    );
+  }
+
+  void _showBottomSheet(final FilmDetails filmDetails) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -56,7 +72,7 @@ class _FilmScreenState extends State<FilmScreen> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      builder: (context) {
+      builder: (final context) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
           child: EpisodesModal(
@@ -68,20 +84,20 @@ class _FilmScreenState extends State<FilmScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       body: FutureBuilder<FilmDetails>(
         future: lazyFilm,
-        builder: (context, snapshot) {
+        builder: (final context, final snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return buildErrorContent(
                 snapshot.error!,
                 context,
-                (response) => Navigator.of(context).pushReplacement(
+                (final response) => Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                        builder: (context) => FilmScreen(
+                        builder: (final context) => FilmScreen(
                             url: widget.url,
                             title: widget.title,
                             image: widget.image))));
@@ -105,47 +121,88 @@ class _FilmScreenState extends State<FilmScreen> {
               ),
             );
           } else {
-            return const Center(child: Text('Brak danych'));
+            return const Center(child: Text("Brak danych"));
           }
         },
       ),
       bottomNavigationBar: BottomAppBar(
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: Navigator.of(context).pop,
-            ),
-            IconButton(
-              icon: const Icon(Icons.share_outlined),
-              onPressed: () {
-                Share.share(
-                    "Oglądaj '${widget.title}' za darmo na ${widget.url}");
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.open_in_new),
-              onPressed: () async {
-                final Uri uri = Uri.parse(widget.url);
-                if (!await launchUrl(uri,
-                    mode: LaunchMode.externalApplication)) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Nie można otworzyć linku w przeglądarce'),
-                      dismissDirection: DismissDirection.horizontal,
-                      behavior: SnackBarBehavior.floating,
-                      showCloseIcon: true,
-                    ));
+          child: Stack(
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: Navigator.of(context).pop,
+              ),
+              IconButton(
+                icon: const Icon(Icons.share_outlined),
+                onPressed: () {
+                  Share.share(
+                      "Oglądaj '${widget.title}' za darmo na ${widget.url}");
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.open_in_new),
+                onPressed: () async {
+                  final Uri uri = Uri.parse(widget.url);
+                  if (!await launchUrl(uri,
+                      mode: LaunchMode.externalApplication)) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content:
+                            Text("Nie można otworzyć linku w przeglądarce"),
+                        dismissDirection: DismissDirection.horizontal,
+                        behavior: SnackBarBehavior.floating,
+                        showCloseIcon: true,
+                      ));
+                    }
                   }
-                }
-              },
-            ),
-          ],
-        ),
-      ),
+                },
+              ),
+              FutureBuilder<FilmDetails>(
+                future: lazyFilm,
+                builder: (final context, final snapshot) => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: snapshot.data?.isSerial == false && snapshot.hasData
+                        ? IconButton(
+                            onPressed: () async {
+                              final direct = await getUserSelectedVersion(
+                                  snapshot.data?.links ?? [], context);
+                              if (direct == null) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content: Text("Brak dostępnych linków"),
+                                    dismissDirection:
+                                        DismissDirection.horizontal,
+                                    behavior: SnackBarBehavior.floating,
+                                    showCloseIcon: true,
+                                  ));
+                                  return;
+                                }
+                              }
+                              if (context.mounted) {
+                                Provider.of<DownloadNotifier>(context,
+                                        listen: false)
+                                    .addFilmToDownload(
+                                        snapshot.data!,
+                                        direct!.language,
+                                        direct.qualityVersion,
+                                        Provider.of<SettingsNotifier>(context,
+                                            listen: false));
+                              }
+                            },
+                            icon: const Icon(Icons.download))
+                        : const SizedBox()),
+              )
+            ],
+          ),
+          _buildProgressBar(Provider.of<WatchedNotifier>(context))
+        ],
+      )),
       floatingActionButton: FutureBuilder<FilmDetails>(
         future: lazyFilm,
-        builder: (context, snapshot) {
+        builder: (final context, final snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return FloatingActionButton(
               onPressed: () {},
@@ -158,6 +215,10 @@ class _FilmScreenState extends State<FilmScreen> {
             );
           } else if (snapshot.hasData) {
             final film = snapshot.data!;
+            final watched = Provider.of<WatchedNotifier>(context, listen: false)
+                .films
+                .firstWhereOrNull(
+                    (final element) => element.filmDetails.url == film.url);
             return FloatingActionButton(
               child: Icon(film.isSerial ? Icons.list : Icons.play_arrow),
               onPressed: () async {
@@ -166,7 +227,7 @@ class _FilmScreenState extends State<FilmScreen> {
                     _showBottomSheet(film);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Brak dostępnych sezonów'),
+                      content: Text("Brak dostępnych sezonów"),
                       dismissDirection: DismissDirection.horizontal,
                       behavior: SnackBarBehavior.floating,
                       showCloseIcon: true,
@@ -174,8 +235,13 @@ class _FilmScreenState extends State<FilmScreen> {
                   }
                 } else {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) =>
-                        FilmanPlayer.fromDetails(filmDetails: film),
+                    builder: (final context) => watched != null
+                        ? FilmanPlayer.fromDetails(
+                            filmDetails: film,
+                            startFrom: watched.watchedInSec,
+                            savedDuration: watched.totalInSec,
+                          )
+                        : FilmanPlayer.fromDetails(filmDetails: film),
                   ));
                 }
               },
@@ -189,10 +255,10 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildCategoryTags(List<String>? categories) {
+  Widget _buildCategoryTags(final List<String>? categories) {
     return Text(
       categories?.isNotEmpty == true
-          ? categories!.join(' ').toUpperCase()
+          ? categories!.join(" ").toUpperCase()
           : "Brak kategorii",
       style: const TextStyle(
         fontWeight: FontWeight.bold,
@@ -202,13 +268,14 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildTitleAndImage(BuildContext context, FilmDetails film) {
+  Widget _buildTitleAndImage(
+      final BuildContext context, final FilmDetails film) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(12.0),
           child: Image.network(
             widget.image,
             width: MediaQuery.of(context).size.width * 0.3,
@@ -229,7 +296,7 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildFilmDetailsChips(FilmDetails film) {
+  Widget _buildFilmDetailsChips(final FilmDetails film) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -250,9 +317,9 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildDescription(String? description) {
+  Widget _buildDescription(final String? description) {
     return Text(
-      description ?? 'Brak opisu',
+      description ?? "Brak opisu",
       style: const TextStyle(
         fontSize: 16,
         height: 1.5,

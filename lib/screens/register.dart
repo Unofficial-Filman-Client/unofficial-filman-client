@@ -1,10 +1,10 @@
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/screens/login.dart';
-import 'package:filman_flutter/widgets/recaptcha.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/screens/login.dart";
+import "package:unofficial_filman_client/widgets/recaptcha.dart";
+import "package:flutter/gestures.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
+import "package:url_launcher/url_launcher.dart";
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -29,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     recaptchaV2Controller.show();
   }
 
-  void _register(String recaptchatoken) async {
+  void _register(final String recaptchatoken) async {
     final registerResponse =
         await Provider.of<FilmanNotifier>(context, listen: false)
             .createAccountOnFilmn(
@@ -46,14 +46,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (registerResponse.success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Zarejestrowano pomyślnie!'),
+          content: Text("Zarejestrowano pomyślnie!"),
           dismissDirection: DismissDirection.horizontal,
           behavior: SnackBarBehavior.floating,
           showCloseIcon: true,
         ));
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (final context) => const LoginScreen()),
         );
       }
     } else {
@@ -91,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
@@ -109,7 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         children: [
                           const Align(
                             alignment: Alignment.centerLeft,
-                            child: Text('Tworzysz nowe konto!',
+                            child: Text("Tworzysz nowe konto!",
                                 style: TextStyle(
                                   fontSize: 32,
                                 )),
@@ -117,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 23.0),
                           TextField(
                             decoration: const InputDecoration(
-                              labelText: 'Nazwa użytkownika',
+                              labelText: "Nazwa użytkownika",
                               border: OutlineInputBorder(),
                             ),
                             controller: loginController,
@@ -126,7 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 16.0),
                           TextField(
                             decoration: const InputDecoration(
-                              labelText: 'Email',
+                              labelText: "Email",
                               border: OutlineInputBorder(),
                             ),
                             controller: emailController,
@@ -136,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           TextField(
                             obscureText: true,
                             decoration: const InputDecoration(
-                              labelText: 'Hasło',
+                              labelText: "Hasło",
                               border: OutlineInputBorder(),
                             ),
                             controller: passwordController,
@@ -146,11 +146,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           TextField(
                             obscureText: true,
                             decoration: const InputDecoration(
-                              labelText: 'Powtórz hasło',
+                              labelText: "Powtórz hasło",
                               border: OutlineInputBorder(),
                             ),
                             controller: repasswordController,
-                            onSubmitted: (_) {
+                            onSubmitted: (final _) {
                               _submitForm();
                             },
                           ),
@@ -162,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     style:
                                         Theme.of(context).textTheme.labelMedium,
                                     text:
-                                        'Tworzac konto zgadzasz się z treścią '),
+                                        "Tworzac konto zgadzasz się z treścią "),
                                 TextSpan(
                                     style: Theme.of(context)
                                         .textTheme
@@ -170,11 +170,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ?.copyWith(
                                             decoration:
                                                 TextDecoration.underline),
-                                    text: 'regulaminu serwisu Filman.cc',
+                                    text: "regulaminu serwisu Filman.cc",
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () async {
                                         final Uri uri = Uri.parse(
-                                            'https://filman.cc/regulamin');
+                                            "https://filman.cc/regulamin");
                                         if (!await launchUrl(uri,
                                             mode: LaunchMode
                                                 .externalApplication)) {
@@ -182,7 +182,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(const SnackBar(
                                               content: Text(
-                                                  'Nie można otworzyć linku w przeglądarce'),
+                                                  "Nie można otworzyć linku w przeglądarce"),
                                               dismissDirection:
                                                   DismissDirection.horizontal,
                                               behavior:
@@ -202,18 +202,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               onPressed: () {
                                 _submitForm();
                               },
-                              child: const Text('Zarejestruj się'),
+                              child: const Text("Zarejestruj się"),
                             ),
                           ),
                         ],
                       ),
                 RecaptchaV2(
-                  siteUrl: 'https://filman.cc/rejestracja',
+                  siteUrl: "https://filman.cc/rejestracja",
                   controller: recaptchaV2Controller,
-                  onToken: (token) {
+                  onToken: (final token) {
                     _register(token);
                   },
-                  onCanceled: (value) {
+                  onCanceled: (final value) {
                     setState(() {
                       isLoading = false;
                     });

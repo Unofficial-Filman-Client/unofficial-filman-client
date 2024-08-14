@@ -1,19 +1,27 @@
-import 'dart:async';
+import "dart:async";
+import "dart:math";
+import "dart:io" show Directory;
 
-import 'package:filman_flutter/notifiers/filman.dart';
-import 'package:filman_flutter/notifiers/settings.dart';
-import 'package:filman_flutter/notifiers/watched.dart';
-import 'package:filman_flutter/types/film_details.dart';
-import 'package:filman_flutter/types/season.dart';
-import 'package:filman_flutter/types/watched.dart';
-import 'package:filman_flutter/utils/titlte.dart';
-import 'package:flutter/material.dart';
-import 'dart:math' as math;
-import 'package:flutter/services.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:provider/provider.dart';
-import 'package:system_screen_brightness/system_screen_brightness.dart';
+import "package:flutter_cast_framework/cast.dart";
+import "package:flutter_cast_framework/widgets.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/notifiers/watched.dart";
+import "package:unofficial_filman_client/types/film_details.dart";
+import "package:unofficial_filman_client/types/season.dart";
+import "package:unofficial_filman_client/types/watched.dart";
+import "package:unofficial_filman_client/utils/select_dialog.dart";
+import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:flutter/material.dart";
+import "package:flutter/services.dart";
+import "package:media_kit/media_kit.dart" hide PlayerState;
+import "package:media_kit_video/media_kit_video.dart";
+import "package:provider/provider.dart";
+import "package:screen_brightness/screen_brightness.dart";
+import "package:unofficial_filman_client/types/links.dart";
+import "package:unofficial_filman_client/types/download.dart";
+import "package:path_provider/path_provider.dart";
+import "package:collection/collection.dart";
 
 class FilmanPlayer extends StatefulWidget {
   final String targetUrl;
@@ -21,21 +29,42 @@ class FilmanPlayer extends StatefulWidget {
   final FilmDetails? parentDetails;
   final int startFrom;
   final int savedDuration;
+  final FlutterCastFramework? castFramework;
+  final DownloadedSingle? downloaded;
+  final DownloadedSerial? parentDownloaded;
 
   const FilmanPlayer(
       {super.key,
       required this.targetUrl,
       this.parentDetails,
       this.startFrom = 0,
-      this.savedDuration = 0})
-      : filmDetails = null;
+      this.savedDuration = 0,
+      this.castFramework})
+      : filmDetails = null,
+        downloaded = null,
+        parentDownloaded = null;
+
   const FilmanPlayer.fromDetails(
       {super.key,
       required this.filmDetails,
       this.parentDetails,
       this.startFrom = 0,
-      this.savedDuration = 0})
-      : targetUrl = '';
+      this.savedDuration = 0,
+      this.castFramework})
+      : targetUrl = "",
+        downloaded = null,
+        parentDownloaded = null;
+
+  FilmanPlayer.fromDownload(
+      {super.key,
+      required this.downloaded,
+      this.parentDownloaded,
+      this.startFrom = 0,
+      this.savedDuration = 0,
+      this.castFramework})
+      : targetUrl = "",
+        filmDetails = downloaded?.film,
+        parentDetails = parentDownloaded?.serial;
 
   @override
   State<FilmanPlayer> createState() => _FilmanPlayerState();
@@ -46,7 +75,6 @@ enum SeekDirection { forward, backward }
 class _FilmanPlayerState extends State<FilmanPlayer> {
   late final Player _player;
   late final VideoController _controller;
-  late final SystemScreenBrightness _brightnessPlugin;
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<bool> _playingSubscription;
@@ -55,16 +83,23 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   bool _isOverlayVisible = true;
   bool _isBuffering = true;
   bool _isPlaying = false;
-  bool _hasBrightnessPermission = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
-  FilmDetails? _filmDetails;
+
+  late FilmDetails _filmDetails;
+
   FilmDetails? _parentDetails;
   Season? _currentSeason;
   SeekDirection? _seekDirection;
   bool _isSeeking = false;
-
   FilmDetails? _nextEpisode;
+  DownloadedSingle? _nextDwonloaded;
+
+  late FlutterCastFramework _castFramework;
+  DirectLink? _direct;
+  CastState? _castState;
+  // SessionState? _castSessionState;
+  // PlayerState? _castPlayerState;
 
   @override
   void initState() {
@@ -74,21 +109,68 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    _player = Player();
-    _controller = VideoController(_player);
-    _brightnessPlugin = SystemScreenBrightness();
-    _position = Duration(seconds: widget.startFrom);
-    _duration = Duration(seconds: widget.savedDuration);
-
-    _checkBrightnessPermission();
-    _initializeSubscriptions();
-    _initializePlayer();
+    _initMediaKit();
+    _initSubscriptions();
+    _initPlayer();
+    _initCast();
     super.initState();
   }
 
-  void _initializeSubscriptions() {
+  void _initCast() {
+    if (widget.castFramework != null) {
+      _castFramework = widget.castFramework!;
+    } else {
+      _castFramework = FlutterCastFramework.create([
+        "urn:x-cast:majusss-unofficial-filman-client",
+      ]);
+    }
+    _castFramework.castContext.state.addListener(
+      () async {
+        setState(() {
+          _castState = _castFramework.castContext.state.value;
+        });
+        switch (_castFramework.castContext.state.value) {
+          case CastState.connected:
+            _castVideo();
+            break;
+          case CastState.idle:
+          default:
+            break;
+        }
+      },
+    );
+
+    final sessionManager = _castFramework.castContext.sessionManager;
+    // sessionManager.state.addListener(
+    //   () {
+    //     setState(() {
+    //       _castSessionState = sessionManager.state.value;
+    //     });
+    //   },
+    // );
+    // sessionManager.remoteMediaClient.playerState.addListener(() {
+    //   setState(() {
+    //     _castPlayerState = sessionManager.remoteMediaClient.playerState.value;
+    //   });
+    // });
+    sessionManager.remoteMediaClient.onProgressUpdated =
+        (final progressMs, final durationMs) {
+      setState(() {
+        _position = Duration(milliseconds: progressMs);
+      });
+    };
+  }
+
+  void _initMediaKit() {
+    _player = Player();
+    _controller = VideoController(_player);
+    _position = Duration(seconds: widget.startFrom);
+    _duration = Duration(seconds: widget.savedDuration);
+  }
+
+  void _initSubscriptions() {
     _positionSubscription =
-        _controller.player.stream.position.listen((position) {
+        _controller.player.stream.position.listen((final position) {
       if (widget.startFrom != 0) {
         if (position.inSeconds != 0) {
           setState(() => _position = position);
@@ -99,7 +181,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     });
 
     _durationSubscription =
-        _controller.player.stream.duration.listen((duration) {
+        _controller.player.stream.duration.listen((final duration) {
       if (duration.inSeconds > widget.savedDuration) {
         setState(() => _duration = duration);
       }
@@ -108,71 +190,79 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         _controller.player.seek(Duration(seconds: widget.startFrom));
       }
       _saveWatched();
-      Timer.periodic(const Duration(seconds: 5), (timer) {
+      Timer.periodic(const Duration(seconds: 5), (final timer) {
         if (mounted) {
           _saveWatched();
         }
       });
     });
 
-    _playingSubscription = _controller.player.stream.playing.listen((playing) {
+    _playingSubscription =
+        _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
       });
     });
 
     _bufferingSubscription =
-        _controller.player.stream.buffering.listen((buffering) {
+        _controller.player.stream.buffering.listen((final buffering) {
       setState(() => _isBuffering = buffering);
     });
   }
 
-  Future<void> _initializePlayer() async {
+  Future<void> _initPlayer() async {
     if (widget.filmDetails == null) {
       final details = await Provider.of<FilmanNotifier>(context, listen: false)
           .getFilmDetails(widget.targetUrl);
       setState(() => _filmDetails = details);
     } else {
-      setState(() => _filmDetails = widget.filmDetails);
+      setState(() => _filmDetails = widget.filmDetails!);
     }
 
-    if (_filmDetails?.isEpisode == true) {
+    if (_filmDetails.isEpisode == true) {
       if (widget.parentDetails != null) {
         _parentDetails = widget.parentDetails;
-      } else if (_filmDetails?.parentUrl != null && mounted) {
+      } else if (_filmDetails.parentUrl != null && mounted) {
         final parent = await Provider.of<FilmanNotifier>(context, listen: false)
-            .getFilmDetails(_filmDetails?.parentUrl ?? '');
+            .getFilmDetails(_filmDetails.parentUrl ?? "");
         setState(() => _parentDetails = parent);
       }
 
       setState(() {
-        _currentSeason = _parentDetails!.seasons!.firstWhere((element) =>
-            element.episodes.any((element) =>
-                element.episodeName == _filmDetails?.seasonEpisodeTag));
+        _currentSeason = _parentDetails!.seasons!.firstWhere((final element) =>
+            element.episodes.any((final element) =>
+                element.episodeName == _filmDetails.seasonEpisodeTag));
       });
     }
 
-    if (_filmDetails?.isEpisode == true) {
+    if (_filmDetails.isEpisode == true) {
       _loadNextEpisode();
     }
 
-    final directs = await _filmDetails?.getDirect() ?? [];
-    if (directs.length > 1) {
-      _showLanguageSelectionDialog(directs);
-    } else if (directs.isNotEmpty) {
-      _player.open(Media(directs.first.link));
+    if (widget.downloaded == null) {
+      if (_filmDetails.links != null && mounted) {
+        final DirectLink? direct =
+            await getUserSelectedVersion(_filmDetails.links!, context);
+        if (direct == null) return _showNoLinksSnackbar();
+        setState(() {
+          _direct = direct;
+        });
+        _player.open(Media(direct.link));
+      } else {
+        return _showNoLinksSnackbar();
+      }
     } else {
-      _showNoLinksSnackbar();
+      _player.open(Media(Directory(
+              "${(await getApplicationDocumentsDirectory()).path}/${widget.downloaded?.filename}")
+          .path));
     }
   }
 
   void _saveWatched() {
     if (_duration.inSeconds == 0) return;
-    if (_filmDetails != null &&
-        _parentDetails != null &&
-        _filmDetails?.isEpisode == true) {
-      WatchedSingle lastWatched = WatchedSingle.fromFilmDetails(
-          filmDetailsFrom: _filmDetails!,
+    if (_parentDetails != null && _filmDetails.isEpisode == true) {
+      final WatchedSingle lastWatched = WatchedSingle.fromFilmDetails(
+          filmDetailsFrom: _filmDetails,
           sec: _position.inSeconds,
           totalSec: _duration.inSeconds,
           parentSeason: _currentSeason);
@@ -182,85 +272,44 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             lastWatchedFromDetails: lastWatched,
           ),
           lastWatched);
-    } else if (_filmDetails != null && _filmDetails?.isEpisode == false) {
+    } else if (_filmDetails.isEpisode == false) {
       Provider.of<WatchedNotifier>(context, listen: false).watch(
           WatchedSingle.fromFilmDetails(
-              filmDetailsFrom: _filmDetails!,
+              filmDetailsFrom: _filmDetails,
               sec: _position.inSeconds,
               totalSec: _duration.inSeconds));
     }
   }
 
   void _loadNextEpisode() async {
-    if (_filmDetails?.nextEpisodeUrl != null) {
-      FilmDetails next =
+    final nextDownloaded = widget.parentDownloaded?.episodes.firstWhereOrNull(
+        (final e) => e.film.url == _filmDetails.nextEpisodeUrl);
+    if (nextDownloaded != null) {
+      setState(() {
+        _nextDwonloaded = nextDownloaded;
+      });
+      return;
+    }
+    if (_filmDetails.nextEpisodeUrl != null) {
+      final FilmDetails next =
           await Provider.of<FilmanNotifier>(context, listen: false)
-              .getFilmDetails(_filmDetails?.nextEpisodeUrl ?? '');
+              .getFilmDetails(_filmDetails.nextEpisodeUrl ?? "");
       setState(() {
         _nextEpisode = next;
       });
     }
   }
 
-  void _showLanguageSelectionDialog(List<DirectLink> directs) {
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Wybierz treść'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: directs
-                .map((link) => ListTile(
-                      title: Row(
-                        children: [
-                          Image.network(link.hostingImgUrl,
-                              width: 32, height: 32),
-                          const SizedBox(
-                            width: 4,
-                          ),
-                          Expanded(
-                              child: Text(
-                                  '${link.qualityVersion} ${link.language}')),
-                        ],
-                      ),
-                      onTap: () {
-                        _player.open(Media(link.link));
-                        Navigator.of(context).pop();
-                      },
-                    ))
-                .toList(),
-          ),
-        ),
-      );
-    }
-  }
-
   void _showNoLinksSnackbar() {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Brak dostępnych linków'),
+        content: Text("Brak dostępnych linków"),
         dismissDirection: DismissDirection.horizontal,
         behavior: SnackBarBehavior.floating,
         showCloseIcon: true,
       ));
       Navigator.of(context).pop();
     }
-  }
-
-  Future<void> _checkBrightnessPermission() async {
-    try {
-      final hasPermission = await _brightnessPlugin.checkSystemWritePermission;
-      setState(() => _hasBrightnessPermission = hasPermission);
-    } catch (e) {
-      setState(() => _hasBrightnessPermission = false);
-    }
-  }
-
-  void _requestPermissions() async {
-    await _brightnessPlugin.openAndroidPermissionsMenu();
-    setState(() {});
   }
 
   @override
@@ -277,8 +326,34 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     super.dispose();
   }
 
+  void _castVideo() async {
+    _player.pause();
+    _castFramework.castContext.sessionManager.remoteMediaClient.load(
+        MediaLoadRequestData(
+            currentTime: _position.inMilliseconds,
+            shouldAutoplay: true,
+            mediaInfo: MediaInfo(
+                streamDuration: _duration.inMilliseconds,
+                streamType: StreamType.buffered,
+                contentType: "videos/mp4",
+                contentId: _direct!.link,
+                mediaMetadata: MediaMetadata(
+                    mediaType: MediaType.movie,
+                    strings: _filmDetails.isEpisode
+                        ? {
+                            MediaMetadataKey.title.name:
+                                _filmDetails.seasonEpisodeTag,
+                            MediaMetadataKey.subtitle.name: _filmDetails.title,
+                          }
+                        : {MediaMetadataKey.title.name: _filmDetails.title},
+                    webImages: [
+                      WebImage(url: _filmDetails.imageUrl),
+                      WebImage(url: _filmDetails.imageUrl)
+                    ]))));
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
@@ -291,26 +366,47 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  Widget _buildOverlay(BuildContext context) {
+  Widget _buildOverlay(final BuildContext context) {
     return Stack(
       children: [
         _buildSeekingIcons(),
         _buildLoadingIcon(),
-        AnimatedOpacity(
-          opacity: _isOverlayVisible ? 1.0 : 0.0,
+        _buildDoubleTapControls(),
+        AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: Stack(
-            children: [
-              _buildDoubleTapControl(),
-              _buildBrightnessControl(context),
-              _buildTopBar(),
-              _buildCenterPlayPauseButton(),
-              _buildBottomBar(),
-            ],
-          ),
+          child: _isOverlayVisible
+              ? Stack(
+                  children: [
+                    _buildTopBar(),
+                    _buildCenterPlayPauseButton(),
+                    _buildIconsBar(context),
+                    _buildBrightnessControl(context),
+                    _buildBottomBar(),
+                  ],
+                )
+              : const SizedBox(),
         )
       ],
     );
+  }
+
+  Widget _buildIconsBar(final BuildContext context) {
+    return Positioned(
+        height: MediaQuery.of(context).size.height,
+        right: 10,
+        top: -10,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _castState != CastState.unavailable
+                ? CastButton(
+                    castFramework: _castFramework,
+                    color: Colors.white,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                  )
+                : const SizedBox()
+          ],
+        ));
   }
 
   Widget _buildLoadingIcon() {
@@ -334,20 +430,17 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         child: AnimatedOpacity(
             opacity: _isSeeking ? 1 : 0,
             duration: const Duration(milliseconds: 300),
-            child: IconButton(
-              icon: Icon(
-                _seekDirection == SeekDirection.forward
-                    ? Icons.fast_forward
-                    : Icons.fast_rewind,
-                size: 52,
-              ),
-              onPressed: () {},
+            child: Icon(
+              _seekDirection == SeekDirection.forward
+                  ? Icons.fast_forward
+                  : Icons.fast_rewind,
+              size: 52,
             )),
       ),
     );
   }
 
-  Widget _buildDoubleTapControl() {
+  Widget _buildDoubleTapControls() {
     return Row(
       children: [
         SizedBox(
@@ -369,8 +462,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   });
                 });
               });
-              _player.seek(
-                  Duration(seconds: math.max(0, _position.inSeconds - 10)));
+              _player.seek(Duration(seconds: max(0, _position.inSeconds - 10)));
             },
           ),
         ),
@@ -394,8 +486,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 });
               });
               _player.seek(Duration(
-                  seconds:
-                      math.min(_position.inSeconds + 10, _duration.inSeconds)));
+                  seconds: min(_position.inSeconds + 10, _duration.inSeconds)));
             },
           ),
         ),
@@ -403,30 +494,14 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  Widget _buildBrightnessControl(BuildContext context) {
+  Widget _buildBrightnessControl(final BuildContext context) {
     return Positioned(
       left: 10,
       top: -10,
       height: MediaQuery.of(context).size.height,
       child: FutureBuilder<double>(
-        future: _brightnessPlugin.currentBrightness,
-        builder: (context, snapshot) {
-          if (!_hasBrightnessPermission) {
-            return Center(
-              child: IconButton(
-                onPressed: () {
-                  if (!_isOverlayVisible) {
-                    _isOverlayVisible = true;
-                    return;
-                  }
-                  _checkBrightnessPermission();
-                  _requestPermissions();
-                },
-                icon: const Icon(Icons.no_cell),
-              ),
-            );
-          }
-
+        future: ScreenBrightness().current,
+        builder: (final context, final snapshot) {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -436,10 +511,9 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   value: snapshot.data ?? 0,
                   min: 0,
                   max: 1,
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     setState(() {
-                      _brightnessPlugin
-                          .setSystemScreenBrightness((value * 255).toInt());
+                      ScreenBrightness().setScreenBrightness(value);
                     });
                   },
                 ),
@@ -452,7 +526,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  IconData _getBrightnessIcon(double brightness) {
+  IconData _getBrightnessIcon(final double brightness) {
     if (brightness >= 0.875) return Icons.brightness_7;
     if (brightness >= 0.75) return Icons.brightness_6;
     if (brightness >= 0.625) return Icons.brightness_5;
@@ -481,10 +555,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               child: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
-                  if (!_isOverlayVisible) {
-                    _isOverlayVisible = true;
-                    return;
-                  }
                   _saveWatched();
                   Navigator.of(context).pop();
                 },
@@ -492,13 +562,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             ),
             Center(
               child: Consumer<SettingsNotifier>(
-                builder: (context, settings, child) {
+                builder: (final context, final settings, final child) {
                   final displayTitle = getDisplayTitle(
-                      widget.filmDetails?.title ?? '', settings);
+                      widget.filmDetails?.title ?? "", settings);
 
                   return Text(
                     widget.filmDetails?.isEpisode == true
-                        ? '$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}'
+                        ? "$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}"
                         : displayTitle,
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
@@ -511,27 +581,39 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 alignment: Alignment.centerRight,
                 child: AnimatedContainer(
                   transform: Matrix4.translationValues(
-                      _nextEpisode != null ? 0.0 : 100.0, 0.0, 0.0),
+                      (_nextEpisode != null || _nextDwonloaded != null)
+                          ? 0.0
+                          : 100.0,
+                      0.0,
+                      0.0),
                   duration: const Duration(milliseconds: 300),
                   child: AnimatedOpacity(
-                    opacity: _nextEpisode != null ? 1.0 : 0.0,
+                    opacity: (_nextEpisode != null || _nextDwonloaded != null)
+                        ? 1.0
+                        : 0.0,
                     duration: const Duration(milliseconds: 300),
                     child: OutlinedButton.icon(
-                      icon: Text(
-                          _nextEpisode?.seasonEpisodeTag ?? 'Następny odcinek'),
+                      icon: Text(_nextEpisode?.seasonEpisodeTag ??
+                          _nextDwonloaded?.film.seasonEpisodeTag ??
+                          "Następny odcinek"),
                       label: const Icon(Icons.arrow_forward),
                       onPressed: () {
-                        if (!_isOverlayVisible) {
-                          _isOverlayVisible = true;
-                          return;
-                        }
-                        if (_nextEpisode != null) {
-                          Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      FilmanPlayer.fromDetails(
-                                          filmDetails: _nextEpisode)));
-                        }
+                        Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (final context) {
+                          if (_nextEpisode != null) {
+                            return FilmanPlayer.fromDetails(
+                                filmDetails: _nextEpisode,
+                                castFramework: _castFramework);
+                          }
+                          if (_nextDwonloaded != null) {
+                            return FilmanPlayer.fromDownload(
+                              downloaded: _nextDwonloaded,
+                              parentDownloaded: widget.parentDownloaded,
+                              castFramework: _castFramework,
+                            );
+                          }
+                          return const Center(child: Text("Wystąpił błąd"));
+                        }));
                       },
                     ),
                   ),
@@ -550,10 +632,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
               iconSize: 72,
               onPressed: () {
-                if (!_isOverlayVisible) {
-                  _isOverlayVisible = true;
-                  return;
-                }
                 _saveWatched();
                 _player.playOrPause();
               },
@@ -578,11 +656,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             Expanded(
               child: Slider(
                 value: _position.inSeconds.toDouble(),
-                onChanged: (value) {
-                  if (!_isOverlayVisible) {
-                    _isOverlayVisible = true;
-                    return;
-                  }
+                onChanged: (final value) {
                   _controller.player.seek(Duration(seconds: value.toInt()));
                   _saveWatched();
                 },

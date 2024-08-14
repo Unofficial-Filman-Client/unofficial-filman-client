@@ -1,10 +1,10 @@
-import 'package:filman_flutter/types/film.dart';
+import "package:unofficial_filman_client/types/film.dart";
 
-class HomePage {
+class HomePageResponse {
   final Map<String, List<Film>> filmMap = {};
   final List<String> categories = [];
 
-  void addFilm(String key, Film film) {
+  void addFilm(final String key, final Film film) {
     if (!categories.contains(key)) {
       categories.add(key);
     }
@@ -15,7 +15,7 @@ class HomePage {
     }
   }
 
-  List<Film>? getFilms(String key) {
+  List<Film>? getFilms(final String key) {
     return filmMap[key];
   }
 

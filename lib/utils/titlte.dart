@@ -1,6 +1,6 @@
-import 'package:filman_flutter/notifiers/settings.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 
 class DisplayTitle extends StatelessWidget {
   final String title;
@@ -17,9 +17,9 @@ class DisplayTitle extends StatelessWidget {
       this.textAlign});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Consumer<SettingsNotifier>(
-      builder: (context, settings, child) {
+      builder: (final context, final settings, final child) {
         return Text(
           getDisplayTitle(title, settings),
           style: style,
@@ -32,12 +32,12 @@ class DisplayTitle extends StatelessWidget {
   }
 }
 
-String getDisplayTitle(String title, SettingsNotifier settings) {
+String getDisplayTitle(final String title, final SettingsNotifier settings) {
   return title.contains("/")
-      ? settings.titleType == TitleDisplayType.first
-          ? title.split('/').first.trim()
-          : settings.titleType == TitleDisplayType.second
-              ? title.split('/')[1].trim()
+      ? settings.titleDisplayType == TitleDisplayType.first
+          ? title.split("/").first.trim()
+          : settings.titleDisplayType == TitleDisplayType.second
+              ? title.split("/")[1].trim()
               : title.trim()
       : title.trim();
 }
