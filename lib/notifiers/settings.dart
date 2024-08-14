@@ -1,7 +1,4 @@
-import "dart:ui";
-
 import "package:flutter/material.dart";
-import "package:flutter/scheduler.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
 enum TitleDisplayType { first, second, all }

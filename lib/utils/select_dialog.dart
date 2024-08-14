@@ -50,7 +50,7 @@ Future<dynamic> _showSelectionDialog(
   );
 }
 
-Future<DirectLink?> getUserSelectedVersion(
+Future<(Language?, Quality?)> getUserSelectedPreferences(
     final List<Host> links, final BuildContext context) async {
   final List<Language> languages = await _getAvailableLanguages(links);
   late Language lang;
@@ -63,7 +63,7 @@ Future<DirectLink?> getUserSelectedVersion(
   } else if (languages.isNotEmpty) {
     lang = languages.first;
   } else {
-    return null;
+    return (null, null);
   }
   final List<Quality> qualities =
       await _getAvaliableQualitiesForLanguage(lang, links);
@@ -73,6 +73,15 @@ Future<DirectLink?> getUserSelectedVersion(
   } else if (qualities.isNotEmpty) {
     quality = qualities.first;
   } else {
+    return (lang, null);
+  }
+  return (lang, quality);
+}
+
+Future<DirectLink?> getUserSelectedVersion(
+    final List<Host> links, final BuildContext context) async {
+  final (lang, quality) = await getUserSelectedPreferences(links, context);
+  if (lang == null || quality == null) {
     return null;
   }
   final List<DirectLink> directs = await getDirects(links, lang, quality);

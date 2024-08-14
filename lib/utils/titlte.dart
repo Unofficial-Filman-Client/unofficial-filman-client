@@ -34,9 +34,9 @@ class DisplayTitle extends StatelessWidget {
 
 String getDisplayTitle(final String title, final SettingsNotifier settings) {
   return title.contains("/")
-      ? settings.titleType == TitleDisplayType.first
+      ? settings.titleDisplayType == TitleDisplayType.first
           ? title.split("/").first.trim()
-          : settings.titleType == TitleDisplayType.second
+          : settings.titleDisplayType == TitleDisplayType.second
               ? title.split("/")[1].trim()
               : title.trim()
       : title.trim();

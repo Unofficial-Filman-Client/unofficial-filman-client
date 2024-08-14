@@ -4,3 +4,7 @@ linter:
     - prefer_double_quotes
     - prefer_final_locals
     - prefer_final_parameters
+    - avoid_unused_constructor_parameters
+# dart_code_metrics:
+# extends:
+# - recommended

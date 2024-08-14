@@ -1,5 +1,6 @@
 import "dart:async";
 import "dart:math";
+import "dart:io" show Directory;
 
 import "package:flutter_cast_framework/cast.dart";
 import "package:flutter_cast_framework/widgets.dart";
@@ -18,6 +19,9 @@ import "package:media_kit_video/media_kit_video.dart";
 import "package:provider/provider.dart";
 import "package:screen_brightness/screen_brightness.dart";
 import "package:unofficial_filman_client/types/links.dart";
+import "package:unofficial_filman_client/types/download.dart";
+import "package:path_provider/path_provider.dart";
+import "package:collection/collection.dart";
 
 class FilmanPlayer extends StatefulWidget {
   final String targetUrl;
@@ -26,6 +30,8 @@ class FilmanPlayer extends StatefulWidget {
   final int startFrom;
   final int savedDuration;
   final FlutterCastFramework? castFramework;
+  final DownloadedSingle? downloaded;
+  final DownloadedSerial? parentDownloaded;
 
   const FilmanPlayer(
       {super.key,
@@ -34,7 +40,10 @@ class FilmanPlayer extends StatefulWidget {
       this.startFrom = 0,
       this.savedDuration = 0,
       this.castFramework})
-      : filmDetails = null;
+      : filmDetails = null,
+        downloaded = null,
+        parentDownloaded = null;
+
   const FilmanPlayer.fromDetails(
       {super.key,
       required this.filmDetails,
@@ -42,7 +51,20 @@ class FilmanPlayer extends StatefulWidget {
       this.startFrom = 0,
       this.savedDuration = 0,
       this.castFramework})
-      : targetUrl = "";
+      : targetUrl = "",
+        downloaded = null,
+        parentDownloaded = null;
+
+  FilmanPlayer.fromDownload(
+      {super.key,
+      required this.downloaded,
+      this.parentDownloaded,
+      this.startFrom = 0,
+      this.savedDuration = 0,
+      this.castFramework})
+      : targetUrl = "",
+        filmDetails = downloaded?.film,
+        parentDetails = parentDownloaded?.serial;
 
   @override
   State<FilmanPlayer> createState() => _FilmanPlayerState();
@@ -71,12 +93,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   SeekDirection? _seekDirection;
   bool _isSeeking = false;
   FilmDetails? _nextEpisode;
+  DownloadedSingle? _nextDwonloaded;
 
   late FlutterCastFramework _castFramework;
   DirectLink? _direct;
   CastState? _castState;
-  SessionState? _castSessionState;
-  PlayerState? _castPlayerState;
+  // SessionState? _castSessionState;
+  // PlayerState? _castPlayerState;
 
   @override
   void initState() {
@@ -118,18 +141,18 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
 
     final sessionManager = _castFramework.castContext.sessionManager;
-    sessionManager.state.addListener(
-      () {
-        setState(() {
-          _castSessionState = sessionManager.state.value;
-        });
-      },
-    );
-    sessionManager.remoteMediaClient.playerState.addListener(() {
-      setState(() {
-        _castPlayerState = sessionManager.remoteMediaClient.playerState.value;
-      });
-    });
+    // sessionManager.state.addListener(
+    //   () {
+    //     setState(() {
+    //       _castSessionState = sessionManager.state.value;
+    //     });
+    //   },
+    // );
+    // sessionManager.remoteMediaClient.playerState.addListener(() {
+    //   setState(() {
+    //     _castPlayerState = sessionManager.remoteMediaClient.playerState.value;
+    //   });
+    // });
     sessionManager.remoteMediaClient.onProgressUpdated =
         (final progressMs, final durationMs) {
       setState(() {
@@ -216,16 +239,22 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       _loadNextEpisode();
     }
 
-    if (_filmDetails.links != null && mounted) {
-      final DirectLink? direct =
-          await getUserSelectedVersion(_filmDetails.links!, context);
-      if (direct == null) return _showNoLinksSnackbar();
-      setState(() {
-        _direct = direct;
-      });
-      _player.open(Media(direct.link));
+    if (widget.downloaded == null) {
+      if (_filmDetails.links != null && mounted) {
+        final DirectLink? direct =
+            await getUserSelectedVersion(_filmDetails.links!, context);
+        if (direct == null) return _showNoLinksSnackbar();
+        setState(() {
+          _direct = direct;
+        });
+        _player.open(Media(direct.link));
+      } else {
+        return _showNoLinksSnackbar();
+      }
     } else {
-      return _showNoLinksSnackbar();
+      _player.open(Media(Directory(
+              "${(await getApplicationDocumentsDirectory()).path}/${widget.downloaded?.filename}")
+          .path));
     }
   }
 
@@ -253,6 +282,14 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   void _loadNextEpisode() async {
+    final nextDownloaded = widget.parentDownloaded?.episodes.firstWhereOrNull(
+        (final e) => e.film.url == _filmDetails.nextEpisodeUrl);
+    if (nextDownloaded != null) {
+      setState(() {
+        _nextDwonloaded = nextDownloaded;
+      });
+      return;
+    }
     if (_filmDetails.nextEpisodeUrl != null) {
       final FilmDetails next =
           await Provider.of<FilmanNotifier>(context, listen: false)
@@ -358,8 +395,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         height: MediaQuery.of(context).size.height,
         right: 10,
         top: -10,
-        child: Expanded(
-            child: Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _castState != CastState.unavailable
@@ -370,7 +406,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   )
                 : const SizedBox()
           ],
-        )));
+        ));
   }
 
   Widget _buildLoadingIcon() {
@@ -545,23 +581,39 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 alignment: Alignment.centerRight,
                 child: AnimatedContainer(
                   transform: Matrix4.translationValues(
-                      _nextEpisode != null ? 0.0 : 100.0, 0.0, 0.0),
+                      (_nextEpisode != null || _nextDwonloaded != null)
+                          ? 0.0
+                          : 100.0,
+                      0.0,
+                      0.0),
                   duration: const Duration(milliseconds: 300),
                   child: AnimatedOpacity(
-                    opacity: _nextEpisode != null ? 1.0 : 0.0,
+                    opacity: (_nextEpisode != null || _nextDwonloaded != null)
+                        ? 1.0
+                        : 0.0,
                     duration: const Duration(milliseconds: 300),
                     child: OutlinedButton.icon(
-                      icon: Text(
-                          _nextEpisode?.seasonEpisodeTag ?? "Następny odcinek"),
+                      icon: Text(_nextEpisode?.seasonEpisodeTag ??
+                          _nextDwonloaded?.film.seasonEpisodeTag ??
+                          "Następny odcinek"),
                       label: const Icon(Icons.arrow_forward),
                       onPressed: () {
-                        if (_nextEpisode != null) {
-                          Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                  builder: (final context) =>
-                                      FilmanPlayer.fromDetails(
-                                          filmDetails: _nextEpisode)));
-                        }
+                        Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (final context) {
+                          if (_nextEpisode != null) {
+                            return FilmanPlayer.fromDetails(
+                                filmDetails: _nextEpisode,
+                                castFramework: _castFramework);
+                          }
+                          if (_nextDwonloaded != null) {
+                            return FilmanPlayer.fromDownload(
+                              downloaded: _nextDwonloaded,
+                              parentDownloaded: widget.parentDownloaded,
+                              castFramework: _castFramework,
+                            );
+                          }
+                          return const Center(child: Text("Wystąpił błąd"));
+                        }));
                       },
                     ),
                   ),

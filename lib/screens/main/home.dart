@@ -5,7 +5,6 @@ import "package:unofficial_filman_client/utils/updater.dart";
 import "package:flutter/material.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
-import "package:unofficial_filman_client/utils/titlte.dart";
 import "package:unofficial_filman_client/widgets/search.dart";
 import "package:provider/provider.dart";
 
@@ -58,44 +57,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           );
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(4.0)),
-                child: Image.network(
-                  film.imageUrl,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8.0),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    DisplayTitle(
-                      title: film.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
-                      ),
-                      maxLines:
-                          MediaQuery.of(context).size.width > 1024 ? 3 : 2,
-                      overflow: TextOverflow.fade,
-                      textAlign: TextAlign.center,
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: ClipRRect(
+          borderRadius: const BorderRadius.all(Radius.circular(12.0)),
+          child: Image.network(
+            film.imageUrl,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -105,8 +72,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget build(final BuildContext context) {
     return FutureBuilder<HomePageResponse>(
       future: homePageLoader,
-      builder:
-          (final BuildContext context, final AsyncSnapshot<HomePageResponse> snapshot) {
+      builder: (final BuildContext context,
+          final AsyncSnapshot<HomePageResponse> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
@@ -159,12 +126,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               1,
                           crossAxisSpacing: 6,
                           mainAxisSpacing: 10,
-                          childAspectRatio: 0.8,
+                          childAspectRatio: 0.6,
                         ),
                         padding: const EdgeInsets.all(10),
                         itemCount:
                             snapshot.data?.getFilms(category)?.length ?? 0,
-                        itemBuilder: (final BuildContext context, final int index) {
+                        itemBuilder:
+                            (final BuildContext context, final int index) {
                           final film =
                               snapshot.data?.getFilms(category)?[index];
                           if (film == null) return const SizedBox();

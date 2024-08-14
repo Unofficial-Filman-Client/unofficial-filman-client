@@ -53,8 +53,8 @@ class _FilmScreenState extends State<FilmScreen> {
   }
 
   Widget _buildProgressBar(final WatchedNotifier watchedNotifier) {
-    final watched = watchedNotifier.films
-        .firstWhereOrNull((final element) => element.filmDetails.url == widget.url);
+    final watched = watchedNotifier.films.firstWhereOrNull(
+        (final element) => element.filmDetails.url == widget.url);
     if (watched == null) return const SizedBox();
     return Transform(
       transform: Matrix4.translationValues(-16, -12, 0),
@@ -268,13 +268,14 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildTitleAndImage(final BuildContext context, final FilmDetails film) {
+  Widget _buildTitleAndImage(
+      final BuildContext context, final FilmDetails film) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(12.0),
           child: Image.network(
             widget.image,
             width: MediaQuery.of(context).size.width * 0.3,

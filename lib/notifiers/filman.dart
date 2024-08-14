@@ -23,6 +23,7 @@ class FilmanNotifier extends ChangeNotifier {
 
   Future<void> initPrefs() async {
     dio = Dio();
+    dio.interceptors.add(CfWrapperInterceptor());
     prefs = await SharedPreferences.getInstance();
     cookies.addAll(prefs.getStringList("cookies") ?? []);
     secureStorage = const FlutterSecureStorage(
@@ -56,8 +57,12 @@ class FilmanNotifier extends ChangeNotifier {
     );
   }
 
-  Future<AuthResponse> createAccountOnFilmn(final String login, final String email,
-      final String password, final String password2, final String recaptchatoken) async {
+  Future<AuthResponse> createAccountOnFilmn(
+      final String login,
+      final String email,
+      final String password,
+      final String password2,
+      final String recaptchatoken) async {
     try {
       final response = await dio.post(
         "https://filman.cc/rejestracja",
@@ -100,7 +105,8 @@ class FilmanNotifier extends ChangeNotifier {
     }
   }
 
-  Future<AuthResponse> loginToFilman(final String login, final String password) async {
+  Future<AuthResponse> loginToFilman(
+      final String login, final String password) async {
     try {
       final response = await dio.post(
         "https://filman.cc/logowanie",
@@ -185,7 +191,9 @@ class FilmanNotifier extends ChangeNotifier {
     final document = parse(response.data);
     final searchResults = SearchResults();
 
-    document.querySelectorAll(".col-xs-6.col-sm-3.col-lg-2").forEach((final filmDOM) {
+    document
+        .querySelectorAll(".col-xs-6.col-sm-3.col-lg-2")
+        .forEach((final filmDOM) {
       final poster = filmDOM.querySelector(".poster");
       final title =
           filmDOM.querySelector(".film_title")?.text.trim() ?? "Brak danych";
@@ -293,12 +301,15 @@ class FilmanNotifier extends ChangeNotifier {
         try {
           final decoded = base64Decode(
               row.querySelector("td a")?.attributes["data-iframe"] ?? "");
-          link = jsonDecode(utf8.decode(decoded))["src"];
+          link = (jsonDecode(utf8.decode(decoded))["src"] as String)
+              .split("/")
+              .take(7)
+              .join("/");
         } catch (_) {
           link = null;
         }
 
-        if (link?.isEmpty ?? true) return;
+        if (link == null || link.isEmpty == true) return;
 
         final tableData = row.querySelectorAll("td");
         if (tableData.length < 3) return;
@@ -309,7 +320,7 @@ class FilmanNotifier extends ChangeNotifier {
             main: main,
             qualityVersion: qualityVersion,
             language: language,
-            link: link!));
+            link: link));
       });
 
       final isEpisode = document.querySelector("#item-headline h3") != null;

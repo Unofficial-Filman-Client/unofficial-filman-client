@@ -1,4 +1,3 @@
-import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/film.dart";
@@ -16,8 +15,8 @@ class WatchedPage extends StatefulWidget {
 }
 
 class _WatchedPageState extends State<WatchedPage> {
-  Widget _buildWatchedFilmCard(
-      final BuildContext context, final WatchedSingle film, final WatchedNotifier all) {
+  Widget _buildWatchedFilmCard(final BuildContext context,
+      final WatchedSingle film, final WatchedNotifier all) {
     return Card(
         child: Stack(
       children: [
@@ -39,7 +38,7 @@ class _WatchedPageState extends State<WatchedPage> {
                 title: const Text("Usuwanie z historii"),
                 content: Consumer<SettingsNotifier>(
                   builder: (final context, final settings, final child) => Text(
-                      "Czy na pewno chcesz usunąć postęp oglądania '${getDisplayTitle(film.filmDetails.title, settings)}' z historii?"),
+                      "Czy na pewno chcesz usunąć postęp oglądania \"${getDisplayTitle(film.filmDetails.title, settings)}\" z historii?"),
                 ),
                 actions: [
                   TextButton(
@@ -56,7 +55,7 @@ class _WatchedPageState extends State<WatchedPage> {
                       });
                       Navigator.of(context).pop();
                     },
-                    child: const Text(""),
+                    child: const Text("Usuń"),
                   ),
                 ],
               );
@@ -66,10 +65,10 @@ class _WatchedPageState extends State<WatchedPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                flex: 3,
+                flex: 5,
                 child: ClipRRect(
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(4.0)),
+                      const BorderRadius.vertical(top: Radius.circular(12.0)),
                   child: Image.network(
                     film.filmDetails.imageUrl,
                     fit: BoxFit.cover,
@@ -86,17 +85,6 @@ class _WatchedPageState extends State<WatchedPage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        DisplayTitle(
-                          title: film.filmDetails.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16.0,
-                          ),
-                          maxLines:
-                              MediaQuery.of(context).size.width > 1024 ? 3 : 2,
-                          overflow: TextOverflow.fade,
-                          textAlign: TextAlign.center,
-                        ),
                         film.filmDetails.isEpisode
                             ? Column(
                                 children: [
@@ -137,28 +125,18 @@ class _WatchedPageState extends State<WatchedPage> {
           right: 0,
           top: 0,
           child: film.filmDetails.parentUrl != null
-              ? FutureBuilder(
-                  future: Provider.of<FilmanNotifier>(context)
-                      .getFilmDetails(film.filmDetails.parentUrl!),
-                  builder: (final context, final snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return const Icon(Icons.error);
-                    }
-
-                    return IconButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (final context) => FilmScreen.fromDetails(
-                                    details: snapshot.data!,
-                                  )),
-                        );
-                      },
-                      icon: const Icon(Icons.info),
+              ? IconButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (final context) => FilmScreen(
+                              url: film.filmDetails.parentUrl!,
+                              image: film.filmDetails.imageUrl,
+                              title: film.filmDetails.title)),
                     );
-                  })
+                  },
+                  icon: const Icon(Icons.info),
+                )
               : IconButton(
                   onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (final context) => FilmScreen.fromDetails(
@@ -174,8 +152,8 @@ class _WatchedPageState extends State<WatchedPage> {
   Widget build(final BuildContext context) {
     return Consumer<WatchedNotifier>(
       builder: (final context, final value, final child) {
-        final List<WatchedSingle> combined =
-            value.films + value.serials.map((final e) => e.lastWatched).toList();
+        final List<WatchedSingle> combined = value.films +
+            value.serials.map((final e) => e.lastWatched).toList();
         combined.sort((final a, final b) => b.watchedAt.compareTo(a.watchedAt));
 
         return combined.isEmpty

@@ -23,7 +23,8 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
   }
 
-  AppBar _buildAppBar(final BuildContext context, {final bool showProgress = false}) {
+  AppBar _buildAppBar(final BuildContext context,
+      {final bool showProgress = false}) {
     return AppBar(
       title: Text(createTimeBasedGreeting(
           Provider.of<FilmanNotifier>(context).user?.login ?? "")),
@@ -53,7 +54,7 @@ class _MainScreenState extends State<MainScreen> {
       automaticallyImplyLeading: false,
       bottom: showProgress
           ? const PreferredSize(
-              preferredSize: Size.fromHeight(4.0),
+              preferredSize: Size.fromHeight(4),
               child: LinearProgressIndicator(),
             )
           : null,
