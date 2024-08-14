@@ -35,7 +35,7 @@ class _SearchModalState extends State<SearchModal> {
       children: [
         SearchBar(
           controller: searchController,
-          padding: const WidgetStatePropertyAll<EdgeInsets>(
+          padding: const WidgetStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 16.0)),
           leading: const Icon(Icons.search),
           autoFocus: true,
@@ -91,7 +91,8 @@ class _SearchModalState extends State<SearchModal> {
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (final context) => FilmScreen(
+                                            builder: (final context) =>
+                                                FilmScreen(
                                               url: film.link,
                                               title: film.title,
                                               image: film.imageUrl,
