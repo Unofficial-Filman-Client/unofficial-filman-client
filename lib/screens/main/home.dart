@@ -87,72 +87,62 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   }));
         }
 
-        return DefaultTabController(
-          length: snapshot.data?.getCategories().length ?? 0,
-          child: Scaffold(
-            appBar: AppBar(
-              toolbarHeight: 0,
-              automaticallyImplyLeading: false,
-              bottom: TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.center,
-                tabs: [
-                  for (final category in snapshot.data?.getCategories() ?? [])
-                    Tab(
-                      child: Text(
-                        category,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            body: SafeArea(
-              child: TabBarView(
-                children: [
-                  for (final category in snapshot.data?.getCategories() ?? [])
-                    RefreshIndicator(
-                      onRefresh: () async {
-                        setState(() {
-                          homePageLoader = Provider.of<FilmanNotifier>(context,
-                                  listen: false)
-                              .getFilmanPage();
-                        });
-                      },
-                      child: GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: (MediaQuery.of(context).size.width ~/
-                                  (MediaQuery.of(context).size.height / 2.5)) +
-                              1,
-                          crossAxisSpacing: 6,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.6,
+        return Scaffold(
+          appBar: AppBar(
+            toolbarHeight: 0,
+            automaticallyImplyLeading: false,
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    for (final String category
+                        in snapshot.data?.categories ?? [])
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              category,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20),
+                            ),
+                            SizedBox(
+                              height: 180.0,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: [
+                                  for (final Film film
+                                      in snapshot.data?.getFilms(category) ??
+                                          [])
+                                    _buildFilmCard(context, film),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        padding: const EdgeInsets.all(10),
-                        itemCount:
-                            snapshot.data?.getFilms(category)?.length ?? 0,
-                        itemBuilder:
-                            (final BuildContext context, final int index) {
-                          final film =
-                              snapshot.data?.getFilms(category)?[index];
-                          if (film == null) return const SizedBox();
-                          return _buildFilmCard(context, film);
-                        },
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: _showBottomSheet,
-              label: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.search),
-                  SizedBox(width: 8.0),
-                  Text("Szukaj"),
-                ],
-              ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: _showBottomSheet,
+            label: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search),
+                SizedBox(width: 8.0),
+                Text("Szukaj"),
+              ],
             ),
           ),
         );

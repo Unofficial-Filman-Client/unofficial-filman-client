@@ -11,7 +11,7 @@ import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/season.dart";
 import "package:unofficial_filman_client/types/watched.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
-import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/utils/title.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:media_kit/media_kit.dart" hide PlayerState;

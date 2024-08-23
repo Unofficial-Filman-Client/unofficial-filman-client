@@ -2,7 +2,7 @@ import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/types/search_results.dart";
-import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/utils/title.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 

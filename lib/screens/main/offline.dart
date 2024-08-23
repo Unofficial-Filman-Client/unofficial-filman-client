@@ -3,7 +3,7 @@ import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 import "package:unofficial_filman_client/notifiers/download.dart";
 import "package:unofficial_filman_client/types/download.dart";
-import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
 
 class OfflinePage extends StatefulWidget {

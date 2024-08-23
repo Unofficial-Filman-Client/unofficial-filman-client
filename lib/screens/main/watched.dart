@@ -3,7 +3,7 @@ import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/watched.dart";
-import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/utils/title.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 

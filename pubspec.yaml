@@ -31,7 +31,7 @@ dependencies:
   webview_flutter: ^4.8.0
   screen_brightness: ^0.2.2+1
   flutter_cast_framework:
-    git: https://github.com/majusss/flutter_cast_framework
+    git: https://github.com/Unofficial-Filman-Client/flutter_cast_framework
 
 dev_dependencies:
   flutter_test:
