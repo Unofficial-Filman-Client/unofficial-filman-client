@@ -101,7 +101,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     for (final String category
                         in snapshot.data?.categories ?? [])
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.only(bottom: 10),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -111,7 +111,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   .textTheme
                                   .bodyLarge
                                   ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w600,
                                       fontSize: 20),
                             ),
                             SizedBox(
