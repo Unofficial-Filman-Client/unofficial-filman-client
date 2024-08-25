@@ -18,6 +18,7 @@ Future<void> checkForUpdates(final BuildContext context) async {
   );
 
   final Version currentVersion = Version.parse(packageInfo.version);
+
   final Version latestVersion = Version.parse(response.data["tag_name"]);
 
   if (currentVersion < latestVersion) {

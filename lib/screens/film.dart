@@ -7,7 +7,7 @@ import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/utils/error_handling.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
-import "package:unofficial_filman_client/utils/titlte.dart";
+import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
