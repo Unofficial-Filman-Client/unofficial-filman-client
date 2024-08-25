@@ -3,9 +3,11 @@ import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/links.dart";
 
 bool isSupportedHost(final Host host) {
-  return host.main.contains("streamtape") ||
-      host.main.contains("vidoza") ||
-      host.main.contains("vtube");
+  return [
+    "streamtape",
+    "vidoza",
+    "vtube",
+  ].any((final String domain) => host.main.contains(domain));
 }
 
 Future<List<DirectLink>> getDirects(
