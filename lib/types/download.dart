@@ -62,10 +62,13 @@ class Downloading {
 
   Future<DownloadTask> getTask() async {
     if (_task == null) {
-      final DirectLink? direct =
-          (await getDirects(film.links ?? [], language, quality)
-                ..shuffle())
-              .firstOrNull;
+      final directs = await getDirects(film.links ?? []);
+      directs.removeWhere((final link) =>
+          link.language != language ||
+          link.qualityVersion != quality ||
+          (link.link.contains(".m3u8")));
+
+      final DirectLink? direct = (directs..shuffle()).firstOrNull;
       if (direct == null) {
         throw Exception("No host to download from found");
       }
