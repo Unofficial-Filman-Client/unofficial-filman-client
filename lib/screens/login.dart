@@ -1,6 +1,5 @@
 import "package:unofficial_filman_client/screens/main.dart";
 import "package:unofficial_filman_client/notifiers/filman.dart";
-import "package:unofficial_filman_client/types/auth_response.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 
@@ -15,12 +14,12 @@ class _LoginScreenState extends State<LoginScreen> {
   late final TextEditingController loginController;
   late final TextEditingController passwordController;
 
-  void _submitForm() async {
+  void _login() async {
     setState(() {
       isLoading = true;
     });
 
-    final AuthResponse loginResponse =
+    final loginResponse =
         await Provider.of<FilmanNotifier>(context, listen: false)
             .loginToFilman(loginController.text, passwordController.text);
 
@@ -109,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           controller: passwordController,
                           onSubmitted: (final _) {
-                            _submitForm();
+                            _login();
                           },
                         ),
                         const SizedBox(height: 16.0),
@@ -117,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerRight,
                           child: FilledButton(
                             onPressed: () {
-                              _submitForm();
+                              _login();
                             },
                             child: const Text("Zaloguj się"),
                           ),
