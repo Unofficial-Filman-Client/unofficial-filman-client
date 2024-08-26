@@ -1,5 +1,3 @@
-// library flutter_recaptcha_v2_compat_compat; original from https://github.com/corgivn/flutter_recaptcha_v2
-
 import "package:flutter/material.dart";
 import "package:webview_flutter/webview_flutter.dart";
 
@@ -26,20 +24,9 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
   late RecaptchaV2Controller controller;
   late WebViewController webViewController;
 
-  void onListen() {
-    if (controller.visible) {
-      webViewController.clearCache();
-      webViewController.reload();
-    }
-    setState(() {
-      controller.visible;
-    });
-  }
-
   @override
   void initState() {
     controller = widget.controller;
-    controller.addListener(onListen);
     super.initState();
     webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -47,13 +34,26 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
       ..addJavaScriptChannel("Captcha", onMessageReceived: (final token) {
         widget.onToken?.call(token.message);
         controller.hide();
+        controller.unload();
+        webViewController.clearCache();
+        webViewController.reload();
       })
+      ..addJavaScriptChannel(
+        "Visible",
+        onMessageReceived: (final visible) {
+          debugPrint(visible.message);
+          setState(() {
+            if (bool.parse(visible.message) == true) controller.loaded();
+          });
+        },
+      )
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (final String url) {
           webViewController.runJavaScript('''
-            document.body.style.visibility="hidden"
-            document.querySelector(".g-recaptcha").scrollIntoView(true)
+            document.body.style.visibility="hidden";
+            document.querySelector(".g-recaptcha")?.scrollIntoView(true);
             document.querySelector(".g-recaptcha").style.visibility = "visible"
+            Visible.postMessage("true");
             interval = setInterval(()=>{
               let captcha = document.getElementsByName("g-recaptcha-response")[0].value
               if(captcha.length > 0) {
@@ -70,16 +70,13 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
   @override
   void didUpdateWidget(final RecaptchaV2 oldWidget) {
     if (widget.controller != oldWidget.controller) {
-      oldWidget.controller.removeListener(onListen);
       controller = widget.controller;
-      controller.removeListener(onListen);
     }
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void dispose() {
-    controller.removeListener(onListen);
     controller.dispose();
     super.dispose();
   }
@@ -89,7 +86,13 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
     return controller.visible
         ? Stack(
             children: [
-              WebViewWidget(controller: webViewController),
+              Opacity(
+                opacity: controller.loading ? 0.0 : 1.0,
+                child: WebViewWidget(controller: webViewController),
+              ),
+              controller.loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Container(),
               Align(
                 alignment: Alignment.bottomCenter,
                 child: SizedBox(
@@ -102,6 +105,9 @@ class _RecaptchaV2State extends State<RecaptchaV2> {
                           child: const Text("CANCEL RECAPTCHA"),
                           onPressed: () {
                             controller.hide();
+                            controller.unload();
+                            webViewController.clearCache();
+                            webViewController.reload();
                             widget.onCanceled?.call(null);
                           },
                         ),
@@ -123,6 +129,19 @@ class RecaptchaV2Controller extends ChangeNotifier {
   bool _visible = false;
   bool get visible => _visible;
 
+  bool _loading = true;
+  bool get loading => _loading;
+
+  void loaded() {
+    _loading = false;
+    if (!isDisposed) notifyListeners();
+  }
+
+  void unload() {
+    _loading = true;
+    if (!isDisposed) notifyListeners();
+  }
+
   void show() {
     _visible = true;
     if (!isDisposed) notifyListeners();
@@ -142,8 +161,10 @@ class RecaptchaV2Controller extends ChangeNotifier {
 
   @override
   void addListener(final listener) {
-    _listeners.add(listener);
-    super.addListener(listener);
+    if (!_listeners.contains(listener)) {
+      _listeners.add(listener);
+      super.addListener(listener);
+    }
   }
 
   @override
