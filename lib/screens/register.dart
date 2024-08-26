@@ -1,5 +1,5 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
-import "package:unofficial_filman_client/screens/login.dart";
+import "package:unofficial_filman_client/screens/main.dart";
 import "package:unofficial_filman_client/widgets/recaptcha.dart";
 import "package:flutter/gestures.dart";
 import "package:flutter/material.dart";
@@ -39,22 +39,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 repasswordController.text,
                 recaptchatoken);
 
+    if (!mounted) return;
     setState(() {
       isLoading = false;
     });
 
     if (registerResponse.success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Zarejestrowano pomyślnie!"),
-          dismissDirection: DismissDirection.horizontal,
-          behavior: SnackBarBehavior.floating,
-          showCloseIcon: true,
-        ));
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (final context) => const LoginScreen()),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Zarejestrowano pomyślnie!"),
+        dismissDirection: DismissDirection.horizontal,
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+      ));
+
+      final loginResponse =
+          await Provider.of<FilmanNotifier>(context, listen: false)
+              .loginToFilman(loginController.text, passwordController.text);
+
+      if (!mounted) return;
+      if (loginResponse.success) {
+        Provider.of<FilmanNotifier>(context, listen: false).saveUser(
+          loginController.text,
+          passwordController.text,
         );
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (final context) => const MainScreen()),
+          );
+        }
+      } else {
+        for (final error in loginResponse.errors) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(error),
+              dismissDirection: DismissDirection.horizontal,
+              behavior: SnackBarBehavior.floating,
+              showCloseIcon: true,
+            ));
+          }
+        }
       }
     } else {
       for (final error in registerResponse.errors) {
@@ -95,135 +119,127 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Expanded(
-                child: Stack(
-              children: [
-                isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text("Tworzysz nowe konto!",
-                                style: TextStyle(
-                                  fontSize: 32,
-                                )),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Stack(
+            children: [
+              isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Center(
+                      child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text("Tworzysz nowe konto!",
+                              style: TextStyle(
+                                fontSize: 32,
+                              )),
+                        ),
+                        const SizedBox(height: 23.0),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: "Nazwa użytkownika",
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(height: 23.0),
-                          TextField(
-                            decoration: const InputDecoration(
-                              labelText: "Nazwa użytkownika",
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: loginController,
-                            textInputAction: TextInputAction.next,
+                          controller: loginController,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextField(
+                          decoration: const InputDecoration(
+                            labelText: "Email",
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(height: 16.0),
-                          TextField(
-                            decoration: const InputDecoration(
-                              labelText: "Email",
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: emailController,
-                            textInputAction: TextInputAction.next,
+                          controller: emailController,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextField(
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: "Hasło",
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(height: 16.0),
-                          TextField(
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: "Hasło",
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: passwordController,
-                            textInputAction: TextInputAction.next,
+                          controller: passwordController,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 16.0),
+                        TextField(
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: "Powtórz hasło",
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(height: 16.0),
-                          TextField(
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: "Powtórz hasło",
-                              border: OutlineInputBorder(),
-                            ),
-                            controller: repasswordController,
-                            onSubmitted: (final _) {
+                          controller: repasswordController,
+                          onSubmitted: (final _) {
+                            _submitForm();
+                          },
+                        ),
+                        const SizedBox(height: 16.0),
+                        RichText(
+                          text: TextSpan(
+                            children: <TextSpan>[
+                              TextSpan(
+                                  style:
+                                      Theme.of(context).textTheme.labelMedium,
+                                  text:
+                                      "Tworząc konto zgadzasz się z treścią "),
+                              TextSpan(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.copyWith(
+                                          decoration: TextDecoration.underline),
+                                  text: "regulaminu serwisu Filman.cc",
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () async {
+                                      final Uri uri = Uri.parse(
+                                          "https://filman.cc/regulamin");
+                                      if (!await launchUrl(uri,
+                                          mode:
+                                              LaunchMode.externalApplication)) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                            content: Text(
+                                                "Nie można otworzyć linku w przeglądarce"),
+                                            dismissDirection:
+                                                DismissDirection.horizontal,
+                                            behavior: SnackBarBehavior.floating,
+                                            showCloseIcon: true,
+                                          ));
+                                        }
+                                      }
+                                    }),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16.0),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton(
+                            onPressed: () {
                               _submitForm();
                             },
+                            child: const Text("Zarejestruj się"),
                           ),
-                          const SizedBox(height: 16.0),
-                          RichText(
-                            text: TextSpan(
-                              children: <TextSpan>[
-                                TextSpan(
-                                    style:
-                                        Theme.of(context).textTheme.labelMedium,
-                                    text:
-                                        "Tworzac konto zgadzasz się z treścią "),
-                                TextSpan(
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                            decoration:
-                                                TextDecoration.underline),
-                                    text: "regulaminu serwisu Filman.cc",
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () async {
-                                        final Uri uri = Uri.parse(
-                                            "https://filman.cc/regulamin");
-                                        if (!await launchUrl(uri,
-                                            mode: LaunchMode
-                                                .externalApplication)) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(const SnackBar(
-                                              content: Text(
-                                                  "Nie można otworzyć linku w przeglądarce"),
-                                              dismissDirection:
-                                                  DismissDirection.horizontal,
-                                              behavior:
-                                                  SnackBarBehavior.floating,
-                                              showCloseIcon: true,
-                                            ));
-                                          }
-                                        }
-                                      }),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16.0),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FilledButton(
-                              onPressed: () {
-                                _submitForm();
-                              },
-                              child: const Text("Zarejestruj się"),
-                            ),
-                          ),
-                        ],
-                      ),
-                RecaptchaV2(
-                  siteUrl: "https://filman.cc/rejestracja",
-                  controller: recaptchaV2Controller,
-                  onToken: (final token) {
-                    _register(token);
-                  },
-                  onCanceled: (final value) {
-                    setState(() {
-                      isLoading = false;
-                    });
-                  },
-                )
-              ],
-            )),
-          ],
-        ),
-      ),
+                        ),
+                      ],
+                    )),
+              RecaptchaV2(
+                siteUrl: "https://filman.cc/rejestracja",
+                controller: recaptchaV2Controller,
+                onToken: (final token) {
+                  _register(token);
+                },
+                onCanceled: (final value) {
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+              )
+            ],
+          )),
     );
   }
 }
