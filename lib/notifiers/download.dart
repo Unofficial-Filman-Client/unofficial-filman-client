@@ -129,7 +129,7 @@ class DownloadNotifier extends ChangeNotifier {
     });
   }
 
-  void addFilmToDownload(final FilmDetails film, final Language language,
+  Future addFilmToDownload(final FilmDetails film, final Language language,
       final Quality quality, final SettingsNotifier settings,
       [final FilmDetails? parentDetails]) async {
     final Downloading download = Downloading(
