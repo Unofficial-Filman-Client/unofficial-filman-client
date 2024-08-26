@@ -4,10 +4,11 @@ import "package:flutter/material.dart";
 import "package:unofficial_filman_client/types/links.dart";
 import "package:unofficial_filman_client/utils/hosts.dart";
 
-Future<List<Language>> _getAvailableLanguages(final List<Host> links) async {
+Future<List<Language>> _getAvailableLanguages(
+    final List<DirectLink> links) async {
   final List<Language> languages = [];
-  for (Host link in links) {
-    if (!languages.contains(link.language) && isSupportedHost(link)) {
+  for (final link in links) {
+    if (!languages.contains(link.language)) {
       languages.add(link.language);
     }
   }
@@ -15,11 +16,11 @@ Future<List<Language>> _getAvailableLanguages(final List<Host> links) async {
 }
 
 Future<List<Quality>> _getAvaliableQualitiesForLanguage(
-    final Language lang, final List<Host> links) async {
+    final Language lang, final List<DirectLink> links) async {
   final List<Quality> qualities = [];
-  for (Host link in links) {
+  for (final link in links) {
     if (link.language == lang) {
-      if (!qualities.contains(link.qualityVersion) && isSupportedHost(link)) {
+      if (!qualities.contains(link.qualityVersion)) {
         qualities.add(link.qualityVersion);
       }
     }
@@ -51,7 +52,7 @@ Future<dynamic> _showSelectionDialog(
 }
 
 Future<(Language?, Quality?)> getUserSelectedPreferences(
-    final List<Host> links, final BuildContext context) async {
+    final List<DirectLink> links, final BuildContext context) async {
   final List<Language> languages = await _getAvailableLanguages(links);
   late Language lang;
   if (languages.length > 1 && context.mounted) {
@@ -79,11 +80,20 @@ Future<(Language?, Quality?)> getUserSelectedPreferences(
 }
 
 Future<DirectLink?> getUserSelectedVersion(
-    final List<Host> links, final BuildContext context) async {
-  final (lang, quality) = await getUserSelectedPreferences(links, context);
+    final List<Host> links, final BuildContext context,
+    [final bool supportm3u8 = true]) async {
+  final List<DirectLink> directs = await getDirects(links);
+  if (directs.isEmpty) {
+    return null;
+  }
+  directs
+      .removeWhere((final link) => link.link.contains(".m3u8") && !supportm3u8);
+  if (!context.mounted) return null;
+  final (lang, quality) = await getUserSelectedPreferences(directs, context);
   if (lang == null || quality == null) {
     return null;
   }
-  final List<DirectLink> directs = await getDirects(links, lang, quality);
+  directs.removeWhere(
+      (final link) => link.language != lang || link.qualityVersion != quality);
   return (directs..shuffle()).first;
 }

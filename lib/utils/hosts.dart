@@ -2,21 +2,20 @@ import "package:dio/dio.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/links.dart";
 
-bool isSupportedHost(final Host host) {
-  return [
-    "streamtape",
-    "vidoza",
-    "vtube",
-  ].any((final String domain) => host.main.contains(domain));
-}
+// bool isSupportedHost(final Host host) {
+//   return [
+//     "streamtape",
+//     "vidoza",
+//     "vtube",
+//   ].any((final String domain) => host.main.contains(domain));
+// }
 
-Future<List<DirectLink>> getDirects(
-    final List<Host> links, final Language lang, final Quality quality) async {
+Future<List<DirectLink>> getDirects(final List<Host> links) async {
   final List<DirectLink> directLinks = [];
   for (Host link in links) {
-    if (link.language != lang || link.qualityVersion != quality) {
-      continue;
-    }
+    // if (link.language != lang || link.qualityVersion != quality) {
+    //   continue;
+    // }
     if (link.main.contains("streamtape")) {
       try {
         directLinks.add(DirectLink(

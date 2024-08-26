@@ -167,7 +167,7 @@ class _FilmScreenState extends State<FilmScreen> {
                         ? IconButton(
                             onPressed: () async {
                               final direct = await getUserSelectedVersion(
-                                  snapshot.data?.links ?? [], context);
+                                  snapshot.data?.links ?? [], context, false);
                               if (direct == null) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context)
@@ -189,7 +189,30 @@ class _FilmScreenState extends State<FilmScreen> {
                                         direct!.language,
                                         direct.qualityVersion,
                                         Provider.of<SettingsNotifier>(context,
-                                            listen: false));
+                                            listen: false))
+                                    .then((final _) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text("Dodano do kolejki"),
+                                      dismissDirection:
+                                          DismissDirection.horizontal,
+                                      behavior: SnackBarBehavior.floating,
+                                      showCloseIcon: true,
+                                    ));
+                                  }
+                                }).catchError((final err) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content: Text("Błąd: $err"),
+                                      dismissDirection:
+                                          DismissDirection.horizontal,
+                                      behavior: SnackBarBehavior.floating,
+                                      showCloseIcon: true,
+                                    ));
+                                  }
+                                });
                               }
                             },
                             icon: const Icon(Icons.download))

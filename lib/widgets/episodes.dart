@@ -9,6 +9,7 @@ import "package:unofficial_filman_client/types/season.dart";
 import "package:provider/provider.dart";
 import "package:unofficial_filman_client/types/watched.dart";
 import "package:unofficial_filman_client/notifiers/download.dart";
+import "package:unofficial_filman_client/utils/hosts.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
 
 class EpisodesModal extends StatefulWidget {
@@ -50,7 +51,9 @@ class _EpisodesModalState extends State<EpisodesModal> {
             element.filmDetails.url == widget.filmDetails.url);
 
     for (Season season in seasons) {
+      if (!mounted) return;
       for (Episode episode in season.getEpisodes()) {
+        if (!mounted) return;
         final watched = savedSerial?.episodes
                 .firstWhereOrNull((final element) =>
                     element.filmDetails.url == episode.episodeUrl)
@@ -59,6 +62,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                 .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl)
                 ?.film;
         if (watched != null) {
+          if (!mounted) return;
           setState(() {
             episodeDetails[episode.episodeName] = watched;
           });
@@ -66,6 +70,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
           final FilmDetails data =
               await Provider.of<FilmanNotifier>(context, listen: false)
                   .getFilmDetails(episode.episodeUrl);
+          if (!mounted) return;
           setState(() {
             episodeDetails[episode.episodeName] = data;
           });
@@ -111,17 +116,16 @@ class _EpisodesModalState extends State<EpisodesModal> {
     return IconButton(
       icon: Icon(downloaded != null ? Icons.save : Icons.download),
       onPressed: () async {
-        if (!context.mounted) {
+        if (!context.mounted ||
+            downloaded != null ||
+            filmDetails.links == null) {
           return;
         }
-        if (downloaded != null) {
+        final directs = await getDirects(filmDetails.links!);
+        if (directs.isEmpty || !context.mounted) {
           return;
         }
-        if (filmDetails.links == null) {
-          return;
-        }
-        final (l, q) =
-            await getUserSelectedPreferences(filmDetails.links!, context);
+        final (l, q) = await getUserSelectedPreferences(directs, context);
         if (l == null || q == null) {
           return;
         }
