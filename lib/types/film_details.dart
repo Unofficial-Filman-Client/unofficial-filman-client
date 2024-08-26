@@ -20,7 +20,14 @@ class FilmDetails {
   final String? nextEpisodeUrl;
 
   List<Season> getSeasons() {
-    seasons?.sort((final a, final b) => a.seasonTitle.compareTo(b.seasonTitle));
+    seasons?.sort((final a, final b) {
+      final aInt = int.tryParse(a.seasonTitle.replaceFirst("Sezon ", ""));
+      final bInt = int.tryParse(b.seasonTitle.replaceFirst("Sezon ", ""));
+      if (aInt != null && bInt != null) {
+        return aInt.compareTo(bInt);
+      }
+      return a.seasonTitle.compareTo(b.seasonTitle);
+    });
     return seasons ?? [];
   }
 
@@ -55,7 +62,8 @@ class FilmDetails {
         isSerial = json["isSerial"],
         isEpisode = json["isEpisode"],
         seasons = json["seasons"] != null
-            ? List<Season>.from(json["seasons"].map((final e) => Season.fromMap(e)))
+            ? List<Season>.from(
+                json["seasons"].map((final e) => Season.fromMap(e)))
             : null,
         links = json["links"] != null
             ? List<Host>.from(json["links"]

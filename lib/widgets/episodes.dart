@@ -51,7 +51,9 @@ class _EpisodesModalState extends State<EpisodesModal> {
             element.filmDetails.url == widget.filmDetails.url);
 
     for (Season season in seasons) {
+      if (!mounted) return;
       for (Episode episode in season.getEpisodes()) {
+        if (!mounted) return;
         final watched = savedSerial?.episodes
                 .firstWhereOrNull((final element) =>
                     element.filmDetails.url == episode.episodeUrl)
@@ -60,6 +62,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                 .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl)
                 ?.film;
         if (watched != null) {
+          if (!mounted) return;
           setState(() {
             episodeDetails[episode.episodeName] = watched;
           });
@@ -67,6 +70,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
           final FilmDetails data =
               await Provider.of<FilmanNotifier>(context, listen: false)
                   .getFilmDetails(episode.episodeUrl);
+          if (!mounted) return;
           setState(() {
             episodeDetails[episode.episodeName] = data;
           });
