@@ -93,6 +93,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             automaticallyImplyLeading: false,
           ),
           body: SafeArea(
+              child: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                homePageLoader =
+                    Provider.of<FilmanNotifier>(context, listen: false)
+                        .getFilmanPage();
+              });
+            },
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -133,7 +141,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-          ),
+          )),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: _showBottomSheet,
             label: const Row(
