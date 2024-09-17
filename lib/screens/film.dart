@@ -161,62 +161,76 @@ class _FilmScreenState extends State<FilmScreen> {
               ),
               FutureBuilder<FilmDetails>(
                 future: lazyFilm,
-                builder: (final context, final snapshot) => AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: snapshot.data?.isSerial == false && snapshot.hasData
-                        ? IconButton(
-                            onPressed: () async {
-                              final direct = await getUserSelectedVersion(
-                                  snapshot.data?.links ?? [], context, false);
-                              if (direct == null) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text("Brak dostępnych linków"),
-                                    dismissDirection:
-                                        DismissDirection.horizontal,
-                                    behavior: SnackBarBehavior.floating,
-                                    showCloseIcon: true,
-                                  ));
-                                  return;
-                                }
-                              }
-                              if (context.mounted) {
-                                Provider.of<DownloadNotifier>(context,
-                                        listen: false)
-                                    .addFilmToDownload(
-                                        snapshot.data!,
-                                        direct!.language,
-                                        direct.qualityVersion,
-                                        Provider.of<SettingsNotifier>(context,
-                                            listen: false))
-                                    .then((final _) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text("Dodano do kolejki"),
-                                      dismissDirection:
-                                          DismissDirection.horizontal,
-                                      behavior: SnackBarBehavior.floating,
-                                      showCloseIcon: true,
-                                    ));
-                                  }
-                                }).catchError((final err) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      content: Text("Błąd: $err"),
-                                      dismissDirection:
-                                          DismissDirection.horizontal,
-                                      behavior: SnackBarBehavior.floating,
-                                      showCloseIcon: true,
-                                    ));
-                                  }
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.download))
-                        : const SizedBox()),
+                builder: (final context, final snapshot) {
+                  final isDownloading = Provider.of<DownloadNotifier>(context)
+                      .downloading
+                      .any((final element) => element.film.url == widget.url);
+                  return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: isDownloading
+                          ? const IconButton(
+                              onPressed: null,
+                              icon: Icon(Icons.downloading),
+                            )
+                          : snapshot.data?.isSerial == false && snapshot.hasData
+                              ? IconButton(
+                                  onPressed: () async {
+                                    final direct = await getUserSelectedVersion(
+                                        snapshot.data?.links ?? [],
+                                        context,
+                                        false);
+                                    if (direct == null) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content:
+                                              Text("Brak dostępnych linków"),
+                                          dismissDirection:
+                                              DismissDirection.horizontal,
+                                          behavior: SnackBarBehavior.floating,
+                                          showCloseIcon: true,
+                                        ));
+                                        return;
+                                      }
+                                    }
+                                    if (context.mounted) {
+                                      Provider.of<DownloadNotifier>(context,
+                                              listen: false)
+                                          .addFilmToDownload(
+                                              snapshot.data!,
+                                              direct!.language,
+                                              direct.qualityVersion,
+                                              Provider.of<SettingsNotifier>(
+                                                  context,
+                                                  listen: false))
+                                          .then((final _) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                            content: Text("Dodano do kolejki"),
+                                            dismissDirection:
+                                                DismissDirection.horizontal,
+                                            behavior: SnackBarBehavior.floating,
+                                            showCloseIcon: true,
+                                          ));
+                                        }
+                                      }).catchError((final err) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(
+                                            content: Text("Błąd: $err"),
+                                            dismissDirection:
+                                                DismissDirection.horizontal,
+                                            behavior: SnackBarBehavior.floating,
+                                            showCloseIcon: true,
+                                          ));
+                                        }
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.download))
+                              : const SizedBox());
+                },
               )
             ],
           ),

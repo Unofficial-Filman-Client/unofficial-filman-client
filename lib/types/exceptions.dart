@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+import "package:dio/dio.dart";
 
 class LogOutException implements Exception {
   const LogOutException();
@@ -12,7 +12,7 @@ class CfWrapperInterceptor extends Interceptor {
       handler.reject(
         DioException(
           requestOptions: response.requestOptions,
-          error: 'Cloudflare return an error',
+          error: "Cloudflare return an error",
           type: DioExceptionType.badResponse,
         ),
       );

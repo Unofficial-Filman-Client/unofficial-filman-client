@@ -221,7 +221,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
     if (_filmDetails.isEpisode == true) {
       if (widget.parentDetails != null) {
-        _parentDetails = widget.parentDetails;
+        setState(() => _parentDetails = widget.parentDetails);
       } else if (_filmDetails.parentUrl != null && mounted) {
         final parent = await Provider.of<FilmanNotifier>(context, listen: false)
             .getFilmDetails(_filmDetails.parentUrl ?? "");
@@ -563,17 +563,21 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             Center(
               child: Consumer<SettingsNotifier>(
                 builder: (final context, final settings, final child) {
-                  final displayTitle = getDisplayTitle(
-                      widget.filmDetails?.title ?? "", settings);
+                  try {
+                    final displayTitle =
+                        getDisplayTitle(_filmDetails.title, settings);
 
-                  return Text(
-                    widget.filmDetails?.isEpisode == true
-                        ? "$displayTitle - ${widget.filmDetails?.seasonEpisodeTag}"
-                        : displayTitle,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  );
+                    return Text(
+                      _filmDetails.isEpisode == true
+                          ? "$displayTitle - ${_filmDetails.seasonEpisodeTag}"
+                          : displayTitle,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    );
+                  } catch (err) {
+                    return const SizedBox();
+                  }
                 },
               ),
             ),

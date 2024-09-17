@@ -113,8 +113,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
       final BuildContext context, final FilmDetails filmDetails) {
     final downloaded = Provider.of<DownloadNotifier>(context, listen: false)
         .getEpisodeByUrl(widget.filmDetails, filmDetails.url);
+    bool isDownloading = Provider.of<DownloadNotifier>(context, listen: false)
+        .downloading
+        .any((final element) => element.film.url == filmDetails.url);
     return IconButton(
-      icon: Icon(downloaded != null ? Icons.save : Icons.download),
+      icon: isDownloading
+          ? const CircularProgressIndicator()
+          : Icon(downloaded != null ? Icons.save : Icons.download),
       onPressed: () async {
         if (!context.mounted ||
             downloaded != null ||
@@ -135,6 +140,9 @@ class _EpisodesModalState extends State<EpisodesModal> {
             q,
             Provider.of<SettingsNotifier>(context, listen: false),
             widget.filmDetails);
+        setState(() {
+          isDownloading = true;
+        });
       },
     );
   }
