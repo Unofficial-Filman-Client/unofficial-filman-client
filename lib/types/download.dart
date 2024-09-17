@@ -14,8 +14,9 @@ class Downloading {
   final Quality quality;
   final Language language;
   final String displayName;
-  StreamController<TaskProgressUpdate> progress = StreamController();
-  final StreamController<TaskStatusUpdate> status = StreamController();
+  StreamController<TaskProgressUpdate> progress = StreamController.broadcast();
+  final StreamController<TaskStatusUpdate> status =
+      StreamController.broadcast();
 
   Downloading(
       {required this.film,

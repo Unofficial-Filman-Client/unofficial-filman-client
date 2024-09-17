@@ -18,134 +18,144 @@ class _WatchedPageState extends State<WatchedPage> {
   Widget _buildWatchedFilmCard(final BuildContext context,
       final WatchedSingle film, final WatchedNotifier all) {
     return Card(
-        child: Stack(
-      children: [
-        InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
                   builder: (final context) => FilmanPlayer.fromDetails(
-                        filmDetails: film.filmDetails,
-                        startFrom: film.watchedInSec,
-                        savedDuration: film.totalInSec,
-                      )),
-            );
-          },
-          onLongPress: () => showDialog(
-            context: context,
-            builder: (final context) {
-              return AlertDialog(
-                title: const Text("Usuwanie z historii"),
-                content: Consumer<SettingsNotifier>(
-                  builder: (final context, final settings, final child) => Text(
-                      "Czy na pewno chcesz usunąć postęp oglądania \"${getDisplayTitle(film.filmDetails.title, settings)}\" z historii?"),
+                    filmDetails: film.filmDetails,
+                    startFrom: film.watchedInSec,
+                    savedDuration: film.totalInSec,
+                  ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text("Anuluj"),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        Provider.of<WatchedNotifier>(context, listen: false)
-                            .remove(film);
-                      });
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text("Usuń"),
-                  ),
-                ],
               );
             },
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 5,
-                child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12.0)),
-                  child: Image.network(
-                    film.filmDetails.imageUrl,
-                    fit: BoxFit.cover,
+            onLongPress: () => showDialog(
+              context: context,
+              builder: (final context) {
+                return AlertDialog(
+                  title: const Text("Usuwanie z historii"),
+                  content: Consumer<SettingsNotifier>(
+                    builder: (final context, final settings, final child) =>
+                        Text(
+                      "Czy na pewno chcesz usunąć postęp oglądania \"${getDisplayTitle(film.filmDetails.title, settings)}\" z historii?",
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text("Anuluj"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          Provider.of<WatchedNotifier>(context, listen: false)
+                              .remove(film);
+                        });
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text("Usuń"),
+                    ),
+                  ],
+                );
+              },
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(12.0)),
+                    child: Image.network(
+                      film.filmDetails.imageUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-              ),
-              LinearProgressIndicator(
-                value: film.watchedPercentage,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Column(
+                LinearProgressIndicator(
+                  value: film.watchedPercentage,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        film.filmDetails.isEpisode
-                            ? Column(
-                                children: [
-                                  Text(
-                                    (film.filmDetails.seasonEpisodeTag
-                                                ?.split(" ")
-                                              ?..removeAt(0))
-                                            ?.join(" ") ??
-                                        "",
-                                    maxLines: 1,
-                                    overflow: TextOverflow.fade,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  Text(
-                                    'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((final e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
-                                    style: const TextStyle(
-                                      fontSize: 16.0,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.fade,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              )
-                            : Text(
-                                "Pozostało: ${film.totalInSec ~/ 60} min",
+                        if (film.filmDetails.isEpisode)
+                          Column(
+                            children: [
+                              Text(
+                                (film.filmDetails.seasonEpisodeTag?.split(" ")
+                                          ?..removeAt(0))
+                                        ?.join(" ") ??
+                                    "",
                                 maxLines: 1,
                                 overflow: TextOverflow.fade,
                                 textAlign: TextAlign.center,
                               ),
-                      ]),
+                              Text(
+                                'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((final e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
+                                style: const TextStyle(
+                                  fontSize: 16.0,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.fade,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          )
+                        else
+                          Text(
+                            "Pozostało: ${film.totalInSec ~/ 60} min",
+                            maxLines: 1,
+                            overflow: TextOverflow.fade,
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          right: 0,
-          top: 0,
-          child: film.filmDetails.parentUrl != null
-              ? IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
+          Positioned(
+            right: 0,
+            top: 0,
+            child: film.filmDetails.parentUrl != null
+                ? IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
                           builder: (final context) => FilmScreen(
-                              url: film.filmDetails.parentUrl!,
-                              image: film.filmDetails.imageUrl,
-                              title: film.filmDetails.title)),
-                    );
-                  },
-                  icon: const Icon(Icons.info),
-                )
-              : IconButton(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (final context) => FilmScreen.fromDetails(
-                            details: film.filmDetails,
-                          ))),
-                  icon: const Icon(Icons.info)),
-        )
-      ],
-    ));
+                            url: film.filmDetails.parentUrl!,
+                            image: film.filmDetails.imageUrl,
+                            title: film.filmDetails.title,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.info),
+                  )
+                : IconButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (final context) =>
+                            FilmScreen.fromDetails(details: film.filmDetails),
+                      ),
+                    ),
+                    icon: const Icon(Icons.info),
+                  ),
+          )
+        ],
+      ),
+    );
   }
 
   @override
@@ -158,25 +168,31 @@ class _WatchedPageState extends State<WatchedPage> {
 
         return combined.isEmpty
             ? Center(
-                child: Text("Brak filmów w historii oglądania",
-                    style: Theme.of(context).textTheme.labelLarge),
+                child: Text(
+                  "Brak filmów w historii oglądania",
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
               )
-            : (GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: (MediaQuery.of(context).size.width ~/
-                          (MediaQuery.of(context).size.height / 2.5)) +
-                      1,
+            : GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
                   crossAxisSpacing: 6,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 0.6,
+                  mainAxisExtent: 250,
                 ),
                 padding: const EdgeInsets.all(10),
                 itemCount: combined.length,
                 itemBuilder: (final BuildContext context, final int index) {
                   final film = combined[index];
-                  return _buildWatchedFilmCard(context, film, value);
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      height: 250,
+                      child: _buildWatchedFilmCard(context, film, value),
+                    ),
+                  );
                 },
-              ));
+              );
       },
     );
   }

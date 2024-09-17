@@ -152,6 +152,8 @@ class DownloadNotifier extends ChangeNotifier {
   void cancelDownload(final Downloading download) {
     FileDownloader().cancelTaskWithId(download.taskId);
     _downloading.remove(download);
+
+    notifyListeners();
   }
 
   DownloadedSingle? getEpisodeByUrl(
