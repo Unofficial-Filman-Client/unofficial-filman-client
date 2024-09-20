@@ -92,6 +92,7 @@ Future<void> downloadAndInstallApk(
   final Response<dynamic> response,
   final Function(Exception) onError,
 ) async {
+  await Permission.requestInstallPackages.request();
   final permissionStatus = await Permission.requestInstallPackages.status;
 
   if (permissionStatus.isDenied || permissionStatus.isRestricted) {

@@ -53,12 +53,8 @@ class Season {
   }
 
   List<Episode> getEpisodes() {
-    episodes.sort((final a, final b) => a.episodeName
-        .split(" ")[0]
-        .split("e")[1]
-        .replaceAll("]", "")
-        .compareTo(
-            b.episodeName.split(" ")[0].split("e")[1].replaceAll("]", "")));
+    episodes.sort((final a, final b) =>
+        a.getEpisodeNumber().compareTo(b.getEpisodeNumber()));
 
     return episodes;
   }
@@ -70,8 +66,8 @@ class Season {
 
   Season.fromMap(final Map<String, dynamic> json)
       : seasonTitle = json["seasonTitle"],
-        episodes =
-            List<Episode>.from(json["episodes"].map((final e) => Episode.fromMap(e)));
+        episodes = List<Episode>.from(
+            json["episodes"].map((final e) => Episode.fromMap(e)));
 
   Map<String, dynamic> toMap() {
     return {
