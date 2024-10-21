@@ -10,6 +10,7 @@ import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/hello.dart";
 import "package:unofficial_filman_client/screens/main.dart";
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,8 @@ void main() async {
   await settings.loadSettings();
   await watched.loadWatched();
   await download.loadDownloads();
+
+  await FastCachedImageConfig.init(clearCacheAfter: const Duration(days: 3));
 
   runApp(
     MultiProvider(

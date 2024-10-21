@@ -1,3 +1,4 @@
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/film.dart";
@@ -72,8 +73,8 @@ class _WatchedPageState extends State<WatchedPage> {
                   child: ClipRRect(
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(12.0)),
-                    child: Image.network(
-                      film.filmDetails.imageUrl,
+                    child: FastCachedImage(
+                      url: film.filmDetails.imageUrl,
                       fit: BoxFit.cover,
                     ),
                   ),

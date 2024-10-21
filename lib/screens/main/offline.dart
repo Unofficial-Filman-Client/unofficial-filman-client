@@ -8,6 +8,7 @@ import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/download.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 class OfflinePage extends StatelessWidget {
   const OfflinePage({super.key});
@@ -27,7 +28,7 @@ class OfflinePage extends StatelessWidget {
             onLongPress: () => _showDeleteDialog(context, download),
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(12.0)),
-              child: Image.network(download.film.imageUrl),
+              child: FastCachedImage(url: download.film.imageUrl),
             ),
           ),
           Positioned(
@@ -66,7 +67,8 @@ class OfflinePage extends StatelessWidget {
             },
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(12.0)),
-              child: Image.network(download.serial.imageUrl, fit: BoxFit.cover),
+              child: FastCachedImage(
+                  url: download.serial.imageUrl, fit: BoxFit.cover),
             ),
           ),
           Positioned(
@@ -85,7 +87,8 @@ class OfflinePage extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadingCard(final BuildContext context, final Downloading download) {
+  Widget _buildDownloadingCard(
+      final BuildContext context, final Downloading download) {
     return Card(
       child: Stack(
         children: [
@@ -97,8 +100,8 @@ class OfflinePage extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(12.0)),
-                  child: Image.network(
-                    download.film.imageUrl,
+                  child: FastCachedImage(
+                    url: download.film.imageUrl,
                     fit: BoxFit.cover,
                     height: 256,
                   ),
@@ -135,7 +138,9 @@ class OfflinePage extends StatelessWidget {
                           } else if (status == TaskStatus.running) {
                             return StreamBuilder<TaskProgressUpdate>(
                               stream: download.progress.stream,
-                              builder: (final context, final progressSnapshot) => Row(
+                              builder:
+                                  (final context, final progressSnapshot) =>
+                                      Row(
                                 children: [
                                   Text(
                                       "${((progressSnapshot.data?.progress ?? 0) * 100).toStringAsFixed(0)}%"),
@@ -175,7 +180,8 @@ class OfflinePage extends StatelessWidget {
     );
   }
 
-  void _showDeleteDialog(final BuildContext context, final DownloadedSingle download) {
+  void _showDeleteDialog(
+      final BuildContext context, final DownloadedSingle download) {
     showDialog(
       context: context,
       builder: (final context) => AlertDialog(

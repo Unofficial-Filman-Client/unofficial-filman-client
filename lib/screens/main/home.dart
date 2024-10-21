@@ -1,12 +1,13 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
-import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:unofficial_filman_client/utils/updater.dart";
 import "package:flutter/material.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/widgets/search.dart";
 import "package:provider/provider.dart";
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,10 +60,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         },
         child: ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(12.0)),
-          child: Image.network(
-            film.imageUrl,
-            fit: BoxFit.cover,
-          ),
+          child: FastCachedImage(
+              url: film.imageUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (final context, final progress) => SizedBox(
+                    height: 180,
+                    width: 116,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          value: progress.progressPercentage.value),
+                    ),
+                  )),
         ),
       ),
     );
@@ -77,10 +85,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return buildErrorContent(
-              snapshot.error!,
-              context,
-              (final auth) => setState(() {
+          return ErrorHandling(
+              error: snapshot.error!,
+              onLogin: (final auth) => setState(() {
                     homePageLoader =
                         Provider.of<FilmanNotifier>(context, listen: false)
                             .getFilmanPage();

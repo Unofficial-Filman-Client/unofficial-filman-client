@@ -5,7 +5,7 @@ import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
-import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
@@ -13,6 +13,7 @@ import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 import "package:url_launcher/url_launcher.dart";
 import "package:share_plus/share_plus.dart";
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 class FilmScreen extends StatefulWidget {
   final String url, title, image;
@@ -92,11 +93,10 @@ class _FilmScreenState extends State<FilmScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return buildErrorContent(
-                snapshot.error!,
-                context,
-                (final response) => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
+            return ErrorHandling(
+                error: snapshot.error!,
+                onLogin: (final response) => Navigator.of(context)
+                    .pushReplacement(MaterialPageRoute(
                         builder: (final context) => FilmScreen(
                             url: widget.url,
                             title: widget.title,
@@ -313,8 +313,8 @@ class _FilmScreenState extends State<FilmScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12.0),
-          child: Image.network(
-            widget.image,
+          child: FastCachedImage(
+            url: widget.image,
             width: MediaQuery.of(context).size.width * 0.3,
             fit: BoxFit.cover,
           ),
