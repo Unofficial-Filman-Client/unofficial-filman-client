@@ -1,6 +1,6 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
-import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:unofficial_filman_client/utils/updater.dart";
 import "package:flutter/material.dart";
 import "package:unofficial_filman_client/screens/film.dart";
@@ -85,10 +85,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return buildErrorContent(
-              snapshot.error!,
-              context,
-              (final auth) => setState(() {
+          return ErrorHandling(
+              error: snapshot.error!,
+              onLogin: (final auth) => setState(() {
                     homePageLoader =
                         Provider.of<FilmanNotifier>(context, listen: false)
                             .getFilmanPage();

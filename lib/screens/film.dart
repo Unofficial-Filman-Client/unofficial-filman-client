@@ -5,7 +5,7 @@ import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
-import "package:unofficial_filman_client/utils/error_handling.dart";
+import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
@@ -93,11 +93,10 @@ class _FilmScreenState extends State<FilmScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return buildErrorContent(
-                snapshot.error!,
-                context,
-                (final response) => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
+            return ErrorHandling(
+                error: snapshot.error!,
+                onLogin: (final response) => Navigator.of(context)
+                    .pushReplacement(MaterialPageRoute(
                         builder: (final context) => FilmScreen(
                             url: widget.url,
                             title: widget.title,

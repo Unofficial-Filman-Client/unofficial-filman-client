@@ -112,12 +112,30 @@ class FilmanNotifier extends ChangeNotifier {
     }
   }
 
+  Future<bool> checkIfCaptchaIsNeeded() async {
+    final response = await dio.get(
+      "https://filman.cc/logowanie",
+      options: _buildDioOptions(contentType: "application/json"),
+    );
+
+    final document = parse(response.data);
+    return document.querySelector(".g-recaptcha") != null;
+  }
+
   Future<AuthResponse> loginToFilman(
-      final String login, final String password) async {
+    final String login,
+    final String password, {
+    final String? captchaToken,
+  }) async {
     try {
       final response = await dio.post(
         "https://filman.cc/logowanie",
-        data: {"login": login, "password": password, "submit": ""},
+        data: {
+          "login": login,
+          "password": password,
+          "submit": "",
+          if (captchaToken != null) "g-recaptcha-response": captchaToken,
+        },
         options:
             _buildDioOptions(contentType: "application/x-www-form-urlencoded"),
       );
