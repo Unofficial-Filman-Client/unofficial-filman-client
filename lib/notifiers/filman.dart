@@ -1,5 +1,6 @@
 import "dart:convert";
 import "package:dio/dio.dart";
+import "package:html/dom.dart" as dom;
 import "package:unofficial_filman_client/types/exceptions.dart";
 import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
@@ -13,6 +14,7 @@ import "package:flutter/material.dart";
 import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
+import "package:dio_cache_interceptor/dio_cache_interceptor.dart";
 
 class FilmanNotifier extends ChangeNotifier {
   final List<String> cookies = [];
@@ -24,6 +26,11 @@ class FilmanNotifier extends ChangeNotifier {
   Future<void> initPrefs() async {
     dio = Dio();
     dio.interceptors.add(CfWrapperInterceptor());
+    dio.interceptors.add(DioCacheInterceptor(
+        options: CacheOptions(
+      store: MemCacheStore(maxSize: 10485760, maxEntrySize: 1048576),
+      policy: CachePolicy.request,
+    )));
     prefs = await SharedPreferences.getInstance();
     cookies.addAll(prefs.getStringList("cookies") ?? []);
     secureStorage = const FlutterSecureStorage(
@@ -219,8 +226,8 @@ class FilmanNotifier extends ChangeNotifier {
       options: _buildDioOptions(contentType: "application/json"),
     );
 
-    if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
-        false) {
+    if (response.headers["location"]?.contains("https://filman.cc/logowanie") ==
+        true) {
       logout();
       throw const LogOutException();
     }
@@ -331,7 +338,7 @@ class FilmanNotifier extends ChangeNotifier {
             .querySelectorAll("#item-info a")
             .firstWhere(
               (final el) => el.text.trim() == "Następny",
-              orElse: () => throw ArgumentError("No next episode link found"),
+              orElse: () => dom.Element.tag("a")..attributes["href"] = "",
             )
             .attributes["href"]
             ?.replaceAll("#single-poster", "");
@@ -339,8 +346,7 @@ class FilmanNotifier extends ChangeNotifier {
             .querySelectorAll("#item-info a")
             .firstWhere(
               (final el) => el.text.trim() == "Następny",
-              orElse: () =>
-                  throw ArgumentError("No previous episode link found"),
+              orElse: () => dom.Element.tag("a")..attributes["href"] = "",
             )
             .attributes["href"]
             ?.replaceAll("#single-poster", "");

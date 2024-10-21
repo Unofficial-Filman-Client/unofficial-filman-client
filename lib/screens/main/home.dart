@@ -7,6 +7,7 @@ import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/widgets/search.dart";
 import "package:provider/provider.dart";
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,10 +60,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         },
         child: ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(12.0)),
-          child: Image.network(
-            film.imageUrl,
-            fit: BoxFit.cover,
-          ),
+          child: FastCachedImage(
+              url: film.imageUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (final context, final progress) => SizedBox(
+                    height: 180,
+                    width: 116,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          value: progress.progressPercentage.value),
+                    ),
+                  )),
         ),
       ),
     );

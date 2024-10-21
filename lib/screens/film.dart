@@ -13,6 +13,7 @@ import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 import "package:url_launcher/url_launcher.dart";
 import "package:share_plus/share_plus.dart";
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 class FilmScreen extends StatefulWidget {
   final String url, title, image;
@@ -313,8 +314,8 @@ class _FilmScreenState extends State<FilmScreen> {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12.0),
-          child: Image.network(
-            widget.image,
+          child: FastCachedImage(
+            url: widget.image,
             width: MediaQuery.of(context).size.width * 0.3,
             fit: BoxFit.cover,
           ),

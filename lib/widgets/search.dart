@@ -1,3 +1,4 @@
+import "package:fast_cached_network_image/fast_cached_network_image.dart";
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
@@ -87,7 +88,8 @@ class _SearchModalState extends State<SearchModal> {
                                       title: DisplayTitle(title: film.title),
                                       subtitle: Text(
                                           '${(film.desc?.split(' ').take(12)?..last.replaceAll(',', ''))?.join(' ')}...'),
-                                      leading: Image.network(film.imageUrl),
+                                      leading:
+                                          FastCachedImage(url: film.imageUrl),
                                       onTap: () {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
