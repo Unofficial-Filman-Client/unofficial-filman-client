@@ -34,6 +34,7 @@ dependencies:
     git: https://github.com/Unofficial-Filman-Client/flutter_cast_framework
   fast_cached_network_image: ^1.2.9
   dio_cache_interceptor: ^3.5.0
+  flutter_inappwebview: ^6.0.0
 
 dev_dependencies:
   flutter_test:

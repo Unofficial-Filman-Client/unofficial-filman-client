@@ -1,9 +1,9 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/screens/main.dart";
-import "package:unofficial_filman_client/widgets/recaptcha.dart";
 import "package:flutter/gestures.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
+import "package:unofficial_filman_client/widgets/recaptcha.dart";
 import "package:url_launcher/url_launcher.dart";
 
 class RegisterScreen extends StatefulWidget {
@@ -18,15 +18,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
   late final TextEditingController repasswordController;
+  late final GoogleReCaptchaController recaptchaV2Controller;
 
-  RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
-
-  void _submitForm() async {
+  void _submitForm() {
     setState(() {
+      recaptchaV2Controller.show();
       isLoading = true;
     });
-
-    recaptchaV2Controller.show();
   }
 
   void _register(final String recaptchatoken) async {
@@ -103,6 +101,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     emailController = TextEditingController();
     passwordController = TextEditingController();
     repasswordController = TextEditingController();
+    recaptchaV2Controller = GoogleReCaptchaController()
+      ..onToken((final String token) {
+        _register(token);
+      });
   }
 
   @override
@@ -226,17 +228,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ],
                     )),
-              RecaptchaV2(
-                siteUrl: "https://filman.cc/rejestracja",
+              GoogleReCaptcha(
                 controller: recaptchaV2Controller,
-                onToken: (final token) {
-                  _register(token);
-                },
-                onCanceled: (final value) {
-                  setState(() {
-                    isLoading = false;
-                  });
-                },
+                url: "https://filman.cc/rejestracja",
+                siteKey: "6LcQs24iAAAAALFibpEQwpQZiyhOCn-zdc-eFout",
               )
             ],
           )),

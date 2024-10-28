@@ -14,10 +14,16 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   late final TextEditingController loginController;
   late final TextEditingController passwordController;
+  late final GoogleReCaptchaController recaptchaV2Controller;
 
-  RecaptchaV2Controller recaptchaV2Controller = RecaptchaV2Controller();
+  void _submitForm() {
+    setState(() {
+      recaptchaV2Controller.show();
+      isLoading = true;
+    });
+  }
 
-  void _login({final String? captchaToken}) async {
+  void _login(final String captchaToken) async {
     final loginResponse =
         await Provider.of<FilmanNotifier>(context, listen: false).loginToFilman(
             loginController.text, passwordController.text,
@@ -59,6 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     loginController = TextEditingController();
     passwordController = TextEditingController();
+    recaptchaV2Controller = GoogleReCaptchaController()
+      ..onToken((final String token) {
+        _login(token);
+      });
   }
 
   @override
@@ -109,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               controller: passwordController,
                               onSubmitted: (final _) {
-                                _login();
+                                _submitForm();
                               },
                             ),
                             const SizedBox(height: 16.0),
@@ -117,22 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               alignment: Alignment.centerRight,
                               child: FilledButton(
                                 onPressed: () async {
-                                  setState(() {
-                                    isLoading = true;
-                                  });
-
-                                  final needCaptcha =
-                                      await Provider.of<FilmanNotifier>(context,
-                                              listen: false)
-                                          .checkIfCaptchaIsNeeded();
-
-                                  if (needCaptcha) {
-                                    setState(() {
-                                      recaptchaV2Controller.show();
-                                    });
-                                  } else {
-                                    _login();
-                                  }
+                                  _submitForm();
                                 },
                                 child: const Text("Zaloguj się"),
                               ),
@@ -143,17 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
-          RecaptchaV2(
-            siteUrl: "https://filman.cc/logowanie",
+          GoogleReCaptcha(
             controller: recaptchaV2Controller,
-            onToken: (final token) {
-              _login(captchaToken: token);
-            },
-            onCanceled: (final value) {
-              setState(() {
-                isLoading = false;
-              });
-            },
+            url: "https://filman.cc/logowanie",
+            siteKey: "6LcQs24iAAAAALFibpEQwpQZiyhOCn-zdc-eFout",
           )
         ]));
   }
