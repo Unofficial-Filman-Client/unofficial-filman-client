@@ -1,175 +1,150 @@
 import "package:flutter/material.dart";
-import "package:webview_flutter/webview_flutter.dart";
+import "package:flutter_inappwebview/flutter_inappwebview.dart";
 
-class RecaptchaV2 extends StatefulWidget {
-  final String siteUrl;
-  final RecaptchaV2Controller controller;
+class GoogleReCaptcha extends StatefulWidget {
+  final String siteKey;
+  final String url;
+  final String languageCode;
+  final GoogleReCaptchaController controller;
 
-  final ValueChanged<String>? onToken;
-  final ValueChanged? onCanceled;
-
-  const RecaptchaV2({
+  const GoogleReCaptcha({
     super.key,
-    required this.siteUrl,
+    required this.siteKey,
+    required this.url,
     required this.controller,
-    required this.onToken,
-    required this.onCanceled,
+    this.languageCode = "en",
   });
 
   @override
-  State<StatefulWidget> createState() => _RecaptchaV2State();
+  State<GoogleReCaptcha> createState() => _GoogleReCaptchaState();
 }
 
-class _RecaptchaV2State extends State<RecaptchaV2> {
-  late RecaptchaV2Controller controller;
-  late WebViewController webViewController;
+class _GoogleReCaptchaState extends State<GoogleReCaptcha> {
+  String get htmlContent => '''
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://recaptcha.google.com/recaptcha/api.js?explicit&hl=${widget.languageCode}"></script>
+        <script type="text/javascript">
+          function onDataCallback(response) {
+            window.flutter_inappwebview.callHandler('messageHandler', response);
+            setTimeout(function () {
+              document.getElementById('captcha').style.display = 'none';
+            }, 1500);
+          }
+          function onCancel() {
+            window.flutter_inappwebview.callHandler('messageHandler', null, 'cancel');
+            document.getElementById('captcha').style.display = 'none';
+          }
+          function onDataExpiredCallback() {
+            window.flutter_inappwebview.callHandler('messageHandler', null, 'expired');
+          }
+          function onDataErrorCallback() {
+            window.flutter_inappwebview.callHandler('messageHandler', null, 'error');
+          }
+        </script>
+      </head>
+      <body>
+        <div id="captcha" style="text-align: center; padding-top: 100px;">
+          <div class="g-recaptcha" 
+               style="display: inline-block; height: auto;" 
+               data-sitekey="${widget.siteKey}" 
+               data-callback="onDataCallback"
+               data-expired-callback="onDataExpiredCallback"
+               data-error-callback="onDataErrorCallback">
+          </div>
+        </div>
+      </body>
+    </html>
+  ''';
 
   @override
   void initState() {
-    controller = widget.controller;
     super.initState();
-    webViewController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.white)
-      ..addJavaScriptChannel("Captcha", onMessageReceived: (final token) {
-        widget.onToken?.call(token.message);
-        controller.hide();
-        controller.unload();
-        webViewController.clearCache();
-        webViewController.reload();
-      })
-      ..addJavaScriptChannel(
-        "Visible",
-        onMessageReceived: (final visible) {
-          debugPrint(visible.message);
-          setState(() {
-            if (bool.parse(visible.message) == true) controller.loaded();
-          });
-        },
-      )
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (final String url) {
-          webViewController.runJavaScript('''
-            document.body.style.visibility="hidden";
-            document.querySelector(".g-recaptcha")?.scrollIntoView(true);
-            document.querySelector(".g-recaptcha").style.visibility = "visible"
-            Visible.postMessage("true");
-            interval = setInterval(()=>{
-              let captcha = document.getElementsByName("g-recaptcha-response")[0].value
-              if(captcha.length > 0) {
-                Captcha.postMessage(captcha);
-                clearInterval(interval);
-              }
-            },100)
-          ''');
-        },
-      ))
-      ..loadRequest(Uri.parse(widget.siteUrl));
-  }
-
-  @override
-  void didUpdateWidget(final RecaptchaV2 oldWidget) {
-    if (widget.controller != oldWidget.controller) {
-      controller = widget.controller;
-    }
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
+    widget.controller.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
   Widget build(final BuildContext context) {
-    return controller.visible
-        ? Stack(
-            children: [
-              Opacity(
-                opacity: controller.loading ? 0.0 : 1.0,
-                child: WebViewWidget(controller: webViewController),
-              ),
-              controller.loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Container(),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: SizedBox(
-                  height: 60,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: <Widget>[
-                      Expanded(
-                        child: ElevatedButton(
-                          child: const Text("CANCEL RECAPTCHA"),
-                          onPressed: () {
-                            controller.hide();
-                            controller.unload();
-                            webViewController.clearCache();
-                            webViewController.reload();
-                            widget.onCanceled?.call(null);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          )
-        : Container();
+    if (!widget.controller.isVisible) return const SizedBox.shrink();
+    return Stack(
+      children: [
+        Container(
+          color: Colors.black.withOpacity(0.5),
+        ),
+        Center(
+          child: InAppWebView(
+            initialData: InAppWebViewInitialData(
+              data: htmlContent,
+              baseUrl: WebUri(widget.url),
+            ),
+            initialSettings: InAppWebViewSettings(transparentBackground: true),
+            onWebViewCreated: (final InAppWebViewController controller) {
+              controller.addJavaScriptHandler(
+                handlerName: "messageHandler",
+                callback: (final message) {
+                  if (message[0] is String) {
+                    widget.controller.callTokenCallback(message[0]);
+                    widget.controller.hide();
+                  } else {
+                    widget.controller.hide();
+                    return showDialog(
+                      context: context,
+                      builder: (final context) {
+                        return AlertDialog(
+                          title: const Text("Error"),
+                          content: const Text(
+                              "An error occurred while verifying the captcha."),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                widget.controller.hide();
+                              },
+                              child: const Text("OK"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
 
-class RecaptchaV2Controller extends ChangeNotifier {
-  bool isDisposed = false;
-  List<VoidCallback> _listeners = [];
+class GoogleReCaptchaController extends ChangeNotifier {
+  bool _isVisible = false;
+  void Function(String)? _onTokenCallback;
 
-  bool _visible = false;
-  bool get visible => _visible;
-
-  bool _loading = true;
-  bool get loading => _loading;
-
-  void loaded() {
-    _loading = false;
-    if (!isDisposed) notifyListeners();
-  }
-
-  void unload() {
-    _loading = true;
-    if (!isDisposed) notifyListeners();
-  }
+  bool get isVisible => _isVisible;
 
   void show() {
-    _visible = true;
-    if (!isDisposed) notifyListeners();
+    _isVisible = true;
+    notifyListeners();
   }
 
   void hide() {
-    _visible = false;
-    if (!isDisposed) notifyListeners();
+    _isVisible = false;
+    notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _listeners = [];
-    isDisposed = true;
-    super.dispose();
+  void onToken(final void Function(String) callback) {
+    _onTokenCallback = callback;
   }
 
-  @override
-  void addListener(final listener) {
-    if (!_listeners.contains(listener)) {
-      _listeners.add(listener);
-      super.addListener(listener);
+  void callTokenCallback(final String newToken) {
+    if (_onTokenCallback != null) {
+      _onTokenCallback!(newToken);
     }
-  }
-
-  @override
-  void removeListener(final listener) {
-    _listeners.remove(listener);
-    super.removeListener(listener);
   }
 }
