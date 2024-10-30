@@ -79,12 +79,14 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<bool> _playingSubscription;
   late final StreamSubscription<bool> _bufferingSubscription;
+  late final StreamSubscription<VideoParams> _videoParamsSubscription;
 
   bool _isOverlayVisible = true;
   bool _isBuffering = true;
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  VideoParams _videoParams = VideoParams();
 
   late FilmDetails _filmDetails;
 
@@ -201,6 +203,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
+      });
+    });
+
+    _videoParamsSubscription =
+        _controller.player.stream.videoParams.listen((final videoParams) {
+      setState(() {
+        _videoParams = videoParams;
       });
     });
 
@@ -321,6 +330,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _durationSubscription.cancel();
     _playingSubscription.cancel();
     _bufferingSubscription.cancel();
+    _videoParamsSubscription.cancel();
     _player.dispose();
 
     super.dispose();
@@ -354,11 +364,24 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   @override
   Widget build(final BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Stack(
         children: [
           Center(
-            child: Video(controller: _controller, controls: NoVideoControls),
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(
+                width: _videoParams.w?.toDouble() ?? screenWidth,
+                height: _videoParams.h?.toDouble() ?? screenHeight,
+                child: Video(
+                  controller: _controller,
+                  controls: NoVideoControls,
+                ),
+              ),
+            ),
           ),
           SafeArea(child: _buildOverlay(context)),
         ],
