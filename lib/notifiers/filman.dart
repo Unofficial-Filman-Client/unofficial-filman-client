@@ -6,7 +6,6 @@ import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/types/category.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
-import "package:unofficial_filman_client/types/auth_response.dart";
 import "package:unofficial_filman_client/types/search_results.dart";
 import "package:unofficial_filman_client/types/season.dart";
 import "package:unofficial_filman_client/types/user.dart";
@@ -38,17 +37,15 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
     );
 
     final login = await secureStorage.read(key: "login");
-    final password = await secureStorage.read(key: "password");
 
-    if (login != null && password != null) {
-      user = User(login: login, password: password);
+    if (login != null) {
+      user = User(login: login);
     }
   }
 
-  void saveUser(final String login, final String password) {
+  void saveUser(final String login) {
     secureStorage.write(key: "login", value: login);
-    secureStorage.write(key: "password", value: password);
-    user = User(login: login, password: password);
+    user = User(login: login);
   }
 
   void logout() {
@@ -64,96 +61,96 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
     );
   }
 
-  Future<AuthResponse> createAccountOnFilmn(
-      final String login,
-      final String email,
-      final String password,
-      final String password2,
-      final String recaptchatoken) async {
-    try {
-      final response = await dio.post(
-        "https://filman.cc/rejestracja",
-        data: {
-          "login": login,
-          "email": email,
-          "password": password,
-          "password2": password2,
-          "g-recaptcha-response": recaptchatoken,
-          "submit": "",
-        },
-        options:
-            _buildDioOptions(contentType: "application/x-www-form-urlencoded"),
-      );
+  // Future<AuthResponse> createAccountOnFilmn(
+  //     final String login,
+  //     final String email,
+  //     final String password,
+  //     final String password2,
+  //     final String recaptchatoken) async {
+  //   try {
+  //     final response = await dio.post(
+  //       "https://filman.cc/rejestracja",
+  //       data: {
+  //         "login": login,
+  //         "email": email,
+  //         "password": password,
+  //         "password2": password2,
+  //         "g-recaptcha-response": recaptchatoken,
+  //         "submit": "",
+  //       },
+  //       options:
+  //           _buildDioOptions(contentType: "application/x-www-form-urlencoded"),
+  //     );
 
-      final registerResponse =
-          AuthResponse(success: response.statusCode == 302);
-      final document = parse(response.data);
+  //     final registerResponse =
+  //         AuthResponse(success: response.statusCode == 302);
+  //     final document = parse(response.data);
 
-      document.querySelectorAll(".alert div").forEach((final element) {
-        final error = element.text.trim();
-        if (error.isNotEmpty) {
-          registerResponse.addError(error);
-        }
-      });
+  //     document.querySelectorAll(".alert div").forEach((final element) {
+  //       final error = element.text.trim();
+  //       if (error.isNotEmpty) {
+  //         registerResponse.addError(error);
+  //       }
+  //     });
 
-      if (registerResponse.errors.isEmpty) {
-        document.querySelectorAll(".alert").forEach((final element) {
-          final error = element.text.trim();
-          if (error.isNotEmpty) {
-            registerResponse.addError(error);
-          }
-        });
-      }
+  //     if (registerResponse.errors.isEmpty) {
+  //       document.querySelectorAll(".alert").forEach((final element) {
+  //         final error = element.text.trim();
+  //         if (error.isNotEmpty) {
+  //           registerResponse.addError(error);
+  //         }
+  //       });
+  //     }
 
-      return registerResponse;
-    } catch (e) {
-      return AuthResponse(success: false)
-        ..addError("Error occurred while registering: $e");
-    }
-  }
+  //     return registerResponse;
+  //   } catch (e) {
+  //     return AuthResponse(success: false)
+  //       ..addError("Error occurred while registering: $e");
+  //   }
+  // }
 
-  Future<AuthResponse> loginToFilman(
-    final String login,
-    final String password, {
-    final String? captchaToken,
-  }) async {
-    try {
-      final response = await dio.post(
-        "https://filman.cc/logowanie",
-        data: {
-          "login": login,
-          "password": password,
-          "submit": "",
-          if (captchaToken != null) "g-recaptcha-response": captchaToken,
-        },
-        options:
-            _buildDioOptions(contentType: "application/x-www-form-urlencoded"),
-      );
+  // Future<AuthResponse> loginToFilman(
+  //   final String login,
+  //   final String password, {
+  //   final String? captchaToken,
+  // }) async {
+  //   try {
+  //     final response = await dio.post(
+  //       "https://filman.cc/logowanie",
+  //       data: {
+  //         "login": login,
+  //         "password": password,
+  //         "submit": "",
+  //         if (captchaToken != null) "g-recaptcha-response": captchaToken,
+  //       },
+  //       options:
+  //           _buildDioOptions(contentType: "application/x-www-form-urlencoded"),
+  //     );
 
-      final cookiesHeader = response.headers["set-cookie"];
-      if (cookiesHeader != null) {
-        cookies
-          ..clear()
-          ..addAll(cookiesHeader);
-        prefs.setStringList("cookies", cookies);
-      }
+  //     final cookiesHeader = response.headers["set-cookie"];
+  //     if (cookiesHeader != null) {
+  //       cookies
+  //         ..clear()
+  //         ..addAll(cookiesHeader);
+  //       prefs.setStringList("cookies", cookies);
+  //     }
 
-      final loginResponse = AuthResponse(success: response.statusCode == 302);
-      final document = parse(response.data);
+  //     final loginResponse = AuthResponse(success: response.statusCode == 302);
+  //     final document = parse(response.data);
 
-      document.querySelectorAll(".alert").forEach((final element) {
-        final error = element.text.trim();
-        if (error.isNotEmpty) {
-          loginResponse.addError(error);
-        }
-      });
+  //     document.querySelectorAll(".alert").forEach((final element) {
+  //       final error = element.text.trim();
+  //       if (error.isNotEmpty) {
+  //         loginResponse.addError(error);
+  //       }
+  //     });
 
-      return loginResponse;
-    } catch (e) {
-      return AuthResponse(success: false)
-        ..addError("Error occurred while logging in: $e");
-    }
-  }
+  //     return loginResponse;
+  //   } catch (e) {
+  //     return AuthResponse(success: false)
+  //       ..addError("Error occurred while logging in: $e");
+  //   }
+  // }
 
   Future<HomePageResponse> getFilmanPage() async {
     final response = await dio.get(
