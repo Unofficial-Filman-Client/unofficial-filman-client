@@ -6,6 +6,7 @@ import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/types/category.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
+import "package:unofficial_filman_client/types/links.dart";
 import "package:unofficial_filman_client/types/search_results.dart";
 import "package:unofficial_filman_client/types/season.dart";
 import "package:unofficial_filman_client/types/user.dart";
