@@ -1,62 +1,105 @@
-import "package:unofficial_filman_client/screens/login.dart";
-import "package:unofficial_filman_client/screens/register.dart";
+import "package:device_info_plus/device_info_plus.dart";
 import "package:flutter/material.dart";
+import "package:bonsoir/bonsoir.dart";
+import "dart:io";
 
-class HelloScreen extends StatelessWidget {
+import "package:provider/provider.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/screens/main.dart";
+
+enum LoginState { waiting, loginin, done }
+
+class HelloScreen extends StatefulWidget {
   const HelloScreen({super.key});
+
+  @override
+  State<HelloScreen> createState() => _HelloScreenState();
+}
+
+class _HelloScreenState extends State<HelloScreen> {
+  LoginState state = LoginState.waiting;
+  String status = "Otwórz aplikację na telefonie";
+  late final BonsoirBroadcast broadcast;
+
+  @override
+  void initState() {
+    super.initState();
+    setupLogin();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    broadcast.stop();
+  }
+
+  void setupLogin() async {
+    final BonsoirService service = BonsoirService(
+      name: (await DeviceInfoPlugin().androidInfo).device,
+      type: "_majusssfilman._tcp",
+      port: 3030,
+    );
+    broadcast = BonsoirBroadcast(service: service);
+
+    final serverSocket = await ServerSocket.bind(InternetAddress.anyIPv4, 3031);
+    serverSocket.listen((final client) {
+      client.listen((final raw) {
+        final data = String.fromCharCodes(raw).trim();
+        if (data == "GETSTATE") {
+          client.write("STATE:${state.toString()}");
+          return;
+        }
+        if (data.startsWith("LOGIN:")) {
+          final [login, cookies] = data.split(":")[1].split("|");
+          final filmanNotifier =
+              Provider.of<FilmanNotifier>(context, listen: false);
+          setState(() {
+            state = LoginState.loginin;
+            status = "Logowanie jako $login...";
+            filmanNotifier.cookies
+              ..clear()
+              ..addAll(cookies.split(","));
+            filmanNotifier.prefs.setStringList("cookies", cookies.split(","));
+            filmanNotifier.saveUser(login);
+          });
+          Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (final _) => const MainScreen()));
+          client.write("STATE:LoginState.done");
+          broadcast.stop();
+        }
+      });
+    });
+
+    await broadcast.ready;
+    await broadcast.start();
+  }
 
   @override
   Widget build(final BuildContext context) {
     return Scaffold(
         body: SafeArea(
-            child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Witaj w Filman.cc!",
-                    style: TextStyle(fontSize: 32),
-                  ),
-                ),
-                Text(
-                    "Ta nieoficjalna aplikacja, stworzona przez entuzjaste programowania, wyświetla dane z Filman.cc i innych stron internetowych firm trzecich. Nie jesteśmy związani z Filman.cc ani z żadną inną stroną internetową, którą wyświetlamy. Traktuj tę aplikację jako narzędzie do przeglądania treści."),
-              ],
-            ),
+          const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text("Unofficial Filman Client for TVs"),
+              Text("cos tam")
+            ],
           ),
           const SizedBox(
-            height: 12,
+            width: 24,
           ),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (final context) => const LoginScreen(),
-                    )),
-                child: const Text("Zaloguj się")),
-          ),
-          const SizedBox(
-            height: 8,
-          ),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (final context) => const RegisterScreen(),
-                    )),
-                child: const Text("Stwórz konto")),
-          ),
-          const SizedBox(
-            height: 16,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [const Text("Status"), Text(status)],
           ),
         ],
       ),
-    )));
+    ));
   }
 }
