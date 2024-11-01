@@ -121,16 +121,14 @@ class _EpisodesModalState extends State<EpisodesModal> {
           ? const CircularProgressIndicator()
           : Icon(downloaded != null ? Icons.save : Icons.download),
       onPressed: () async {
-        if (!context.mounted ||
-            downloaded != null ||
-            filmDetails.links == null) {
+        if (downloaded != null || filmDetails.links == null) {
           return;
         }
         final directs = await getDirects(filmDetails.links!);
         if (directs.isEmpty || !context.mounted) {
           return;
         }
-        final (l, q) = await getUserSelectedPreferences(directs, context);
+        final (l, q) = await getUserSelectedPreferences(context, directs);
         if (l == null || q == null) {
           return;
         }

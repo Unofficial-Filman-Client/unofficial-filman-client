@@ -52,14 +52,15 @@ class Host {
     required this.link,
   })  : qualityVersion =
             Quality.values.firstWhere((final e) => e.quality == qualityVersion),
-        language = Language.values.firstWhere((final e) => e.language == language);
+        language =
+            Language.values.firstWhere((final e) => e.language == language);
 
   Host.fromMap(final Map<String, dynamic> json)
       : main = json["main"],
         qualityVersion = Quality.values
             .firstWhere((final e) => e.quality == json["qualityVersion"]),
-        language =
-            Language.values.firstWhere((final e) => e.language == json["language"]),
+        language = Language.values
+            .firstWhere((final e) => e.language == json["language"]),
         link = json["link"];
 
   Map<String, dynamic> toMap() {
@@ -76,14 +77,16 @@ class DirectLink {
   final String link;
   final Quality qualityVersion;
   final Language language;
+  final int responseTime;
 
   DirectLink({
     required this.link,
     required this.qualityVersion,
     required this.language,
+    required this.responseTime,
   });
 
   @override
   String toString() =>
-      "DirectLink(link: $link, qualityVersion: $qualityVersion, language: $language)";
+      "DirectLink(link: $link, qualityVersion: $qualityVersion, language: $language, responseTime: $responseTime)";
 }

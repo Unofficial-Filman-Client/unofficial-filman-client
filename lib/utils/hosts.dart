@@ -1,3 +1,5 @@
+import "dart:async";
+
 import "package:dio/dio.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/links.dart";
@@ -10,18 +12,52 @@ import "package:unofficial_filman_client/types/links.dart";
 //   ].any((final String domain) => host.main.contains(domain));
 // }
 
+Future<(bool, int)> checkDirect(final url) async {
+  final Dio dio = Dio();
+  final startTime = DateTime.now();
+  final CancelToken cancelToken = CancelToken();
+
+  try {
+    await dio.get(
+      url,
+      options: Options(
+        followRedirects: false,
+        validateStatus: (final _) => true,
+      ),
+      cancelToken: cancelToken,
+      onReceiveProgress: (final received, final total) {
+        if (received >= 2 * 1024 * 1024) {
+          cancelToken.cancel();
+        }
+      },
+    );
+    return (true, DateTime.now().difference(startTime).inMilliseconds);
+  } catch (e) {
+    if (e is DioException) {
+      if (CancelToken.isCancel(e)) {
+        return (true, DateTime.now().difference(startTime).inMilliseconds);
+      }
+    }
+  }
+
+  return (false, -1);
+}
+
 Future<List<DirectLink>> getDirects(final List<Host> links) async {
   final List<DirectLink> directLinks = [];
   for (Host link in links) {
-    // if (link.language != lang || link.qualityVersion != quality) {
-    //   continue;
-    // }
     if (link.main.contains("streamtape")) {
       try {
+        final direct = await _scrapStreamtape(link.link);
+        final (valid, responseTime) = await checkDirect(direct);
+        if (!valid) {
+          throw Exception("STREAMTAPE INVALID SOURCE: $direct");
+        }
         directLinks.add(DirectLink(
-          link: await _scrapStreamtape(link.link),
+          link: direct,
           qualityVersion: link.qualityVersion,
           language: link.language,
+          responseTime: responseTime,
         ));
       } catch (e) {
         //
@@ -29,27 +65,40 @@ Future<List<DirectLink>> getDirects(final List<Host> links) async {
     }
     if (link.main.contains("vidoza")) {
       try {
+        final direct = await _scrapVidoza(link.link);
+        final (valid, responseTime) = await checkDirect(direct);
+        if (!valid) {
+          throw Exception("VIDOZA INVALID SOURCE: $direct");
+        }
         directLinks.add(DirectLink(
-          link: await _scrapVidoza(link.link),
-          qualityVersion: link.qualityVersion,
-          language: link.language,
-        ));
+            link: direct,
+            qualityVersion: link.qualityVersion,
+            language: link.language,
+            responseTime: responseTime));
       } catch (e) {
         //
       }
     }
     if (link.main.contains("vtube")) {
       try {
+        final direct = await _scrapVtube(link.link);
+        final (valid, responseTime) = await checkDirect(direct);
+        if (!valid) {
+          throw Exception("VTUBE INVALID SOURCE: $direct");
+        }
         directLinks.add(DirectLink(
-          link: await _scrapVtube(link.link),
+          link: direct,
           qualityVersion: link.qualityVersion,
           language: link.language,
+          responseTime: responseTime,
         ));
       } catch (e) {
         //
       }
     }
   }
+  directLinks
+      .sort((final a, final b) => a.responseTime.compareTo(b.responseTime));
   return directLinks;
 }
 
@@ -63,13 +112,15 @@ Future<String> _scrapVidoza(final String url) async {
       throw Exception("File was deleted");
     }
 
-    final link = document.querySelector("source")?.attributes["src"];
+    final directLink = document.querySelector("source")?.attributes["src"];
 
-    if (link == null) {
+    if (directLink == null) {
       throw Exception("No link found");
     }
 
-    return Uri.parse(link).toString();
+    // debugPrint("VIDOZA: $url | $directLink");
+
+    return Uri.parse(directLink).toString();
   } catch (e) {
     throw Exception("Error scraping Vidoza.net: ${e.toString()}");
   }
@@ -120,7 +171,9 @@ Future<String> _scrapStreamtape(final String url) async {
       throw Exception("No direct link found");
     }
 
-    return directLink;
+    // debugPrint("STREAMTAPE: $url | $directLink");
+
+    return Uri.parse(directLink).toString();
   } catch (e) {
     throw Exception("Error scraping Streamtape.com: ${e.toString()}");
   }
@@ -185,11 +238,13 @@ Future<String> _scrapVtube(final String url) async {
     final String decoded =
         deobfuscate(firstArg, secondArg, thirdArg, fourthArg);
 
-    final directUrl = decoded
+    final directLink = decoded
         .split("jwplayer(\"vplayer\").setup({sources:[{file:\"")[1]
         .split("\"")[0];
 
-    return directUrl;
+    // debugPrint("STREAMTAPE: $url | $directLink");
+
+    return Uri.parse(directLink).toString();
   } catch (e) {
     throw Exception("Error scraping Vtube.network: ${e.toString()}");
   }
