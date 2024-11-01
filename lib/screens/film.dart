@@ -176,8 +176,8 @@ class _FilmScreenState extends State<FilmScreen> {
                               ? IconButton(
                                   onPressed: () async {
                                     final direct = await getUserSelectedVersion(
-                                        snapshot.data?.links ?? [],
                                         context,
+                                        snapshot.data?.links ?? [],
                                         false);
                                     if (direct == null) {
                                       if (context.mounted) {

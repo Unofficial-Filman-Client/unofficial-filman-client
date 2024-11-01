@@ -52,8 +52,12 @@ Future<dynamic> _showSelectionDialog(
 }
 
 Future<(Language?, Quality?)> getUserSelectedPreferences(
-    final List<DirectLink> links, final BuildContext context) async {
-  final List<Language> languages = await _getAvailableLanguages(links);
+    final BuildContext context, final List<DirectLink> directs,
+    [final bool supportm3u8 = true]) async {
+  directs
+      .removeWhere((final link) => link.link.contains(".m3u8") && !supportm3u8);
+
+  final List<Language> languages = await _getAvailableLanguages(directs);
   late Language lang;
   if (languages.length > 1 && context.mounted) {
     lang = await _showSelectionDialog(
@@ -67,7 +71,7 @@ Future<(Language?, Quality?)> getUserSelectedPreferences(
     return (null, null);
   }
   final List<Quality> qualities =
-      await _getAvaliableQualitiesForLanguage(lang, links);
+      await _getAvaliableQualitiesForLanguage(lang, directs);
   late Quality quality;
   if (qualities.length > 1 && context.mounted) {
     quality = await _showSelectionDialog(context, qualities, "Wybierz jakość");
@@ -80,7 +84,7 @@ Future<(Language?, Quality?)> getUserSelectedPreferences(
 }
 
 Future<DirectLink?> getUserSelectedVersion(
-    final List<Host> links, final BuildContext context,
+    final BuildContext context, final List<Host> links,
     [final bool supportm3u8 = true]) async {
   final List<DirectLink> directs = await getDirects(links);
   if (directs.isEmpty) {
@@ -89,11 +93,11 @@ Future<DirectLink?> getUserSelectedVersion(
   directs
       .removeWhere((final link) => link.link.contains(".m3u8") && !supportm3u8);
   if (!context.mounted) return null;
-  final (lang, quality) = await getUserSelectedPreferences(directs, context);
+  final (lang, quality) = await getUserSelectedPreferences(context, directs);
   if (lang == null || quality == null) {
     return null;
   }
   directs.removeWhere(
       (final link) => link.language != lang || link.qualityVersion != quality);
-  return (directs..shuffle()).first;
+  return directs.firstOrNull;
 }

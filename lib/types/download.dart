@@ -69,7 +69,7 @@ class Downloading {
           link.qualityVersion != quality ||
           (link.link.contains(".m3u8")));
 
-      final DirectLink? direct = (directs..shuffle()).firstOrNull;
+      final direct = directs.firstOrNull;
       if (direct == null) {
         throw Exception("No host to download from found");
       }

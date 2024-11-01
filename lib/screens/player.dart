@@ -251,7 +251,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     if (widget.downloaded == null) {
       if (_filmDetails.links != null && mounted) {
         final DirectLink? direct =
-            await getUserSelectedVersion(_filmDetails.links!, context);
+            await getUserSelectedVersion(context, _filmDetails.links!);
         if (direct == null) return _showNoLinksSnackbar();
         setState(() {
           _direct = direct;
