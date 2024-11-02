@@ -99,13 +99,6 @@ class DownloadedSingle {
   final Language language;
   final String displayName;
 
-  // Downloaded(
-  //     {required this.film,
-  //     required this.displayName,
-  //     required this.quality,
-  //     required this.language})
-  //     : filename = "${film.title.replaceAll(' ', '_').replaceAll('/', '')}.mp4";
-
   DownloadedSingle.fromDownloading(final Downloading downloading)
       : film = downloading.film,
         displayName = downloading.displayName,
