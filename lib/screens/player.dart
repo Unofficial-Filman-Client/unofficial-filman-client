@@ -79,14 +79,12 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<bool> _playingSubscription;
   late final StreamSubscription<bool> _bufferingSubscription;
-  late final StreamSubscription<VideoParams> _videoParamsSubscription;
 
   bool _isOverlayVisible = true;
   bool _isBuffering = true;
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
-  VideoParams _videoParams = VideoParams();
 
   late FilmDetails _filmDetails;
 
@@ -96,12 +94,11 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   bool _isSeeking = false;
   FilmDetails? _nextEpisode;
   DownloadedSingle? _nextDwonloaded;
+  String _displayState = "Ładowanie...";
 
   late FlutterCastFramework _castFramework;
   DirectLink? _direct;
   CastState? _castState;
-  // SessionState? _castSessionState;
-  // PlayerState? _castPlayerState;
 
   @override
   void initState() {
@@ -143,18 +140,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
 
     final sessionManager = _castFramework.castContext.sessionManager;
-    // sessionManager.state.addListener(
-    //   () {
-    //     setState(() {
-    //       _castSessionState = sessionManager.state.value;
-    //     });
-    //   },
-    // );
-    // sessionManager.remoteMediaClient.playerState.addListener(() {
-    //   setState(() {
-    //     _castPlayerState = sessionManager.remoteMediaClient.playerState.value;
-    //   });
-    // });
     sessionManager.remoteMediaClient.onProgressUpdated =
         (final progressMs, final durationMs) {
       setState(() {
@@ -206,13 +191,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       });
     });
 
-    _videoParamsSubscription =
-        _controller.player.stream.videoParams.listen((final videoParams) {
-      setState(() {
-        _videoParams = videoParams;
-      });
-    });
-
     _bufferingSubscription =
         _controller.player.stream.buffering.listen((final buffering) {
       setState(() => _isBuffering = buffering);
@@ -221,6 +199,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   Future<void> _initPlayer() async {
     if (widget.filmDetails == null) {
+      setState(() => _displayState = "Pobieranie informacji o filmie...");
       final details = await Provider.of<FilmanNotifier>(context, listen: false)
           .getFilmDetails(widget.targetUrl);
       setState(() => _filmDetails = details);
@@ -232,6 +211,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       if (widget.parentDetails != null) {
         setState(() => _parentDetails = widget.parentDetails);
       } else if (_filmDetails.parentUrl != null && mounted) {
+        setState(() => _displayState = "Pobieranie informacji o serialu...");
         final parent = await Provider.of<FilmanNotifier>(context, listen: false)
             .getFilmDetails(_filmDetails.parentUrl ?? "");
         setState(() => _parentDetails = parent);
@@ -250,12 +230,14 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
     if (widget.downloaded == null) {
       if (_filmDetails.links != null && mounted) {
+        setState(() => _displayState = "Ładowanie mediów...");
         final DirectLink? direct =
             await getUserSelectedVersion(context, _filmDetails.links!);
         if (direct == null) return _showNoLinksSnackbar();
         setState(() {
           _direct = direct;
         });
+        setState(() => _displayState = "");
         _player.open(Media(direct.link));
       } else {
         return _showNoLinksSnackbar();
@@ -330,7 +312,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     _durationSubscription.cancel();
     _playingSubscription.cancel();
     _bufferingSubscription.cancel();
-    _videoParamsSubscription.cancel();
     _player.dispose();
 
     super.dispose();
@@ -364,24 +345,17 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   @override
   Widget build(final BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
     return Scaffold(
       body: Stack(
         children: [
-          Center(
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: SizedBox(
-                width: _videoParams.w?.toDouble() ?? screenWidth,
-                height: _videoParams.h?.toDouble() ?? screenHeight,
-                child: Video(
-                  controller: _controller,
-                  controls: NoVideoControls,
-                ),
-              ),
-            ),
+          Video(
+            controller: _controller,
+            controls: NoVideoControls,
+            fit: BoxFit.fitWidth,
           ),
           SafeArea(child: _buildOverlay(context)),
         ],
@@ -436,10 +410,20 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     if (_isBuffering) {
       return Center(
         child: AnimatedOpacity(
-          opacity: _isBuffering ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 300),
-          child: const CircularProgressIndicator(),
-        ),
+            opacity: _isBuffering ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(
+                  height: 8,
+                ),
+                Text(
+                  _displayState,
+                ),
+              ],
+            )),
       );
     }
     return const SizedBox();

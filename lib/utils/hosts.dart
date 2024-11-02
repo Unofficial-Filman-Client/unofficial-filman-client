@@ -4,14 +4,6 @@ import "package:dio/dio.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/links.dart";
 
-// bool isSupportedHost(final Host host) {
-//   return [
-//     "streamtape",
-//     "vidoza",
-//     "vtube",
-//   ].any((final String domain) => host.main.contains(domain));
-// }
-
 Future<(bool, int)> checkDirect(final url) async {
   final Dio dio = Dio();
   final startTime = DateTime.now();
@@ -26,7 +18,7 @@ Future<(bool, int)> checkDirect(final url) async {
       ),
       cancelToken: cancelToken,
       onReceiveProgress: (final received, final total) {
-        if (received >= 2 * 1024 * 1024) {
+        if (received >= 1024 * 1024) {
           cancelToken.cancel();
         }
       },

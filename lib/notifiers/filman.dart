@@ -14,7 +14,6 @@ import "package:flutter/material.dart";
 import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
-import "package:dio_cache_interceptor/dio_cache_interceptor.dart";
 
 class FilmanNotifier extends ChangeNotifier {
   final List<String> cookies = [];
@@ -26,11 +25,6 @@ class FilmanNotifier extends ChangeNotifier {
   Future<void> initPrefs() async {
     dio = Dio();
     dio.interceptors.add(CfWrapperInterceptor());
-    dio.interceptors.add(DioCacheInterceptor(
-        options: CacheOptions(
-      store: MemCacheStore(maxSize: 10485760, maxEntrySize: 1048576),
-      policy: CachePolicy.request,
-    )));
     prefs = await SharedPreferences.getInstance();
     cookies.addAll(prefs.getStringList("cookies") ?? []);
     secureStorage = const FlutterSecureStorage(
