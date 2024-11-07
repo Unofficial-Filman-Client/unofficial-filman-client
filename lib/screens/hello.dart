@@ -87,7 +87,7 @@ class _HelloScreenState extends State<HelloScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text("Unofficial Filman Client for TVs"),
-              Text("cos tam")
+              Text("cos tddjdncam")
             ],
           ),
           const SizedBox(
