@@ -1,0 +1,100 @@
+name: Build and Release Flutter App
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  update-version:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    name: Update Version Number
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Release Version
+        id: extract_version
+        run: |
+          version=$(echo "${{ github.event.pull_request.head.ref }}" | sed -e 's|release/||')
+          echo "release_version=${version}" >> $GITHUB_OUTPUT
+      - name: Update Version in pubspec.yaml
+        env:
+          release_version: ${{ steps.extract_version.outputs.release_version }}
+        run: |
+          sed -i "s/^version:.*/version: ${release_version}/" pubspec.yaml
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add pubspec.yaml
+          git commit -m "Update version to ${release_version}"
+          git push --force
+  android-build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: update-version
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Pull Latest Changes
+        run: git pull origin main
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.24.1
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk
+
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/unofficial-filman-tv.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: unofficial-filman-tv.apk
+          path: build/app/outputs/flutter-apk/unofficial-filman-tv.apk
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: android-build
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: unofficial-filman-tv.apk
+
+      - name: Extract Release Version
+        id: extract_version
+        run: |
+          version=$(echo "${{ github.event.pull_request.head.ref }}" | sed -e 's|release/||')
+          echo "release_version=${version}" >> $GITHUB_OUTPUT
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          release_version: ${{ steps.extract_version.outputs.release_version }}
+        run: |
+          release_name="Release ${release_version}"
+          release_tag="${release_version}"
+          gh release create "${release_tag}" \
+            --title "${release_name}" \
+            unofficial-filman-tv.apk
