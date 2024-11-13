@@ -1,4 +1,5 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
+import "package:unofficial_filman_client/screens/category.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
 import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:unofficial_filman_client/utils/updater.dart";
@@ -76,6 +77,46 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  PreferredSizeWidget _buildBottomAppBar(final BuildContext context) {
+    return PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.category),
+                SizedBox(width: 4.0),
+                Text(
+                  "Kategorie:",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              ],
+            ),
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (final context) => const CategoryScreen(
+                            forSeries: false,
+                          )));
+                },
+                child: const Text("Filmy")),
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (final context) => const CategoryScreen(
+                            forSeries: true,
+                          )));
+                },
+                child: const Text("Seriale")),
+          ],
+        ));
+  }
+
   @override
   Widget build(final BuildContext context) {
     return FutureBuilder<HomePageResponse>(
@@ -113,6 +154,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
+                    _buildBottomAppBar(context),
                     for (final String category
                         in snapshot.data?.categories ?? [])
                       Padding(
