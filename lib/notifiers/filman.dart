@@ -1,5 +1,6 @@
 import "dart:convert";
 import "package:dio/dio.dart";
+import "package:flutter/material.dart";
 import "package:html/dom.dart" as dom;
 import "package:unofficial_filman_client/types/exceptions.dart";
 import "package:unofficial_filman_client/types/film.dart";
@@ -7,13 +8,13 @@ import "package:unofficial_filman_client/types/category.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
 import "package:unofficial_filman_client/types/auth_response.dart";
-import "package:unofficial_filman_client/types/links.dart";
 import "package:unofficial_filman_client/types/search_results.dart";
 import "package:unofficial_filman_client/types/season.dart";
 import "package:unofficial_filman_client/types/user.dart";
 import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
+import "package:unofficial_filman_client/types/video_scrappers.dart";
 
 class FilmanNotifier {
   final List<String> cookies = [];
@@ -222,6 +223,12 @@ class FilmanNotifier {
     return searchResults;
   }
 
+  void _preloadAndVerifyLinks(final List<MediaLink> links) {
+    for (final link in links) {
+      link.getDirectLink();
+    }
+  }
+
   Future<FilmDetails> getFilmDetails(final String link) async {
     final response = await dio.get(
       link,
@@ -301,10 +308,9 @@ class FilmanNotifier {
         isEpisode: false,
       );
     } else {
-      final List<Host> links = [];
+      final List<MediaLink> links = [];
 
-      document.querySelectorAll("tbody tr").forEach((final row) {
-        final main = row.querySelector("td")?.text.trim() ?? "";
+      for (final row in document.querySelectorAll("tbody tr")) {
         String? link;
 
         try {
@@ -318,19 +324,21 @@ class FilmanNotifier {
           link = null;
         }
 
-        if (link == null || link.isEmpty == true) return;
+        if (link == null || link.isEmpty == true) continue;
 
         final tableData = row.querySelectorAll("td");
-        if (tableData.length < 3) return;
+        if (tableData.length < 3) continue;
         final language = tableData[1].text.trim();
         final qualityVersion = tableData[2].text.trim();
 
-        links.add(Host(
-            main: main,
-            qualityVersion: qualityVersion,
-            language: language,
-            link: link));
-      });
+        try {
+          links.add(MediaLink(link, language, qualityVersion));
+        } catch (e) {
+          //
+        }
+      }
+
+      _preloadAndVerifyLinks(links);
 
       final isEpisode = document.querySelector("#item-headline h3") != null;
       if (isEpisode) {

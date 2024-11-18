@@ -8,7 +8,7 @@ import "package:flutter/material.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/types/download.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
-import "package:unofficial_filman_client/types/links.dart";
+import "package:unofficial_filman_client/types/video_scrappers.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:shared_preferences/shared_preferences.dart";
 

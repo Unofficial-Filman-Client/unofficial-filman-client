@@ -4,6 +4,10 @@ class LogOutException implements Exception {
   const LogOutException();
 }
 
+class NoSourcesException implements Exception {
+  const NoSourcesException();
+}
+
 class CfWrapperInterceptor extends Interceptor {
   @override
   void onResponse(

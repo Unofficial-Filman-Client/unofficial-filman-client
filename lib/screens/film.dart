@@ -175,11 +175,9 @@ class _FilmScreenState extends State<FilmScreen> {
                           : snapshot.data?.isSerial == false && snapshot.hasData
                               ? IconButton(
                                   onPressed: () async {
-                                    final direct = await getUserSelectedVersion(
-                                        context,
-                                        snapshot.data?.links ?? [],
-                                        false);
-                                    if (direct == null) {
+                                    final link = await getUserSelectedVersion(
+                                        context, snapshot.data?.links ?? []);
+                                    if (link == null) {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
@@ -193,13 +191,14 @@ class _FilmScreenState extends State<FilmScreen> {
                                         return;
                                       }
                                     }
+
                                     if (context.mounted) {
                                       Provider.of<DownloadNotifier>(context,
                                               listen: false)
                                           .addFilmToDownload(
                                               snapshot.data!,
-                                              direct!.language,
-                                              direct.qualityVersion,
+                                              link!.language,
+                                              link.quality,
                                               Provider.of<SettingsNotifier>(
                                                   context,
                                                   listen: false))

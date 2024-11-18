@@ -9,7 +9,6 @@ import "package:unofficial_filman_client/types/season.dart";
 import "package:provider/provider.dart";
 import "package:unofficial_filman_client/types/watched.dart";
 import "package:unofficial_filman_client/notifiers/download.dart";
-import "package:unofficial_filman_client/utils/hosts.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
 
 class EpisodesModal extends StatefulWidget {
@@ -124,11 +123,11 @@ class _EpisodesModalState extends State<EpisodesModal> {
         if (downloaded != null || filmDetails.links == null) {
           return;
         }
-        final directs = await getDirects(filmDetails.links!);
-        if (directs.isEmpty || !context.mounted) {
+        if (filmDetails.links?.isEmpty == true || !context.mounted) {
           return;
         }
-        final (l, q) = await getUserSelectedPreferences(context, directs);
+        final (l, q) =
+            await getUserSelectedPreferences(context, filmDetails.links!);
         if (l == null || q == null) {
           return;
         }
