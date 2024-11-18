@@ -155,6 +155,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: Column(
                   children: [
                     _buildBottomAppBar(context),
+                    const SizedBox(height: 8),
                     for (final String category
                         in snapshot.data?.categories ?? [])
                       Padding(

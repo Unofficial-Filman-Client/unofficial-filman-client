@@ -18,7 +18,6 @@ import "package:media_kit/media_kit.dart" hide PlayerState;
 import "package:media_kit_video/media_kit_video.dart";
 import "package:provider/provider.dart";
 import "package:screen_brightness/screen_brightness.dart";
-import "package:unofficial_filman_client/types/links.dart";
 import "package:unofficial_filman_client/types/download.dart";
 import "package:path_provider/path_provider.dart";
 import "package:collection/collection.dart";
@@ -97,7 +96,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   String _displayState = "Ładowanie...";
 
   late FlutterCastFramework _castFramework;
-  DirectLink? _direct;
+  String? _direct;
   CastState? _castState;
 
   @override
@@ -230,15 +229,17 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
     if (widget.downloaded == null) {
       if (_filmDetails.links != null && mounted) {
-        setState(() => _displayState = "Ładowanie mediów...");
-        final DirectLink? direct =
-            await getUserSelectedVersion(context, _filmDetails.links!);
-        if (direct == null) return _showNoLinksSnackbar();
+        setState(() => _displayState = "Ładowanie listy mediów...");
+        final link = await getUserSelectedVersion(context, _filmDetails.links!);
+        if (link == null) return _showNoLinksSnackbar();
+        setState(() => _displayState = "Wydobywanie adresu video...");
+        final direct = await link.getDirectLink();
         setState(() {
           _direct = direct;
+          _displayState = "";
         });
-        setState(() => _displayState = "");
-        _player.open(Media(direct.link));
+        if (_direct == null) return _showNoLinksSnackbar();
+        _player.open(Media(_direct!));
       } else {
         return _showNoLinksSnackbar();
       }
@@ -327,7 +328,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 streamDuration: _duration.inMilliseconds,
                 streamType: StreamType.buffered,
                 contentType: "videos/mp4",
-                contentId: _direct!.link,
+                contentId: _direct,
                 mediaMetadata: MediaMetadata(
                     mediaType: MediaType.movie,
                     strings: _filmDetails.isEpisode
