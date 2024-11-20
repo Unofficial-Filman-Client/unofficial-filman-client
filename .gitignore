@@ -41,3 +41,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# LLM WILL HELP ME
+.repomixignore
+repomix-output.txt
+repomix.config.json
