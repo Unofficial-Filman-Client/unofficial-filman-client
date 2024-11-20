@@ -33,7 +33,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (final _) => filman),
+        Provider(create: (final _) => filman),
         ChangeNotifierProvider(create: (final _) => settings),
         ChangeNotifierProvider(create: (final _) => watched),
         ChangeNotifierProvider(create: (final _) => download),

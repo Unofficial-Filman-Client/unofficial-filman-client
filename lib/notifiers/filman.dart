@@ -1,21 +1,23 @@
 import "dart:convert";
 import "package:dio/dio.dart";
+import "package:flutter/material.dart";
 import "package:html/dom.dart" as dom;
 import "package:unofficial_filman_client/types/exceptions.dart";
 import "package:unofficial_filman_client/types/film.dart";
+import "package:unofficial_filman_client/types/category.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
 import "package:unofficial_filman_client/types/links.dart";
+import "package:unofficial_filman_client/types/auth_response.dart";
 import "package:unofficial_filman_client/types/search_results.dart";
 import "package:unofficial_filman_client/types/season.dart";
 import "package:unofficial_filman_client/types/user.dart";
-import "package:flutter/material.dart";
 import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
-import "package:dio_cache_interceptor/dio_cache_interceptor.dart";
+import "package:unofficial_filman_client/types/video_scrappers.dart";
 
-class FilmanNotifier extends ChangeNotifier {
+class FilmanNotifier {
   final List<String> cookies = [];
   late final SharedPreferences prefs;
   late final Dio dio;
@@ -25,11 +27,6 @@ class FilmanNotifier extends ChangeNotifier {
   Future<void> initPrefs() async {
     dio = Dio();
     dio.interceptors.add(CfWrapperInterceptor());
-    dio.interceptors.add(DioCacheInterceptor(
-        options: CacheOptions(
-      store: MemCacheStore(maxSize: 10485760, maxEntrySize: 1048576),
-      policy: CachePolicy.request,
-    )));
     prefs = await SharedPreferences.getInstance();
     cookies.addAll(prefs.getStringList("cookies") ?? []);
     secureStorage = const FlutterSecureStorage(
@@ -173,7 +170,7 @@ class FilmanNotifier extends ChangeNotifier {
         final title = poster?.querySelector("a")?.attributes["title"]?.trim() ??
             "Brak danych";
         final imageUrl = poster?.querySelector("img")?.attributes["src"] ??
-            "https://placehold.co/250x370?font=roboto&text=?";
+            "https://placehold.co/250x370/png?font=roboto&text=?";
         final link =
             poster?.querySelector("a")?.attributes["href"] ?? "Brak danych";
         final category =
@@ -214,7 +211,7 @@ class FilmanNotifier extends ChangeNotifier {
               "Brak danych";
       final imageUrl =
           poster?.querySelector("img")?.attributes["src"]?.trim() ??
-              "https://placehold.co/250x370?font=roboto&text=?";
+              "https://placehold.co/250x370/png?font=roboto&text=?";
       final link =
           poster?.querySelector("a")?.attributes["href"] ?? "Brak danych";
 
@@ -223,6 +220,12 @@ class FilmanNotifier extends ChangeNotifier {
     });
 
     return searchResults;
+  }
+
+  void _preloadAndVerifyLinks(final List<MediaLink> links) {
+    for (final link in links) {
+      link.getDirectLink();
+    }
   }
 
   Future<FilmDetails> getFilmDetails(final String link) async {
@@ -250,7 +253,7 @@ class FilmanNotifier extends ChangeNotifier {
         "";
     final imageUrl =
         document.querySelector("#single-poster img")?.attributes["src"] ??
-            "https://placehold.co/250x370?font=roboto&text=?";
+            "https://placehold.co/250x370/png?font=roboto&text=?";
     final releaseDate = RegExp(r"(Rok:(\d+))|(Premiera:(\d+))")
             .firstMatch(info)
             ?.group(2) ??
@@ -304,10 +307,9 @@ class FilmanNotifier extends ChangeNotifier {
         isEpisode: false,
       );
     } else {
-      final List<Host> links = [];
+      final List<MediaLink> links = [];
 
-      document.querySelectorAll("tbody tr").forEach((final row) {
-        final main = row.querySelector("td")?.text.trim() ?? "";
+      for (final row in document.querySelectorAll("tbody tr")) {
         String? link;
 
         try {
@@ -321,19 +323,21 @@ class FilmanNotifier extends ChangeNotifier {
           link = null;
         }
 
-        if (link == null || link.isEmpty == true) return;
+        if (link == null || link.isEmpty == true) continue;
 
         final tableData = row.querySelectorAll("td");
-        if (tableData.length < 3) return;
+        if (tableData.length < 3) continue;
         final language = tableData[1].text.trim();
         final qualityVersion = tableData[2].text.trim();
 
-        links.add(Host(
-            main: main,
-            qualityVersion: qualityVersion,
-            language: language,
-            link: link));
-      });
+        try {
+          links.add(MediaLink(link, language, qualityVersion));
+        } catch (e) {
+          //
+        }
+      }
+
+      _preloadAndVerifyLinks(links);
 
       final isEpisode = document.querySelector("#item-headline h3") != null;
       if (isEpisode) {
@@ -391,5 +395,67 @@ class FilmanNotifier extends ChangeNotifier {
         isEpisode: isEpisode,
       );
     }
+  }
+
+  Future<List<Category>> getCategories() async {
+    final response = await dio.get(
+      "https://filman.cc/filmy-online-pl/",
+      options: _buildDioOptions(contentType: "aplication/json"),
+    );
+
+    if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
+        false) {
+      logout();
+      throw const LogOutException();
+    }
+
+    final document = parse(response.data);
+    final categories = <Category>[];
+
+    final column = document
+        .querySelectorAll("h4")
+        .firstWhere((final e) => e.text.trim() == "Kategorie",
+            orElse: () => dom.Element.tag("h4"))
+        .parent;
+
+    column?.querySelectorAll("li").forEach((final element) {
+      final id = element.attributes["data-id"];
+      if (id == null) return;
+      final name = element.text.trim();
+      categories.add(Category(id: id, name: name));
+    });
+
+    return categories;
+  }
+
+  Future<List<Film>> getMoviesByCategory(
+      final Category category, final bool forSeries) async {
+    final response = await dio.get(
+        "${forSeries ? "https://filman.cc/seriale-online-pl" : "https://filman.cc/filmy-online-pl"}/category:${category.id}/",
+        options: _buildDioOptions(contentType: "aplication/json"));
+
+    if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
+        false) {
+      logout();
+      throw const LogOutException();
+    }
+
+    final document = parse(response.data);
+    final films = <Film>[];
+
+    for (final filmDOM
+        in document.querySelectorAll(".col-xs-6.col-sm-3.col-lg-2")) {
+      final poster = filmDOM.querySelector(".poster");
+      final title = poster?.querySelector("a")?.attributes["title"]?.trim() ??
+          "Brak danych";
+      final imageUrl = poster?.querySelector("img")?.attributes["src"] ??
+          "https://placehold.co/250x370/png?font=roboto&text=?";
+      final link =
+          poster?.querySelector("a")?.attributes["href"] ?? "Brak danych";
+
+      films.add(Film(title: title, imageUrl: imageUrl, link: link));
+    }
+
+    return films;
   }
 }
