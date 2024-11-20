@@ -1,3 +1,7 @@
+import "dart:io";
+
+import "package:bonsoir/bonsoir.dart";
+import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:flutter/material.dart";
@@ -11,13 +15,68 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final BonsoirDiscovery discovery =
+      BonsoirDiscovery(type: "_majusssfilman._tcp");
+  final List<ResolvedBonsoirService> services = [];
+
+  void connectToServer(final String ip) async {
+    final socket = await Socket.connect(ip, 3031);
+
+    socket.write("GETSTATE");
+
+    socket.listen((final raw) {
+      final data = String.fromCharCodes(raw).trim();
+      switch (data) {
+        case "STATE:LoginState.waiting":
+          final login =
+              Provider.of<FilmanNotifier>(context, listen: false).user?.login;
+          final cookies = Provider.of<FilmanNotifier>(context, listen: false)
+              .cookies
+              .join(",");
+          if (login == null) {
+            return;
+          }
+          socket.write("LOGIN:$login|$cookies");
+          socket.close();
+          break;
+        case "STATE:LoginState.done":
+          discovery.stop();
+          break;
+      }
+    });
+  }
+
+  void setupmDNS() async {
+    await discovery.ready;
+
+    discovery.eventStream?.listen((final event) async {
+      if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved) {
+        if (event.isServiceResolved &&
+            (event.service as ResolvedBonsoirService).host != null) {
+          services.removeWhere((final service) =>
+              service.host == (event.service as ResolvedBonsoirService).host);
+
+          services.add(event.service as ResolvedBonsoirService);
+          setState(() {});
+        }
+      } else if (event.type ==
+          BonsoirDiscoveryEventType.discoveryServiceFound) {
+        event.service!.resolve(discovery.serviceResolver);
+      }
+    });
+
+    await discovery.start();
+  }
+
   @override
   void initState() {
     super.initState();
+    setupmDNS();
   }
 
   @override
   void dispose() {
+    discovery.stop();
     super.dispose();
   }
 
@@ -99,6 +158,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               settings))
                     ],
                   )))),
+          const Divider(),
+          const ListTile(
+            title: Text("Logowanie TV"),
+            subtitle: Text("Zaloguj się na każdym telewizorze w siec WiFi."),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: FilledButton(
+                onPressed: services.isNotEmpty
+                    ? () async {
+                        for (final service in services) {
+                          connectToServer(service.host!);
+                        }
+                      }
+                    : null,
+                child: Text(services.isNotEmpty
+                    ? "Zaloguj się na TV"
+                    : "Nie znaleziono urządzeń")),
+          )
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import "package:dynamic_color/dynamic_color.dart";
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 import "package:media_kit/media_kit.dart";
 import "package:provider/provider.dart";
 import "package:shared_preferences/shared_preferences.dart";
@@ -58,6 +59,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
     return DynamicColorBuilder(
         builder: (final lightColorScheme, final darkColorScheme) {
       return MaterialApp(

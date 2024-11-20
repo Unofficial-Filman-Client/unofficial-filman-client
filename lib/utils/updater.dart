@@ -14,7 +14,7 @@ import "package:permission_handler/permission_handler.dart";
 Future<void> checkForUpdates(final BuildContext context) async {
   final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
-    "https://api.github.com/repos/majusss/unofficial-filman-flutter-tv/releases/latest",
+    "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
   );
 
   final Version currentVersion = Version.parse(packageInfo.version);
@@ -58,7 +58,7 @@ Future<void> checkForUpdates(final BuildContext context) async {
                   : TextButton(
                       onPressed: () async {
                         final url = Uri.parse(
-                          "https://github.com/majusss/unofficial-filman-flutter-tv/releases/latest",
+                          "https://github.com/majusss/unofficial-filman-flutter/releases/latest",
                         );
                         if (!await launchUrl(
                           url,
@@ -104,7 +104,7 @@ Future<void> downloadAndInstallApk(
     final assets = response.data["assets"];
     if (assets is List) {
       final apkAsset = assets.firstWhereOrNull(
-        (final asset) => asset["name"] == "unofficial-filman-tv.apk",
+        (final asset) => asset["name"] == "unofficial-filman-android.apk",
       );
 
       if (apkAsset != null && apkAsset["browser_download_url"] is String) {
