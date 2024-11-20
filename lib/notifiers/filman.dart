@@ -1,13 +1,11 @@
 import "dart:convert";
 import "package:dio/dio.dart";
-import "package:flutter/material.dart";
 import "package:html/dom.dart" as dom;
 import "package:unofficial_filman_client/types/exceptions.dart";
 import "package:unofficial_filman_client/types/film.dart";
 import "package:unofficial_filman_client/types/category.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
-import "package:unofficial_filman_client/types/auth_response.dart";
 import "package:unofficial_filman_client/types/search_results.dart";
 import "package:unofficial_filman_client/types/season.dart";
 import "package:unofficial_filman_client/types/user.dart";

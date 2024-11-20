@@ -1,10 +1,6 @@
-import "package:provider/provider.dart";
-import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/screens/hello.dart";
 import "package:unofficial_filman_client/types/auth_response.dart";
 import "package:flutter/material.dart";
-import "package:unofficial_filman_client/types/exceptions.dart";
-import "package:unofficial_filman_client/widgets/recaptcha.dart";
 
 class ErrorHandling extends StatefulWidget {
   final Object error;
@@ -21,29 +17,30 @@ class ErrorHandling extends StatefulWidget {
 }
 
 class _ErrorHandlingState extends State<ErrorHandling> {
-  late final GoogleReCaptchaController recaptchaV2Controller;
+  // late final GoogleReCaptchaController recaptchaV2Controller;
 
   @override
   void initState() {
-    if (widget.error is LogOutException) {
-      recaptchaV2Controller = GoogleReCaptchaController()
-        ..onToken((final token) async {
-          final filmanNotifier =
-              Provider.of<FilmanNotifier>(context, listen: false);
-          final user = filmanNotifier.user;
-          if (user == null) {
-            return _logout();
-          }
-          final response = await filmanNotifier
-              .loginToFilman(user.login, user.password, captchaToken: token);
-          if (response.success) {
-            return widget.onLogin(response);
-          }
-          return _logout();
-        });
-      recaptchaV2Controller.show();
-    }
+    // if (widget.error is LogOutException) {
+    //   recaptchaV2Controller = GoogleReCaptchaController()
+    //     ..onToken((final token) async {
+    //       final filmanNotifier =
+    //           Provider.of<FilmanNotifier>(context, listen: false);
+    //       final user = filmanNotifier.user;
+    //       if (user == null) {
+    //         return _logout();
+    //       }
+    //       final response = await filmanNotifier
+    //           .loginToFilman(user.login, user.password, captchaToken: token);
+    //       if (response.success) {
+    //         return widget.onLogin(response);
+    //       }
+    //       return _logout();
+    //     });
+    //   recaptchaV2Controller.show();
+    // }
     super.initState();
+    _logout();
   }
 
   void _logout() {
@@ -87,12 +84,12 @@ class _ErrorHandlingState extends State<ErrorHandling> {
             ],
           ),
         ),
-        if (widget.error is LogOutException)
-          GoogleReCaptcha(
-            controller: recaptchaV2Controller,
-            url: "https://filman.cc/logowanie",
-            siteKey: "6LcQs24iAAAAALFibpEQwpQZiyhOCn-zdc-eFout",
-          )
+        // if (widget.error is LogOutException)
+        //   GoogleReCaptcha(
+        //     controller: recaptchaV2Controller,
+        //     url: "https://filman.cc/logowanie",
+        //     siteKey: "6LcQs24iAAAAALFibpEQwpQZiyhOCn-zdc-eFout",
+        //   )
       ],
     );
   }

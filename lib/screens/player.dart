@@ -190,11 +190,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         setState(() => _displayState = "Wydobywanie adresu video...");
         final direct = await link.getDirectLink();
         setState(() {
-          _direct = direct;
           _displayState = "";
         });
-        if (_direct == null) return _showNoLinksSnackbar();
-        _player.open(Media(_direct!));
+        if (direct == null) return _showNoLinksSnackbar();
+        _player.open(Media(direct));
       } else {
         return _showNoLinksSnackbar();
       }
