@@ -24,6 +24,7 @@ class _ErrorHandlingState extends State<ErrorHandling> {
       _logout();
     }
     super.initState();
+    _logout();
   }
 
   void _logout() {

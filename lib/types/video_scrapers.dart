@@ -2,7 +2,6 @@ import "dart:async";
 import "dart:convert";
 import "dart:math";
 import "package:dio/dio.dart";
-import "package:flutter/material.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/exceptions.dart";
 
