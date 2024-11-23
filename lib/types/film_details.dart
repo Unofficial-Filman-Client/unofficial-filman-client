@@ -1,5 +1,5 @@
 import "package:unofficial_filman_client/types/season.dart";
-import "package:unofficial_filman_client/types/video_scrappers.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 class FilmDetails {
   final String url;

@@ -9,6 +9,7 @@ import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/season.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:unofficial_filman_client/types/watched.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
 import "package:unofficial_filman_client/utils/title.dart";
@@ -231,6 +232,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       if (_filmDetails.links != null && mounted) {
         setState(() => _displayState = "Ładowanie listy mediów...");
         final link = await getUserSelectedVersion(context, _filmDetails.links!);
+        debugPrint("Selected link: $link");
         if (link == null) return _showNoLinksSnackbar();
         setState(() => _displayState = "Wydobywanie adresu video...");
         final direct = await link.getDirectLink();
@@ -239,7 +241,9 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
           _displayState = "";
         });
         if (_direct == null) return _showNoLinksSnackbar();
-        _player.open(Media(_direct!));
+        _player.open(Media(_direct!, httpHeaders: {
+          "referer": getBaseUrl(link.url),
+        }));
       } else {
         return _showNoLinksSnackbar();
       }
