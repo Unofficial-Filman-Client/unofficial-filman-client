@@ -1,7 +1,7 @@
 import "dart:async";
 
 import "package:flutter/material.dart";
-import "package:unofficial_filman_client/types/video_scrappers.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 Future<List<Language>> _getAvailableLanguages(
     final List<MediaLink> links) async {

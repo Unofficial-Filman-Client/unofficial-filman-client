@@ -1,11 +1,10 @@
 import "dart:async";
 import "dart:math";
 import "package:dio/dio.dart";
-import "package:flutter/material.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/exceptions.dart";
 
-String _getBaseUrl(final String url) {
+String getBaseUrl(final String url) {
   final uri = Uri.parse(url);
   return "${uri.scheme}://${uri.host}";
 }
@@ -213,7 +212,7 @@ class DoodStreamScraper extends VideoScraper {
     final embedUrl = url.replaceAll("/d/", "/e/");
     final response = await dio.get(embedUrl);
 
-    final host = _getBaseUrl(response.redirects.last.location.toString());
+    final host = getBaseUrl(response.redirects.last.location.toString());
 
     final responseText = response.data;
 
@@ -326,10 +325,7 @@ class MediaLink {
     }
 
     try {
-      final stopwatch = Stopwatch()..start();
       _directVideoUrl = await _scraper.getVideoLink();
-      stopwatch.stop();
-      _responseTime = stopwatch.elapsedMilliseconds;
 
       await verifyDirectVideoUrl();
     } catch (e) {
@@ -344,13 +340,16 @@ class MediaLink {
     if (_directVideoUrl == null) return;
 
     try {
+      final stopwatch = Stopwatch()..start();
       final response = await Dio().head(
         _directVideoUrl!,
         options: Options(
-            followRedirects: true, headers: {"referer": _getBaseUrl(url)}),
+            followRedirects: true, headers: {"referer": getBaseUrl(url)}),
       );
+      stopwatch.stop();
       _isVideoValid = response.statusCode == 200 &&
           response.headers.value("content-type")?.contains("video") == true;
+      _responseTime = stopwatch.elapsedMilliseconds;
     } catch (_) {
       _isVideoValid = false;
     }
@@ -358,4 +357,8 @@ class MediaLink {
 
   bool get isVideoValid => _isVideoValid;
   int get responseTime => _responseTime;
+
+  @override
+  String toString() =>
+      "MediaLink(url: $url, language: $language, quality: $quality, responseTime: $responseTime, directVideoUrl: $_directVideoUrl, isVideoValid: $_isVideoValid)";
 }
