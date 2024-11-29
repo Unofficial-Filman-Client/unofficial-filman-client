@@ -58,7 +58,7 @@ Future<void> checkForUpdates(final BuildContext context) async {
                   : TextButton(
                       onPressed: () async {
                         final url = Uri.parse(
-                          "https://github.com/majusss/unofficial-filman-flutter-tv/releases/latest",
+                          "https://github.com/Unofficial-Filman-Client/unofficial-filman-client-tv/releases/latest",
                         );
                         if (!await launchUrl(
                           url,
