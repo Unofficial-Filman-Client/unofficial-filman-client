@@ -47,9 +47,12 @@ class FilmanNotifier {
     prefs.remove("cookies");
   }
 
-  Options _buildDioOptions({required final String contentType}) {
+  Options _buildDioOptions({final String? contentType}) {
     return Options(
-      headers: {"Content-Type": contentType, "cookie": cookies.join("; ")},
+      headers: {
+        if (contentType != null) "Content-Type": contentType,
+        "cookie": cookies.join("; ")
+      },
       followRedirects: false,
       validateStatus: (final status) => true,
     );
@@ -149,7 +152,7 @@ class FilmanNotifier {
   Future<HomePageResponse> getFilmanPage() async {
     final response = await dio.get(
       "https://filman.cc/",
-      options: _buildDioOptions(contentType: "application/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
@@ -185,7 +188,7 @@ class FilmanNotifier {
     final response = await dio.get(
       "https://filman.cc/item",
       queryParameters: {"phrase": query},
-      options: _buildDioOptions(contentType: "application/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
@@ -228,7 +231,7 @@ class FilmanNotifier {
   Future<FilmDetails> getFilmDetails(final String link) async {
     final response = await dio.get(
       link,
-      options: _buildDioOptions(contentType: "application/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ==
@@ -397,7 +400,7 @@ class FilmanNotifier {
   Future<List<Category>> getCategories() async {
     final response = await dio.get(
       "https://filman.cc/filmy-online-pl/",
-      options: _buildDioOptions(contentType: "aplication/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
@@ -429,7 +432,7 @@ class FilmanNotifier {
       final Category category, final bool forSeries) async {
     final response = await dio.get(
         "${forSeries ? "https://filman.cc/seriale-online-pl" : "https://filman.cc/filmy-online-pl"}/category:${category.id}/",
-        options: _buildDioOptions(contentType: "aplication/json"));
+        options: _buildDioOptions());
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
         false) {
