@@ -408,7 +408,6 @@ class MediaLink {
             followRedirects: true, headers: {"referer": getBaseUrl(url)}),
       );
       stopwatch.stop();
-      debugPrint(response.headers.toString());
       _isVideoValid = response.statusCode == 200 &&
           (response.headers.value("content-type")?.contains("video") == true ||
               response.headers.value("content-type")?.contains("mpegurl") ==

@@ -15,6 +15,7 @@ import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:cached_annotation/cached_annotation.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 part "filman.cached.dart";
 

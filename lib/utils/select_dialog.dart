@@ -5,6 +5,7 @@ import "package:provider/provider.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:unofficial_filman_client/utils/navigation_service.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 Future<List<Language>> _getAvailableLanguages(
     final List<MediaLink> links) async {
