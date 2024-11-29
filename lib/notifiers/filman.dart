@@ -12,7 +12,7 @@ import "package:unofficial_filman_client/types/user.dart";
 import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
-import "package:unofficial_filman_client/types/video_scrappers.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 class FilmanNotifier {
   final List<String> cookies = [];
