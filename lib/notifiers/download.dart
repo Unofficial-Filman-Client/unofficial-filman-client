@@ -8,7 +8,7 @@ import "package:flutter/material.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/types/download.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
-import "package:unofficial_filman_client/types/links.dart";
+import "package:unofficial_filman_client/types/video_scrappers.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
@@ -72,7 +72,6 @@ class DownloadNotifier extends ChangeNotifier {
         }
         switch (update) {
           case TaskStatusUpdate():
-            debugPrint("task: ${downloading.displayName} ${update.status}");
             switch (update.status) {
               case TaskStatus.complete:
                 _downloading.remove(downloading);
@@ -95,8 +94,6 @@ class DownloadNotifier extends ChangeNotifier {
                       _downloadedSerials
                           .map((final e) => jsonEncode(e.toMap()))
                           .toList());
-                  debugPrint(
-                      "saved ${prefs?.getStringList("downloadedSerials")}");
                 } else {
                   _downloaded
                       .add(DownloadedSingle.fromDownloading(downloading));
@@ -124,7 +121,7 @@ class DownloadNotifier extends ChangeNotifier {
             break;
         }
       } catch (err) {
-        debugPrint("Download error: $err");
+        //
       }
     });
   }

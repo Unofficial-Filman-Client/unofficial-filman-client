@@ -5,9 +5,9 @@ import "package:unofficial_filman_client/utils/updater.dart";
 import "package:flutter/material.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
-import "package:unofficial_filman_client/widgets/search.dart";
 import "package:provider/provider.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
+import "package:unofficial_filman_client/widgets/focus_inkwell.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,26 +27,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     checkForUpdates(context);
   }
 
-  void _showBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
-      ),
-      builder: (final context) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: const SearchModal(),
-        );
-      },
-    );
-  }
+  // void _showBottomSheet() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     showDragHandle: true,
+  //     isScrollControlled: true,
+  //     constraints: BoxConstraints(
+  //       maxHeight: MediaQuery.of(context).size.height * 0.9,
+  //     ),
+  //     builder: (final context) {
+  //       return Container(
+  //         margin: const EdgeInsets.symmetric(horizontal: 16.0),
+  //         child: const SearchModal(),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildFilmCard(final BuildContext context, final Film film) {
-    return Card(
-      child: InkWell(
+    return FocusInkWell(
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -58,22 +57,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           );
         },
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(12.0)),
-          child: FastCachedImage(
-              url: film.imageUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (final context, final progress) => SizedBox(
-                    height: 180,
-                    width: 116,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                          value: progress.progressPercentage.value),
-                    ),
-                  )),
-        ),
-      ),
-    );
+        builder: (final hasFocus) => AnimatedScale(
+              scale: hasFocus ? 1.05 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Card(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(12.0)),
+                  child: FastCachedImage(
+                      url: film.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (final context, final progress) =>
+                          SizedBox(
+                            height: 180,
+                            width: 116,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                  value: progress.progressPercentage.value),
+                            ),
+                          )),
+                ),
+              ),
+            ));
   }
 
   @override
@@ -149,17 +153,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           )),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: _showBottomSheet,
-            label: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search),
-                SizedBox(width: 8.0),
-                Text("Szukaj"),
-              ],
-            ),
-          ),
+          // floatingActionButton: FloatingActionButton.extended(
+          //   onPressed: _showBottomSheet,
+          //   label: const Row(
+          //     mainAxisAlignment: MainAxisAlignment.center,
+          //     children: [
+          //       Icon(Icons.search),
+          //       SizedBox(width: 8.0),
+          //       Text("Szukaj"),
+          //     ],
+          //   ),
+          // ),
         );
       },
     );

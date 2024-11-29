@@ -33,7 +33,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (final _) => filman),
+        Provider(create: (final _) => filman),
         ChangeNotifierProvider(create: (final _) => settings),
         ChangeNotifierProvider(create: (final _) => watched),
         ChangeNotifierProvider(create: (final _) => download),
@@ -60,20 +60,22 @@ class MyApp extends StatelessWidget {
   Widget build(final BuildContext context) {
     return DynamicColorBuilder(
         builder: (final lightColorScheme, final darkColorScheme) {
-      return MaterialApp(
-        title: "Unofficial Filman.cc App",
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: lightColorScheme ?? _defaultLightColorScheme,
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          colorScheme: darkColorScheme ?? _defaultDarkColorScheme,
-          useMaterial3: true,
-        ),
-        themeMode: Provider.of<SettingsNotifier>(context).theme,
-        home: isAuth ? const MainScreen() : const HelloScreen(),
-      );
+      return SafeArea(
+          minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: MaterialApp(
+            title: "Unofficial Filman.cc App",
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: lightColorScheme ?? _defaultLightColorScheme,
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: darkColorScheme ?? _defaultDarkColorScheme,
+              useMaterial3: true,
+            ),
+            themeMode: Provider.of<SettingsNotifier>(context).theme,
+            home: isAuth ? const MainScreen() : const HelloScreen(),
+          ));
     });
   }
 }
