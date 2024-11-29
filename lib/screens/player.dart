@@ -16,7 +16,6 @@ import "package:flutter/services.dart";
 import "package:media_kit/media_kit.dart" hide PlayerState;
 import "package:media_kit_video/media_kit_video.dart";
 import "package:provider/provider.dart";
-import "package:screen_brightness/screen_brightness.dart";
 import "package:unofficial_filman_client/types/download.dart";
 import "package:path_provider/path_provider.dart";
 import "package:collection/collection.dart";
@@ -84,8 +83,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   FilmDetails? _parentDetails;
   Season? _currentSeason;
-  SeekDirection? _seekDirection;
-  bool _isSeeking = false;
   FilmDetails? _nextEpisode;
   DownloadedSingle? _nextDwonloaded;
   String _displayState = "Ładowanie...";
@@ -274,6 +271,19 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     super.dispose();
   }
 
+  Widget _buildMainStack(final BuildContext context) {
+    return Stack(
+      children: [
+        Video(
+          controller: _controller,
+          controls: NoVideoControls,
+          fit: BoxFit.fitWidth,
+        ),
+        SafeArea(child: _buildOverlay(context)),
+      ],
+    );
+  }
+
   @override
   Widget build(final BuildContext context) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -281,34 +291,35 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Video(
-            controller: _controller,
-            controls: NoVideoControls,
-            fit: BoxFit.fitWidth,
-          ),
-          SafeArea(child: _buildOverlay()),
-        ],
-      ),
-    );
+        body: _isOverlayVisible
+            ? _buildMainStack(context)
+            : Focus(
+                autofocus: true,
+                onKeyEvent: (final FocusNode node, final KeyEvent event) {
+                  if (event is KeyDownEvent) {
+                    if (event.logicalKey == LogicalKeyboardKey.select ||
+                        event.logicalKey == LogicalKeyboardKey.enter) {
+                      setState(() {
+                        _isOverlayVisible = !_isOverlayVisible;
+                      });
+                      return KeyEventResult.handled;
+                    }
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: _buildMainStack(context)));
   }
 
   Widget _buildOverlay() {
     return Stack(
       children: [
-        _buildSeekingIcons(),
         _buildLoadingIcon(),
-        _buildDoubleTapControls(),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: _isOverlayVisible
               ? Stack(
                   children: [
                     _buildTopBar(),
-                    _buildCenterPlayPauseButton(),
-                    _buildIconsBar(),
-                    _buildBrightnessControl(),
                     _buildBottomBar(),
                   ],
                 )
@@ -316,19 +327,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         )
       ],
     );
-  }
-
-  Widget _buildIconsBar() {
-    return Positioned(
-        height: MediaQuery.of(context).size.height,
-        right: 10,
-        top: -10,
-        child:
-            const SizedBox() /** Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [],
-        ) */
-        );
   }
 
   Widget _buildLoadingIcon() {
@@ -352,121 +350,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       );
     }
     return const SizedBox();
-  }
-
-  Widget _buildSeekingIcons() {
-    return Center(
-      child: Transform(
-        transform: Matrix4.translationValues(
-            _seekDirection == SeekDirection.forward ? 100 : -100, 0, 0),
-        child: AnimatedOpacity(
-            opacity: _isSeeking ? 1 : 0,
-            duration: const Duration(milliseconds: 300),
-            child: Icon(
-              _seekDirection == SeekDirection.forward
-                  ? Icons.fast_forward
-                  : Icons.fast_rewind,
-              size: 52,
-            )),
-      ),
-    );
-  }
-
-  Widget _buildDoubleTapControls() {
-    return Row(
-      children: [
-        SizedBox(
-          height: double.infinity,
-          width: MediaQuery.of(context).size.width * 0.5,
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                _isOverlayVisible = !_isOverlayVisible;
-              });
-            },
-            onDoubleTap: () {
-              setState(() {
-                _seekDirection = SeekDirection.backward;
-                _isSeeking = true;
-                Future.delayed(const Duration(milliseconds: 400), () {
-                  setState(() {
-                    _isSeeking = false;
-                  });
-                });
-              });
-              _player.seek(Duration(seconds: max(0, _position.inSeconds - 10)));
-            },
-          ),
-        ),
-        SizedBox(
-          height: double.infinity,
-          width: MediaQuery.of(context).size.width * 0.5,
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                _isOverlayVisible = !_isOverlayVisible;
-              });
-            },
-            onDoubleTap: () {
-              setState(() {
-                _seekDirection = SeekDirection.forward;
-                _isSeeking = true;
-                Future.delayed(const Duration(milliseconds: 400), () {
-                  setState(() {
-                    _isSeeking = false;
-                  });
-                });
-              });
-              _player.seek(Duration(
-                  seconds: min(_position.inSeconds + 10, _duration.inSeconds)));
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBrightnessControl() {
-    return Positioned(
-      left: 10,
-      top: -10,
-      height: MediaQuery.of(context).size.height,
-      child: FutureBuilder<double>(
-        future: ScreenBrightness().current,
-        builder: (final context, final snapshot) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              RotatedBox(
-                quarterTurns: -1,
-                child: Slider(
-                  value: snapshot.data ?? 0,
-                  min: 0,
-                  max: 1,
-                  onChanged: (final value) {
-                    setState(() {
-                      ScreenBrightness().setScreenBrightness(value);
-                    });
-                  },
-                ),
-              ),
-              Icon(_getBrightnessIcon(snapshot.data ?? 0)),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  IconData _getBrightnessIcon(final double brightness) {
-    if (brightness >= 0.875) return Icons.brightness_7;
-    if (brightness >= 0.75) return Icons.brightness_6;
-    if (brightness >= 0.625) return Icons.brightness_5;
-    if (brightness >= 0.5) return Icons.brightness_4;
-    if (brightness >= 0.375) return Icons.brightness_1;
-    if (brightness >= 0.25) return Icons.brightness_2;
-    if (brightness >= 0.125) return Icons.brightness_3;
-    return Icons.brightness_3;
   }
 
   Widget _buildTopBar() {
@@ -573,20 +456,55 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
+  void _seekRelative(final int seconds) {
+    final newPosition =
+        max(0, min(_position.inSeconds + seconds, _duration.inSeconds));
+    _player.seek(Duration(seconds: newPosition));
+  }
+
   Widget _buildBottomBar() {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         width: double.infinity,
-        height: 24,
-        margin: const EdgeInsets.only(bottom: 32),
+        height: 64,
+        margin: const EdgeInsets.only(bottom: 16),
         child: Row(
           children: [
-            Text(
-              '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}',
-              style: const TextStyle(color: Colors.white),
+            IconButton(
+              icon: Icon(
+                _isOverlayVisible ? Icons.visibility_off : Icons.visibility,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isOverlayVisible = !_isOverlayVisible;
+                });
+              },
             ),
+
+            IconButton(
+              icon: const Icon(Icons.replay_10, color: Colors.white),
+              onPressed: () => _seekRelative(-10),
+            ),
+
+            IconButton(
+              autofocus: true,
+              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
+                  size: 48, color: Colors.white),
+              onPressed: () {
+                _saveWatched();
+                _player.playOrPause();
+              },
+            ),
+
+            IconButton(
+              icon: const Icon(Icons.forward_10, color: Colors.white),
+              onPressed: () => _seekRelative(10),
+            ),
+
+            // Time display
             Expanded(
               child: Slider(
                 value: _position.inSeconds.toDouble(),
@@ -600,12 +518,12 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 inactiveColor: Colors.white,
               ),
             ),
-            AnimatedOpacity(
-                opacity: _duration == Duration.zero ? 0 : 1,
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                    '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: Colors.white))),
+
+            Text(
+              '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')} / '
+              '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}',
+              style: const TextStyle(color: Colors.white),
+            ),
           ],
         ),
       ),

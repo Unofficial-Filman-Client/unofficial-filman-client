@@ -1,13 +1,12 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
-import "package:unofficial_filman_client/screens/category.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
 import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:flutter/material.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
-import "package:unofficial_filman_client/widgets/search.dart";
 import "package:provider/provider.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
+import "package:unofficial_filman_client/widgets/focus_inkwell.dart";
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,26 +25,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
   }
 
-  void _showBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
-      ),
-      builder: (final context) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: const SearchModal(),
-        );
-      },
-    );
-  }
+  // void _showBottomSheet() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     showDragHandle: true,
+  //     isScrollControlled: true,
+  //     constraints: BoxConstraints(
+  //       maxHeight: MediaQuery.of(context).size.height * 0.9,
+  //     ),
+  //     builder: (final context) {
+  //       return Container(
+  //         margin: const EdgeInsets.symmetric(horizontal: 16.0),
+  //         child: const SearchModal(),
+  //       );
+  //     },
+  //   );
+  // }
 
-  Widget _buildFilmCard(final Film film) {
-    return Card(
-      child: InkWell(
+  Widget _buildFilmCard(final BuildContext context, final Film film) {
+    return FocusInkWell(
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -57,62 +55,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           );
         },
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(12.0)),
-          child: FastCachedImage(
-              url: film.imageUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (final context, final progress) => SizedBox(
-                    height: 180,
-                    width: 116,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                          value: progress.progressPercentage.value),
-                    ),
-                  )),
-        ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildBottomAppBar() {
-    return PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.category),
-                SizedBox(width: 4.0),
-                Text(
-                  "Kategorie:",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-              ],
-            ),
-            TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (final context) => const CategoryScreen(
-                            forSeries: false,
-                          )));
-                },
-                child: const Text("Filmy")),
-            TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (final context) => const CategoryScreen(
-                            forSeries: true,
-                          )));
-                },
-                child: const Text("Seriale")),
-          ],
-        ));
+        builder: (final hasFocus) => AnimatedScale(
+              scale: hasFocus ? 1.05 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Card(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(12.0)),
+                  child: FastCachedImage(
+                      url: film.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (final context, final progress) =>
+                          SizedBox(
+                            height: 180,
+                            width: 116,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                  value: progress.progressPercentage.value),
+                            ),
+                          )),
+                ),
+              ),
+            ));
   }
 
   @override
@@ -152,8 +115,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    _buildBottomAppBar(),
-                    const SizedBox(height: 8),
                     for (final String category
                         in snapshot.data?.categories ?? [])
                       Padding(
@@ -190,17 +151,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           )),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: _showBottomSheet,
-            label: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search),
-                SizedBox(width: 8.0),
-                Text("Szukaj"),
-              ],
-            ),
-          ),
+          // floatingActionButton: FloatingActionButton.extended(
+          //   onPressed: _showBottomSheet,
+          //   label: const Row(
+          //     mainAxisAlignment: MainAxisAlignment.center,
+          //     children: [
+          //       Icon(Icons.search),
+          //       SizedBox(width: 8.0),
+          //       Text("Szukaj"),
+          //     ],
+          //   ),
+          // ),
         );
       },
     );

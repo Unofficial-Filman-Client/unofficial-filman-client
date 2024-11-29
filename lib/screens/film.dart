@@ -1,18 +1,14 @@
 import "package:collection/collection.dart";
-import "package:unofficial_filman_client/notifiers/download.dart";
 import "package:unofficial_filman_client/notifiers/filman.dart";
-import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/widgets/error_handling.dart";
-import "package:unofficial_filman_client/utils/select_dialog.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
-import "package:url_launcher/url_launcher.dart";
-import "package:share_plus/share_plus.dart";
+import "package:unofficial_filman_client/widgets/focus_inkwell.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
 
 class FilmScreen extends StatefulWidget {
@@ -57,30 +53,79 @@ class _FilmScreenState extends State<FilmScreen> {
     final watched = watchedNotifier.films.firstWhereOrNull(
         (final element) => element.filmDetails.url == widget.url);
     if (watched == null) return const SizedBox();
-    return Transform(
-      transform: Matrix4.translationValues(-16, -12, 0),
-      child: LinearProgressIndicator(
-        value: watched.watchedPercentage,
+    return LinearProgressIndicator(
+      value: watched.watchedPercentage,
+    );
+  }
+
+  void _showEpisodesDialog(final FilmDetails filmDetails) {
+    showDialog(
+      context: context,
+      builder: (final context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: EpisodesModal(
+            filmDetails: filmDetails,
+          ),
+        ),
       ),
     );
   }
 
-  void _showBottomSheet(final FilmDetails filmDetails) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.9,
+  Widget _buildActionButton(
+      final IconData icon, final String label, final bool hasFocus) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: hasFocus
+            ? Theme.of(context).colorScheme.secondaryContainer
+            : Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasFocus
+              ? Theme.of(context).colorScheme.secondary
+              : Theme.of(context).colorScheme.outline.withOpacity(0.12),
+          width: hasFocus ? 2 : 1,
+        ),
+        boxShadow: hasFocus
+            ? [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
       ),
-      builder: (final context) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: EpisodesModal(
-            filmDetails: filmDetails,
-          ),
-        );
-      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: hasFocus
+                  ? Theme.of(context).colorScheme.onSecondaryContainer
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: hasFocus
+                    ? Theme.of(context).colorScheme.onSecondaryContainer
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -104,8 +149,8 @@ class _FilmScreenState extends State<FilmScreen> {
           } else if (snapshot.hasData) {
             final film = snapshot.data!;
             return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -206,88 +251,65 @@ class _FilmScreenState extends State<FilmScreen> {
                                         if (context.mounted) {
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(const SnackBar(
-                                            content: Text("Dodano do kolejki"),
-                                            dismissDirection:
-                                                DismissDirection.horizontal,
+                                            content:
+                                                Text("Brak dostępnych sezonów"),
                                             behavior: SnackBarBehavior.floating,
-                                            showCloseIcon: true,
                                           ));
                                         }
-                                      }).catchError((final err) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                            content: Text("Błąd: $err"),
-                                            dismissDirection:
-                                                DismissDirection.horizontal,
-                                            behavior: SnackBarBehavior.floating,
-                                            showCloseIcon: true,
-                                          ));
-                                        }
-                                      });
-                                    }
-                                  },
-                                  icon: const Icon(Icons.download))
-                              : const SizedBox());
-                },
-              )
-            ],
-          ),
-          _buildProgressBar(Provider.of<WatchedNotifier>(context))
-        ],
-      )),
-      floatingActionButton: FutureBuilder<FilmDetails>(
-        future: lazyFilm,
-        builder: (final context, final snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return FloatingActionButton(
-              onPressed: () {},
-              child: const CircularProgressIndicator(),
-            );
-          } else if (snapshot.hasError) {
-            return FloatingActionButton(
-              onPressed: () {},
-              child: const Icon(Icons.error),
-            );
-          } else if (snapshot.hasData) {
-            final film = snapshot.data!;
-            final watched = Provider.of<WatchedNotifier>(context, listen: false)
-                .films
-                .firstWhereOrNull(
-                    (final element) => element.filmDetails.url == film.url);
-            return FloatingActionButton(
-              child: Icon(film.isSerial ? Icons.list : Icons.play_arrow),
-              onPressed: () async {
-                if (film.isSerial) {
-                  if (film.seasons?.isNotEmpty == true) {
-                    _showBottomSheet(film);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text("Brak dostępnych sezonów"),
-                      dismissDirection: DismissDirection.horizontal,
-                      behavior: SnackBarBehavior.floating,
-                      showCloseIcon: true,
-                    ));
-                  }
-                } else {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (final context) => watched != null
-                        ? FilmanPlayer.fromDetails(
-                            filmDetails: film,
-                            startFrom: watched.watchedInSec,
-                            savedDuration: watched.totalInSec,
-                          )
-                        : FilmanPlayer.fromDetails(filmDetails: film),
-                  ));
-                }
-              },
+                                      } else {
+                                        final watched =
+                                            Provider.of<WatchedNotifier>(
+                                          context,
+                                          listen: false,
+                                        ).films.firstWhereOrNull(
+                                                (final element) =>
+                                                    element.filmDetails.url ==
+                                                    film.url);
+
+                                        Navigator.of(context)
+                                            .push(MaterialPageRoute(
+                                          builder: (final context) =>
+                                              watched != null
+                                                  ? FilmanPlayer.fromDetails(
+                                                      filmDetails: film,
+                                                      startFrom:
+                                                          watched.watchedInSec,
+                                                      savedDuration:
+                                                          watched.totalInSec,
+                                                    )
+                                                  : FilmanPlayer.fromDetails(
+                                                      filmDetails: film),
+                                        ));
+                                      }
+                                    },
+                                    autofocus: true,
+                                    builder: (final hasFocus) =>
+                                        _buildActionButton(
+                                      film.isSerial
+                                          ? Icons.list
+                                          : Icons.play_arrow,
+                                      film.isSerial ? "Odcinki" : "Odtwórz",
+                                      hasFocus,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildProgressBar(Provider.of<WatchedNotifier>(context)),
+                  ],
+                ),
+              ),
             );
           } else {
-            return const SizedBox();
+            return const Center(child: Text("Brak danych"));
           }
         },
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
     );
   }
 
@@ -299,7 +321,7 @@ class _FilmScreenState extends State<FilmScreen> {
       style: const TextStyle(
         fontWeight: FontWeight.bold,
         color: Colors.grey,
-        fontSize: 16,
+        fontSize: 20,
       ),
     );
   }
@@ -333,19 +355,28 @@ class _FilmScreenState extends State<FilmScreen> {
 
   Widget _buildFilmDetailsChips(final FilmDetails film) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 16,
+      runSpacing: 16,
       children: [
         Chip(
-          label: Text(film.releaseDate),
+          label: Text(
+            film.releaseDate,
+            style: const TextStyle(fontSize: 16),
+          ),
           avatar: const Icon(Icons.calendar_today),
         ),
         Chip(
-          label: Text(film.viewCount),
+          label: Text(
+            film.viewCount,
+            style: const TextStyle(fontSize: 16),
+          ),
           avatar: const Icon(Icons.visibility),
         ),
         Chip(
-          label: Text(film.country),
+          label: Text(
+            film.country,
+            style: const TextStyle(fontSize: 16),
+          ),
           avatar: const Icon(Icons.flag),
         ),
       ],
@@ -355,8 +386,10 @@ class _FilmScreenState extends State<FilmScreen> {
   Widget _buildDescription(final String? description) {
     return Text(
       description ?? "Brak opisu",
+      maxLines: 7,
+      overflow: TextOverflow.ellipsis,
       style: const TextStyle(
-        fontSize: 16,
+        fontSize: 18,
         height: 1.5,
       ),
     );

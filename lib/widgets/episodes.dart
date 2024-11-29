@@ -200,6 +200,8 @@ class _EpisodesModalState extends State<EpisodesModal> {
                               (final e) => e.film.url == episode.episodeUrl);
 
                       return ListTile(
+                        autofocus:
+                            index == 0 && episode.getEpisodeNumber() == 1,
                         title: Row(
                           children: [
                             Text(

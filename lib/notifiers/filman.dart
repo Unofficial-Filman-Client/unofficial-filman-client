@@ -54,9 +54,12 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
     prefs.remove("cookies");
   }
 
-  Options _buildDioOptions({required final String contentType}) {
+  Options _buildDioOptions({final String? contentType}) {
     return Options(
-      headers: {"Content-Type": contentType, "cookie": cookies.join("; ")},
+      headers: {
+        if (contentType != null) "Content-Type": contentType,
+        "cookie": cookies.join("; ")
+      },
       followRedirects: false,
       validateStatus: (final status) => true,
     );
@@ -156,7 +159,7 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
   Future<HomePageResponse> getFilmanPage() async {
     final response = await dio.get(
       "https://filman.cc/",
-      options: _buildDioOptions(contentType: "application/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
@@ -192,7 +195,7 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
     final response = await dio.get(
       "https://filman.cc/item",
       queryParameters: {"phrase": query},
-      options: _buildDioOptions(contentType: "application/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
@@ -236,7 +239,7 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
   Future<FilmDetails> getFilmDetails(final String link) async {
     final response = await dio.get(
       link,
-      options: _buildDioOptions(contentType: "application/json"),
+      options: _buildDioOptions(),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ==
