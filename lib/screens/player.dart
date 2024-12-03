@@ -63,7 +63,7 @@ class FilmanPlayer extends StatefulWidget {
   State<FilmanPlayer> createState() => _FilmanPlayerState();
 }
 
-enum SeekDirection { forward, backward }
+enum SeekDirection { forward, backward, up, down }
 
 class _FilmanPlayerState extends State<FilmanPlayer> {
   late final Player _player;
@@ -78,14 +78,18 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   bool _isPlaying = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  Timer? _overlayTimer;
+  
+  int _selectedControlIndex = 1;
+  final List<GlobalKey> _controlKeys = List.generate(4, (_) => GlobalKey());
 
   late FilmDetails _filmDetails;
-
   FilmDetails? _parentDetails;
   Season? _currentSeason;
   FilmDetails? _nextEpisode;
   DownloadedSingle? _nextDwonloaded;
   String _displayState = "Ładowanie...";
+
   @override
   void initState() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -108,8 +112,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   void _initSubscriptions() {
-    _positionSubscription =
-        _controller.player.stream.position.listen((final position) {
+    _positionSubscription = _controller.player.stream.position.listen((final position) {
       if (widget.startFrom != 0) {
         if (position.inSeconds != 0) {
           setState(() => _position = position);
@@ -119,8 +122,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       }
     });
 
-    _durationSubscription =
-        _controller.player.stream.duration.listen((final duration) {
+    _durationSubscription = _controller.player.stream.duration.listen((final duration) {
       if (duration.inSeconds > widget.savedDuration) {
         setState(() => _duration = duration);
       }
@@ -136,17 +138,29 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       });
     });
 
-    _playingSubscription =
-        _controller.player.stream.playing.listen((final playing) {
+    _playingSubscription = _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
+        _initOverlayTimer();
       });
     });
 
-    _bufferingSubscription =
-        _controller.player.stream.buffering.listen((final buffering) {
+    _bufferingSubscription = _controller.player.stream.buffering.listen((final buffering) {
       setState(() => _isBuffering = buffering);
     });
+  }
+
+  void _initOverlayTimer() {
+    _overlayTimer?.cancel();
+    if (_isPlaying && !_isBuffering) {
+      _overlayTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted && _isPlaying) {
+          setState(() {
+            _isOverlayVisible = false;
+          });
+        }
+      });
+    }
   }
 
   Future<void> _initPlayer() async {
@@ -259,15 +273,56 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     }
   }
 
+  void _handleDirectionalNavigation(SeekDirection direction) {
+    if (!_isOverlayVisible) {
+      setState(() => _isOverlayVisible = true);
+      _initOverlayTimer();
+      return;
+    }
+    
+    switch (direction) {
+      case SeekDirection.forward:
+        setState(() {
+          _selectedControlIndex = (_selectedControlIndex + 1).clamp(0, 3);
+        });
+        break;
+      case SeekDirection.backward:
+        setState(() {
+          _selectedControlIndex = (_selectedControlIndex - 1).clamp(0, 3);
+        });
+        break;
+      case SeekDirection.up:
+        setState(() {
+          if (_selectedControlIndex >= 0 && _selectedControlIndex <= 2) {
+            _selectedControlIndex = 3;
+          }
+        });
+        break;
+      case SeekDirection.down:
+        setState(() {
+          if (_selectedControlIndex == 3) {
+            _selectedControlIndex = 1;
+          }
+        });
+        break;
+    }
+  }
+
   @override
   void dispose() {
+    _overlayTimer?.cancel();
     _positionSubscription.cancel();
     _durationSubscription.cancel();
     _playingSubscription.cancel();
     _bufferingSubscription.cancel();
     _player.dispose();
-
     super.dispose();
+  }
+
+  void _handlePlayPause() {
+    _saveWatched();
+    _player.playOrPause();
+    _initOverlayTimer();
   }
 
   Widget _buildMainStack(final BuildContext context) {
@@ -278,7 +333,20 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
           controls: NoVideoControls,
           fit: BoxFit.fitWidth,
         ),
-        SafeArea(child: _buildOverlay(context)),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isOverlayVisible = !_isOverlayVisible;
+            });
+            if (_isOverlayVisible) {
+              _initOverlayTimer();
+            }
+          },
+          child: Container(
+            color: Colors.transparent,
+            child: SafeArea(child: _buildOverlay(context)),
+          ),
+        ),
       ],
     );
   }
@@ -290,23 +358,49 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
         [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
     return Scaffold(
-        body: _isOverlayVisible
-            ? _buildMainStack(context)
-            : Focus(
-                autofocus: true,
-                onKeyEvent: (final FocusNode node, final KeyEvent event) {
-                  if (event is KeyDownEvent) {
-                    if (event.logicalKey == LogicalKeyboardKey.select ||
-                        event.logicalKey == LogicalKeyboardKey.enter) {
-                      setState(() {
-                        _isOverlayVisible = !_isOverlayVisible;
-                      });
-                      return KeyEventResult.handled;
+        body: Focus(
+            autofocus: true,
+            onKeyEvent: (final FocusNode node, final KeyEvent event) {
+              if (event is KeyDownEvent) {
+                if (event.logicalKey == LogicalKeyboardKey.select ||
+                    event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (_isOverlayVisible) {
+                    switch (_selectedControlIndex) {
+                      case 0:
+                        _seekRelative(-10);
+                        break;
+                      case 1:
+                        _handlePlayPause();
+                        break;
+                      case 2:
+                        _seekRelative(10);
+                        break;
+                      case 3:
+                        Navigator.of(context).pop();
+                        break;
                     }
+                  } else {
+                    setState(() => _isOverlayVisible = true);
+                    _initOverlayTimer();
                   }
-                  return KeyEventResult.ignored;
-                },
-                child: _buildMainStack(context)));
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                  _handleDirectionalNavigation(SeekDirection.backward);
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                  _handleDirectionalNavigation(SeekDirection.forward);
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                  _handleDirectionalNavigation(SeekDirection.up);
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                  _handleDirectionalNavigation(SeekDirection.down);
+                  return KeyEventResult.handled;
+                }
+              }
+              return KeyEventResult.ignored;
+            },
+            child: _buildMainStack(context)));
   }
 
   Widget _buildOverlay(final BuildContext context) {
@@ -319,6 +413,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               ? Stack(
                   children: [
                     _buildTopBar(),
+                    _buildCenterControls(),
                     _buildBottomBar(),
                   ],
                 )
@@ -338,12 +433,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const CircularProgressIndicator(),
-                const SizedBox(
-                  height: 8,
-                ),
-                Text(
-                  _displayState,
-                ),
+                const SizedBox(height: 8),
+                Text(_displayState),
               ],
             )),
       );
@@ -356,18 +447,29 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       alignment: Alignment.topCenter,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        // duration: const Duration(milliseconds: 400),
-        // transform: Matrix4.translationValues(
-        //     0.0, _isOverlayVisible ? 0.0 : -48.0, 0.0),
-        // curve: Curves.easeInOut,
         width: double.infinity,
         height: 48,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.7),
+              Colors.transparent,
+            ],
+          ),
+        ),
         child: Stack(
           children: [
             Align(
               alignment: Alignment.centerLeft,
               child: IconButton(
+                key: _controlKeys[3],
+                focusNode: FocusNode(),
                 icon: const Icon(Icons.arrow_back),
+                style: IconButton.styleFrom(
+                  backgroundColor: _selectedControlIndex == 3 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                ),
                 onPressed: () {
                   _saveWatched();
                   Navigator.of(context).pop();
@@ -378,9 +480,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               child: Consumer<SettingsNotifier>(
                 builder: (final context, final settings, final child) {
                   try {
-                    final displayTitle =
-                        getDisplayTitle(_filmDetails.title, settings);
-
+                    final displayTitle = getDisplayTitle(_filmDetails.title, settings);
                     return Text(
                       _filmDetails.isEpisode == true
                           ? "$displayTitle - ${_filmDetails.seasonEpisodeTag}"
@@ -396,62 +496,86 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
               ),
             ),
             Align(
-                alignment: Alignment.centerRight,
-                child: AnimatedContainer(
-                  transform: Matrix4.translationValues(
-                      (_nextEpisode != null || _nextDwonloaded != null)
-                          ? 0.0
-                          : 100.0,
-                      0.0,
-                      0.0),
+              alignment: Alignment.centerRight,
+              child: AnimatedContainer(
+                transform: Matrix4.translationValues(
+                    (_nextEpisode != null || _nextDwonloaded != null) ? 0.0 : 100.0,
+                    0.0,
+                    0.0),
+                duration: const Duration(milliseconds: 300),
+                child: AnimatedOpacity(
+                  opacity:
+                      (_nextEpisode != null || _nextDwonloaded != null) ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 300),
-                  child: AnimatedOpacity(
-                    opacity: (_nextEpisode != null || _nextDwonloaded != null)
-                        ? 1.0
-                        : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: OutlinedButton.icon(
-                      icon: Text(_nextEpisode?.seasonEpisodeTag ??
-                          _nextDwonloaded?.film.seasonEpisodeTag ??
-                          "Następny odcinek"),
-                      label: const Icon(Icons.arrow_forward),
-                      onPressed: () {
-                        Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (final context) {
-                          if (_nextEpisode != null) {
-                            return FilmanPlayer.fromDetails(
-                                filmDetails: _nextEpisode);
-                          }
-                          if (_nextDwonloaded != null) {
-                            return FilmanPlayer.fromDownload(
-                              downloaded: _nextDwonloaded,
-                              parentDownloaded: widget.parentDownloaded,
-                            );
-                          }
-                          return const Center(child: Text("Wystąpił błąd"));
-                        }));
-                      },
-                    ),
+                  child: OutlinedButton.icon(
+                    icon: Text(_nextEpisode?.seasonEpisodeTag ??
+                        _nextDwonloaded?.film.seasonEpisodeTag ??
+                        "Następny odcinek"),
+                    label: const Icon(Icons.arrow_forward),
+                    onPressed: () {
+                      Navigator.of(context)
+                          .pushReplacement(MaterialPageRoute(builder: (final context) {
+                        if (_nextEpisode != null) {
+                          return FilmanPlayer.fromDetails(filmDetails: _nextEpisode);
+                        }
+                        if (_nextDwonloaded != null) {
+                          return FilmanPlayer.fromDownload(
+                            downloaded: _nextDwonloaded,
+                            parentDownloaded: widget.parentDownloaded,
+                          );
+                        }
+                        return const Center(child: Text("Wystąpił błąd"));
+                      }));
+                    },
                   ),
-                )),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCenterPlayPauseButton() {
+  Widget _buildCenterControls() {
     return Center(
-      child: _isBuffering
-          ? const SizedBox()
-          : IconButton(
-              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              iconSize: 72,
-              onPressed: () {
-                _saveWatched();
-                _player.playOrPause();
-              },
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            key: _controlKeys[0],
+            focusNode: FocusNode(),
+            iconSize: 48,
+            icon: const Icon(Icons.replay_10, color: Colors.white),
+            style: IconButton.styleFrom(
+              backgroundColor: _selectedControlIndex == 0 ? Colors.white.withOpacity(0.2) : Colors.transparent,
             ),
+            onPressed: () => _seekRelative(-10),
+          ),
+          const SizedBox(width: 32),
+          IconButton(
+            key: _controlKeys[1],
+            focusNode: FocusNode(),
+            iconSize: 64,
+            style: IconButton.styleFrom(
+              backgroundColor: _selectedControlIndex == 1 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+            ),
+            icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white),
+            onPressed: _handlePlayPause,
+          ),
+          const SizedBox(width: 32),
+          IconButton(
+            key: _controlKeys[2],
+            focusNode: FocusNode(),
+            iconSize: 48,
+            style: IconButton.styleFrom(
+              backgroundColor: _selectedControlIndex == 2 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+            ),
+            icon: const Icon(Icons.forward_10, color: Colors.white),
+            onPressed: () => _seekRelative(10),
+          ),
+        ],
+      ),
     );
   }
 
@@ -462,66 +586,60 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   Widget _buildBottomBar() {
+    final timeText = '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}';
+    final durationText = '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}';
+    
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         width: double.infinity,
-        height: 64,
-        margin: const EdgeInsets.only(bottom: 16),
-        child: Row(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              Colors.black.withOpacity(0.7),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: Icon(
-                _isOverlayVisible ? Icons.visibility_off : Icons.visibility,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                setState(() {
-                  _isOverlayVisible = !_isOverlayVisible;
-                });
-              },
-            ),
-
-            IconButton(
-              icon: const Icon(Icons.replay_10, color: Colors.white),
-              onPressed: () => _seekRelative(-10),
-            ),
-
-            IconButton(
-              autofocus: true,
-              icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
-                  size: 48, color: Colors.white),
-              onPressed: () {
-                _saveWatched();
-                _player.playOrPause();
-              },
-            ),
-
-            IconButton(
-              icon: const Icon(Icons.forward_10, color: Colors.white),
-              onPressed: () => _seekRelative(10),
-            ),
-
-            // Time display
-            Expanded(
-              child: Slider(
-                value: _position.inSeconds.toDouble(),
-                onChanged: (final value) {
-                  _controller.player.seek(Duration(seconds: value.toInt()));
-                  _saveWatched();
-                },
-                min: 0,
-                max: _duration.inSeconds.toDouble(),
-                activeColor: Theme.of(context).colorScheme.primary,
-                inactiveColor: Colors.white,
-              ),
-            ),
-
-            Text(
-              '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')} / '
-              '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}',
-              style: const TextStyle(color: Colors.white),
+            Row(
+              children: [
+                Text(
+                  timeText,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: _duration.inSeconds > 0 
+                          ? _position.inSeconds / _duration.inSeconds 
+                          : 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Text(
+                  durationText,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
             ),
           ],
         ),
