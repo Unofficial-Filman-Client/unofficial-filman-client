@@ -65,23 +65,30 @@ class FilmanPlayer extends StatefulWidget {
 
 enum SeekDirection { forward, backward, up, down }
 
-class _FilmanPlayerState extends State<FilmanPlayer> {
+class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderStateMixin {
   late final Player _player;
   late final VideoController _controller;
   late final StreamSubscription<Duration> _positionSubscription;
   late final StreamSubscription<Duration?> _durationSubscription;
   late final StreamSubscription<bool> _playingSubscription;
   late final StreamSubscription<bool> _bufferingSubscription;
+  late final AnimationController _overlayAnimationController;
 
-  bool _isOverlayVisible = true;
+  bool _isOverlayVisible = false;
   bool _isBuffering = true;
   bool _isPlaying = false;
+  bool _isSeekingForward = false;
+  bool _isSeekingBackward = false;
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
+  int _seekSpeed = 10;
+  Timer? _seekSpeedTimer;
   Timer? _overlayTimer;
+  Timer? _seekTimer;
+  static const int maxSeekSpeed = 60;
   
   int _selectedControlIndex = 1;
-  final List<GlobalKey> _controlKeys = List.generate(4, (_) => GlobalKey());
+  final List<GlobalKey> _controlKeys = List.generate(5, (final _) => GlobalKey());
 
   late FilmDetails _filmDetails;
   FilmDetails? _parentDetails;
@@ -91,18 +98,24 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   String _displayState = "Ładowanie...";
 
   @override
-  void initState() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+void initState() {
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
 
-    _initMediaKit();
-    _initSubscriptions();
-    _initPlayer();
-    super.initState();
-  }
+    _overlayAnimationController = AnimationController(
+    duration: const Duration(milliseconds: 300),
+    vsync: this,
+  );
+
+  _isOverlayVisible = true;
+  _initMediaKit();
+  _initSubscriptions();
+  _initPlayer();
+  super.initState();
+}
 
   void _initMediaKit() {
     _player = Player();
@@ -120,11 +133,24 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
       } else {
         setState(() => _position = position);
       }
+      
+      if (_duration.inSeconds > 0 && 
+          position.inSeconds >= _duration.inSeconds - 1 && 
+          (_nextEpisode != null || _nextDwonloaded != null)) {
+        setState(() {
+          _isOverlayVisible = true;
+        });
+        _overlayAnimationController.forward();
+      }
     });
 
     _durationSubscription = _controller.player.stream.duration.listen((final duration) {
       if (duration.inSeconds > widget.savedDuration) {
-        setState(() => _duration = duration);
+        setState(() {
+          _duration = duration;
+          _isOverlayVisible = true;
+        });
+        _overlayAnimationController.forward();
       }
 
       if (widget.startFrom > 0) {
@@ -158,6 +184,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
           setState(() {
             _isOverlayVisible = false;
           });
+          _overlayAnimationController.reverse();
         }
       });
     }
@@ -273,48 +300,56 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     }
   }
 
-  void _handleDirectionalNavigation(SeekDirection direction) {
-    if (!_isOverlayVisible) {
-      setState(() => _isOverlayVisible = true);
-      _initOverlayTimer();
-      return;
-    }
-    
-    switch (direction) {
-      case SeekDirection.forward:
-        setState(() {
-          _selectedControlIndex = (_selectedControlIndex + 1).clamp(0, 3);
-        });
-        break;
-      case SeekDirection.backward:
-        setState(() {
-          _selectedControlIndex = (_selectedControlIndex - 1).clamp(0, 3);
-        });
-        break;
-      case SeekDirection.up:
-        setState(() {
-          if (_selectedControlIndex >= 0 && _selectedControlIndex <= 2) {
-            _selectedControlIndex = 3;
-          }
-        });
-        break;
-      case SeekDirection.down:
-        setState(() {
-          if (_selectedControlIndex == 3) {
-            _selectedControlIndex = 1;
-          }
-        });
-        break;
-    }
+  void _handleDirectionalNavigation(final SeekDirection direction) {
+  if (!_isOverlayVisible) {
+    setState(() => _isOverlayVisible = true);
+    _overlayAnimationController.forward();
+    _initOverlayTimer();
+    return;
   }
+  
+  switch (direction) {
+    case SeekDirection.forward:
+      setState(() {
+        _selectedControlIndex = (_selectedControlIndex + 1).clamp(0, 4);
+      });
+      break;
+    case SeekDirection.backward:
+      setState(() {
+        _selectedControlIndex = (_selectedControlIndex - 1).clamp(0, 4);
+      });
+      break;
+    case SeekDirection.up:
+      setState(() {
+        if (_selectedControlIndex >= 0 && _selectedControlIndex <= 2) {
+          _selectedControlIndex = 3;
+        } else if (_selectedControlIndex == 3) {
+          _selectedControlIndex = 4;
+        }
+      });
+      break;
+    case SeekDirection.down:
+      setState(() {
+        if (_selectedControlIndex == 4) {
+          _selectedControlIndex = 3;
+        } else if (_selectedControlIndex == 3) {
+          _selectedControlIndex = 1;
+        }
+      });
+      break;
+  }
+}
 
   @override
   void dispose() {
     _overlayTimer?.cancel();
+    _seekTimer?.cancel();
+    _seekSpeedTimer?.cancel();
     _positionSubscription.cancel();
     _durationSubscription.cancel();
     _playingSubscription.cancel();
     _bufferingSubscription.cancel();
+    _overlayAnimationController.dispose();
     _player.dispose();
     super.dispose();
   }
@@ -326,98 +361,113 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
   }
 
   Widget _buildMainStack(final BuildContext context) {
-    return Stack(
-      children: [
-        Video(
-          controller: _controller,
-          controls: NoVideoControls,
-          fit: BoxFit.fitWidth,
+  return Stack(
+    children: [
+      Video(
+        controller: _controller,
+        controls: NoVideoControls,
+        fit: BoxFit.fitWidth,
+      ),
+      FadeTransition(
+        opacity: _overlayAnimationController,
+        child: Container(
+          color: Colors.black.withOpacity(0.4),
         ),
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _isOverlayVisible = !_isOverlayVisible;
-            });
-            if (_isOverlayVisible) {
-              _initOverlayTimer();
-            }
-          },
-          child: Container(
-            color: Colors.transparent,
-            child: SafeArea(child: _buildOverlay(context)),
+      ),
+      GestureDetector(
+        onTap: () {
+          setState(() {
+            _isOverlayVisible = !_isOverlayVisible;
+          });
+          if (_isOverlayVisible) {
+            _overlayAnimationController.forward();
+            _initOverlayTimer();
+          } else {
+            _overlayAnimationController.reverse();
+          }
+        },
+        child: Container(
+          color: Colors.transparent,
+          child: SafeArea(
+            child: _buildOverlay(context),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   @override
-  Widget build(final BuildContext context) {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+Widget build(final BuildContext context) {
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
-    return Scaffold(
-        body: Focus(
-            autofocus: true,
-            onKeyEvent: (final FocusNode node, final KeyEvent event) {
-              if (event is KeyDownEvent) {
-                if (event.logicalKey == LogicalKeyboardKey.select ||
-                    event.logicalKey == LogicalKeyboardKey.enter) {
-                  if (_isOverlayVisible) {
-                    switch (_selectedControlIndex) {
-                      case 0:
-                        _seekRelative(-10);
-                        break;
-                      case 1:
-                        _handlePlayPause();
-                        break;
-                      case 2:
-                        _seekRelative(10);
-                        break;
-                      case 3:
-                        Navigator.of(context).pop();
-                        break;
-                    }
-                  } else {
-                    setState(() => _isOverlayVisible = true);
-                    _initOverlayTimer();
+  return Scaffold(
+      body: Focus(
+          autofocus: true,
+          onKeyEvent: (final FocusNode node, final KeyEvent event) {
+            if (event is KeyDownEvent) {
+              if (event.logicalKey == LogicalKeyboardKey.select ||
+                  event.logicalKey == LogicalKeyboardKey.enter) {
+                if (_isOverlayVisible) {
+                  switch (_selectedControlIndex) {
+                    case 0:
+                      _handleSeekBackwardStart();
+                      break;
+                    case 1:
+                      _handlePlayPause();
+                      break;
+                    case 2:
+                      _handleSeekForwardStart();
+                      break;
+                    case 3:
+                      Navigator.of(context).pop();
+                      break;
                   }
-                  return KeyEventResult.handled;
-                } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                  _handleDirectionalNavigation(SeekDirection.backward);
-                  return KeyEventResult.handled;
-                } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-                  _handleDirectionalNavigation(SeekDirection.forward);
-                  return KeyEventResult.handled;
-                } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                  _handleDirectionalNavigation(SeekDirection.up);
-                  return KeyEventResult.handled;
-                } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                  _handleDirectionalNavigation(SeekDirection.down);
-                  return KeyEventResult.handled;
+                } else {
+                  setState(() => _isOverlayVisible = true);
+                  _overlayAnimationController.forward();
+                  _initOverlayTimer();
                 }
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                _handleDirectionalNavigation(SeekDirection.backward);
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                _handleDirectionalNavigation(SeekDirection.forward);
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                _handleDirectionalNavigation(SeekDirection.up);
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                _handleDirectionalNavigation(SeekDirection.down);
+                return KeyEventResult.handled;
               }
-              return KeyEventResult.ignored;
-            },
-            child: _buildMainStack(context)));
-  }
+            } else if (event is KeyUpEvent) {
+              if (_isSeekingForward || _isSeekingBackward) {
+                _handleSeekStop();
+                return KeyEventResult.handled;
+              }
+            }
+            return KeyEventResult.ignored;
+          },
+          child: _buildMainStack(context)));
+}
 
   Widget _buildOverlay(final BuildContext context) {
     return Stack(
       children: [
         _buildLoadingIcon(),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _isOverlayVisible
-              ? Stack(
-                  children: [
-                    _buildTopBar(),
-                    _buildCenterControls(),
-                    _buildBottomBar(),
-                  ],
-                )
-              : const SizedBox(),
+        FadeTransition(
+          opacity: _overlayAnimationController,
+          child: Stack(
+            children: [
+              _buildTopBar(),
+              _buildCenterControls(),
+              _buildBottomBar(),
+            ],
+          ),
         )
       ],
     );
@@ -442,6 +492,62 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     return const SizedBox();
   }
 
+void _handleSeekForwardStart() {
+    if (_isSeekingForward) return;
+    
+    setState(() {
+      _isSeekingForward = true;
+      _seekSpeed = 10;
+    });
+    
+    _seekRelative(_seekSpeed);
+
+    _seekTimer = Timer(const Duration(milliseconds: 500), () {
+      _startContinuousSeeking(true);
+    });
+  }
+
+  void _handleSeekBackwardStart() {
+    if (_isSeekingBackward) return;
+    
+    setState(() {
+      _isSeekingBackward = true;
+      _seekSpeed = 10;
+    });
+    
+    _seekRelative(-_seekSpeed);
+    
+    _seekTimer = Timer(const Duration(milliseconds: 500), () {
+      _startContinuousSeeking(false);
+    });
+  }
+
+  void _startContinuousSeeking(final bool forward) {
+    _seekTimer?.cancel();
+    _seekSpeedTimer?.cancel();
+    
+    _seekTimer = Timer.periodic(const Duration(milliseconds: 200), (final timer) {
+      _seekRelative(forward ? _seekSpeed : -_seekSpeed);
+    });
+    
+    _seekSpeedTimer = Timer.periodic(const Duration(seconds: 1), (final timer) {
+      setState(() {
+        _seekSpeed = min(_seekSpeed * 2, maxSeekSpeed);
+      });
+    });
+  }
+
+  void _handleSeekStop() {
+    setState(() {
+      _isSeekingForward = false;
+      _isSeekingBackward = false;
+      _seekSpeed = 10;
+    });
+    
+    _seekTimer?.cancel();
+    _seekSpeedTimer?.cancel();
+  }
+
   Widget _buildTopBar() {
     return Align(
       alignment: Alignment.topCenter,
@@ -463,17 +569,23 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: IconButton(
-                key: _controlKeys[3],
-                focusNode: FocusNode(),
-                icon: const Icon(Icons.arrow_back),
-                style: IconButton.styleFrom(
-                  backgroundColor: _selectedControlIndex == 3 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+              child: MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 3 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: IconButton(
+                    key: _controlKeys[3],
+                    focusNode: FocusNode(),
+                    icon: const Icon(Icons.arrow_back),
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedControlIndex == 3 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                    ),
+                    onPressed: () {
+                      _saveWatched();
+                      Navigator.of(context).pop();
+                    },
+                  ),
                 ),
-                onPressed: () {
-                  _saveWatched();
-                  Navigator.of(context).pop();
-                },
               ),
             ),
             Center(
@@ -495,42 +607,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                 },
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: AnimatedContainer(
-                transform: Matrix4.translationValues(
-                    (_nextEpisode != null || _nextDwonloaded != null) ? 0.0 : 100.0,
-                    0.0,
-                    0.0),
-                duration: const Duration(milliseconds: 300),
-                child: AnimatedOpacity(
-                  opacity:
-                      (_nextEpisode != null || _nextDwonloaded != null) ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: OutlinedButton.icon(
-                    icon: Text(_nextEpisode?.seasonEpisodeTag ??
-                        _nextDwonloaded?.film.seasonEpisodeTag ??
-                        "Następny odcinek"),
-                    label: const Icon(Icons.arrow_forward),
-                    onPressed: () {
-                      Navigator.of(context)
-                          .pushReplacement(MaterialPageRoute(builder: (final context) {
-                        if (_nextEpisode != null) {
-                          return FilmanPlayer.fromDetails(filmDetails: _nextEpisode);
-                        }
-                        if (_nextDwonloaded != null) {
-                          return FilmanPlayer.fromDownload(
-                            downloaded: _nextDwonloaded,
-                            parentDownloaded: widget.parentDownloaded,
-                          );
-                        }
-                        return const Center(child: Text("Wystąpił błąd"));
-                      }));
-                    },
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -539,45 +615,85 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
 
   Widget _buildCenterControls() {
     return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            key: _controlKeys[0],
-            focusNode: FocusNode(),
-            iconSize: 48,
-            icon: const Icon(Icons.replay_10, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: _selectedControlIndex == 0 ? Colors.white.withOpacity(0.2) : Colors.transparent,
-            ),
-            onPressed: () => _seekRelative(-10),
-          ),
-          const SizedBox(width: 32),
-          IconButton(
-            key: _controlKeys[1],
-            focusNode: FocusNode(),
-            iconSize: 64,
-            style: IconButton.styleFrom(
-              backgroundColor: _selectedControlIndex == 1 ? Colors.white.withOpacity(0.2) : Colors.transparent,
-            ),
-            icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white),
-            onPressed: _handlePlayPause,
-          ),
-          const SizedBox(width: 32),
-          IconButton(
-            key: _controlKeys[2],
-            focusNode: FocusNode(),
-            iconSize: 48,
-            style: IconButton.styleFrom(
-              backgroundColor: _selectedControlIndex == 2 ? Colors.white.withOpacity(0.2) : Colors.transparent,
-            ),
-            icon: const Icon(Icons.forward_10, color: Colors.white),
-            onPressed: () => _seekRelative(10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 0 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: GestureDetector(
+                    onTapDown: (final _) => _handleSeekBackwardStart(),
+                    onTapUp: (final _) => _handleSeekStop(),
+                    onTapCancel: _handleSeekStop,
+                    child: IconButton(
+                      key: _controlKeys[0],
+                      focusNode: FocusNode(),
+                      iconSize: 40,
+                      icon: Icon(
+                        Icons.replay_10,
+                        color: _isSeekingBackward ? Theme.of(context).primaryColor : Colors.white
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: _selectedControlIndex == 0 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                      ),
+                      onPressed: () => _seekRelative(-10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 32),
+              MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 1 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: IconButton(
+                    key: _controlKeys[1],
+                    focusNode: FocusNode(),
+                    iconSize: 56,
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedControlIndex == 1 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                    ),
+                    icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white),
+                    onPressed: _handlePlayPause,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 32),
+              MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 2 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: GestureDetector(
+                    onTapDown: (final _) => _handleSeekForwardStart(),
+                    onTapUp: (final _) => _handleSeekStop(),
+                    onTapCancel: _handleSeekStop,
+                    child: IconButton(
+                      key: _controlKeys[2],
+                      focusNode: FocusNode(),
+                      iconSize: 40,
+                      style: IconButton.styleFrom(
+                        backgroundColor: _selectedControlIndex == 2 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                      ),
+                      icon: Icon(
+                        Icons.forward_10,
+                        color: _isSeekingForward ? Theme.of(context).primaryColor : Colors.white
+                      ),
+                      onPressed: () => _seekRelative(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
 
   void _seekRelative(final int seconds) {
     final newPosition =
