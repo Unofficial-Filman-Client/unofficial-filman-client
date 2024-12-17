@@ -86,6 +86,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   Timer? _overlayTimer;
   Timer? _seekTimer;
   static const int maxSeekSpeed = 60;
+  bool _isInitialOverlay = true;
   
   int _selectedControlIndex = 1;
   final List<GlobalKey> _controlKeys = List.generate(5, (final _) => GlobalKey());
@@ -98,24 +99,26 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   String _displayState = "Ładowanie...";
 
   @override
-void initState() {
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
+  void initState() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
 
     _overlayAnimationController = AnimationController(
-    duration: const Duration(milliseconds: 300),
-    vsync: this,
-  );
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
 
-  _isOverlayVisible = true;
-  _initMediaKit();
-  _initSubscriptions();
-  _initPlayer();
-  super.initState();
-}
+    _isOverlayVisible = true;
+    _initMediaKit();
+    _initSubscriptions();
+    _initPlayer();
+    _initOverlayTimer();
+    
+    super.initState();
+  }
 
   void _initMediaKit() {
     _player = Player();
@@ -167,7 +170,10 @@ void initState() {
     _playingSubscription = _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
-        _initOverlayTimer();
+        if (_isInitialOverlay && playing) {
+          _isInitialOverlay = false;
+          _initOverlayTimer();
+        }
       });
     });
 
@@ -178,7 +184,7 @@ void initState() {
 
   void _initOverlayTimer() {
     _overlayTimer?.cancel();
-    if (_isPlaying && !_isBuffering) {
+    if (_isPlaying && !_isBuffering && !_isInitialOverlay) {
       _overlayTimer = Timer(const Duration(seconds: 5), () {
         if (mounted && _isPlaying) {
           setState(() {
