@@ -10,6 +10,9 @@ import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 import "package:unofficial_filman_client/widgets/focus_inkwell.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
+import "package:unofficial_filman_client/notifiers/download.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/utils/select_dialog.dart";
 
 class FilmScreen extends StatefulWidget {
   final String url, title, image;
@@ -129,6 +132,23 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
+  Widget _buildDownloadButton(final FilmDetails film, final bool hasFocus) {
+    if (film.isSerial) return const SizedBox();
+
+    final downloaded = Provider.of<DownloadNotifier>(context)
+        .downloadedSerials
+        .firstWhereOrNull((final s) => s.serial.url == film.url);
+    final bool isDownloading = Provider.of<DownloadNotifier>(context)
+        .downloading
+        .any((final element) => element.film.url == film.url);
+
+    return _buildActionButton(
+      isDownloading ? Icons.downloading : (downloaded != null ? Icons.save : Icons.download),
+      isDownloading ? "Pobieranie..." : (downloaded != null ? "Zapisane" : "Pobierz"),
+      hasFocus,
+    );
+  }
+
   @override
   Widget build(final BuildContext context) {
     return Scaffold(
@@ -245,6 +265,39 @@ class _FilmScreenState extends State<FilmScreen> {
                                       hasFocus,
                                     ),
                                   ),
+                                  if (!film.isSerial) ...[
+                                    const SizedBox(width: 16),
+                                    FocusInkWell(
+                                      onTap: () async {
+                                        final downloaded = Provider.of<DownloadNotifier>(context, listen: false)
+                                            .downloadedSerials
+                                            .firstWhereOrNull((final s) => s.serial.url == film.url);
+                                        
+                                        if (downloaded != null || film.links == null) {
+                                          return;
+                                        }
+                                        
+                                        if (film.links?.isEmpty == true || !mounted) {
+                                          return;
+                                        }
+                                        
+                                        final (l, q) = await getUserSelectedPreferences(context, film.links!);
+                                        if (l == null || q == null) {
+                                          return;
+                                        }
+                                        
+                                        Provider.of<DownloadNotifier>(context, listen: false)
+                                            .addFilmToDownload(
+                                          film,
+                                          l,
+                                          q,
+                                          Provider.of<SettingsNotifier>(context, listen: false),
+                                          null,
+                                        );
+                                      },
+                                      builder: (final hasFocus) => _buildDownloadButton(film, hasFocus),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ],
