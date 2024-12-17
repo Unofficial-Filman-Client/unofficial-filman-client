@@ -23,6 +23,8 @@ class EpisodesModal extends StatefulWidget {
 class _EpisodesModalState extends State<EpisodesModal> {
   Map<String, FilmDetails> episodeDetails = {};
   List<Season> seasons = [];
+  int selectedSeasonIndex = 0;
+  bool isLoadingEpisodes = false;
 
   @override
   void initState() {
@@ -30,7 +32,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
     setState(() {
       seasons = widget.filmDetails.getSeasons();
     });
-    _loadEpisodeDescriptions();
+    _loadEpisodesForSeason(selectedSeasonIndex);
   }
 
   @override
@@ -39,9 +41,15 @@ class _EpisodesModalState extends State<EpisodesModal> {
     episodeDetails.clear();
   }
 
-  Future<void> _loadEpisodeDescriptions() async {
-    final downloadedSerial = Provider.of<DownloadNotifier>(context,
-            listen: false)
+  Future<void> _loadEpisodesForSeason(final int seasonIndex) async {
+    if (!mounted) return;
+    
+    setState(() {
+      isLoadingEpisodes = true;
+    });
+
+    final Season season = seasons[seasonIndex];
+    final downloadedSerial = Provider.of<DownloadNotifier>(context, listen: false)
         .downloadedSerials
         .firstWhereOrNull((final s) => s.serial.url == widget.filmDetails.url);
     final savedSerial = Provider.of<WatchedNotifier>(context, listen: false)
@@ -49,32 +57,36 @@ class _EpisodesModalState extends State<EpisodesModal> {
         .firstWhereOrNull((final element) =>
             element.filmDetails.url == widget.filmDetails.url);
 
-    for (Season season in seasons) {
+    for (Episode episode in season.getEpisodes()) {
       if (!mounted) return;
-      for (Episode episode in season.getEpisodes()) {
+      final watched = savedSerial?.episodes
+              .firstWhereOrNull((final element) =>
+                  element.filmDetails.url == episode.episodeUrl)
+              ?.filmDetails ??
+          downloadedSerial?.episodes
+              .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl)
+              ?.film;
+      
+      if (watched != null) {
         if (!mounted) return;
-        final watched = savedSerial?.episodes
-                .firstWhereOrNull((final element) =>
-                    element.filmDetails.url == episode.episodeUrl)
-                ?.filmDetails ??
-            downloadedSerial?.episodes
-                .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl)
-                ?.film;
-        if (watched != null) {
-          if (!mounted) return;
-          setState(() {
-            episodeDetails[episode.episodeName] = watched;
-          });
-        } else {
-          final FilmDetails data =
-              await Provider.of<FilmanNotifier>(context, listen: false)
-                  .getFilmDetails(episode.episodeUrl);
-          if (!mounted) return;
-          setState(() {
-            episodeDetails[episode.episodeName] = data;
-          });
-        }
+        setState(() {
+          episodeDetails[episode.episodeName] = watched;
+        });
+      } else {
+        final FilmDetails data =
+            await Provider.of<FilmanNotifier>(context, listen: false)
+                .getFilmDetails(episode.episodeUrl);
+        if (!mounted) return;
+        setState(() {
+          episodeDetails[episode.episodeName] = data;
+        });
       }
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoadingEpisodes = false;
+      });
     }
   }
 
@@ -90,16 +102,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
           Text(
             '${watched.inMinutes}:${(watched.inSeconds % 60).toString().padLeft(2, '0')}',
           ),
-          const SizedBox(
-            width: 5,
-          ),
+          const SizedBox(width: 5),
           Expanded(
-              child: LinearProgressIndicator(
-            value: currentEpisode.watchedPercentage,
-          )),
-          const SizedBox(
-            width: 5,
+            child: LinearProgressIndicator(
+              value: currentEpisode.watchedPercentage,
+            ),
           ),
+          const SizedBox(width: 5),
           Text(
             '${total.inMinutes}:${(total.inSeconds % 60).toString().padLeft(2, '0')}',
           ),
@@ -144,157 +153,200 @@ class _EpisodesModalState extends State<EpisodesModal> {
     );
   }
 
-  @override
-  Widget build(final BuildContext context) {
-    final downloadedSerial = Provider.of<DownloadNotifier>(context)
-        .downloadedSerials
-        .firstWhereOrNull((final s) => s.serial.url == widget.filmDetails.url);
+  Widget _buildSeasonSelector() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: seasons.length,
+        itemBuilder: (final context, final index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: FocusableActionDetector(
+              actions: {
+                ActivateIntent: CallbackAction<ActivateIntent>(
+                  onInvoke: (final ActivateIntent intent) {
+                    _onSeasonSelected(index);
+                    return null;
+                  },
+                ),
+              },
+              child: Builder(
+                builder: (final BuildContext context) {
+                  final bool hasFocus = Focus.of(context).hasFocus;
+                  return AnimatedScale(
+                    scale: hasFocus ? 1.1 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: ChoiceChip(
+                      label: Text(seasons[index].seasonTitle),
+                      selected: selectedSeasonIndex == index,
+                      onSelected: (final bool selected) {
+                        if (selected) {
+                          _onSeasonSelected(index);
+                        }
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
+  void _onSeasonSelected(final int index) {
+    if (selectedSeasonIndex != index) {
+      setState(() {
+        selectedSeasonIndex = index;
+        episodeDetails.clear();
+      });
+      _loadEpisodesForSeason(index);
+    }
+  }
+
+  Widget _buildEpisodesList() {
     return Consumer<WatchedNotifier>(
       builder: (final context, final watchedNotifier, final child) {
         final currentSerial = watchedNotifier.serials.firstWhereOrNull(
             (final s) => s.filmDetails.url == widget.filmDetails.url);
+        final downloadedSerial = Provider.of<DownloadNotifier>(context)
+            .downloadedSerials
+            .firstWhereOrNull((final s) => s.serial.url == widget.filmDetails.url);
 
-        return ListView.separated(
-          itemCount: seasons.length,
-          separatorBuilder: (final context, final index) =>
-              const SizedBox(height: 16.0),
-          itemBuilder: (final context, final index) {
-            final Season season = seasons[index];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: Center(
-                    child: Text(
-                      season.seasonTitle,
-                      style: const TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                      ),
+        final Season currentSeason = seasons[selectedSeasonIndex];
+
+        if (isLoadingEpisodes) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: currentSeason.getEpisodes().length,
+          itemBuilder: (final context, final episodeIndex) {
+            final Episode episode = currentSeason.getEpisodes()[episodeIndex];
+            final currentEpisode = currentSerial?.episodes.firstWhereOrNull(
+                (final e) =>
+                    e.filmDetails.url == episode.episodeUrl && e.watchedInSec > 0);
+            final downloadedEpisode = downloadedSerial?.episodes.firstWhereOrNull(
+                (final e) => e.film.url == episode.episodeUrl);
+
+            return ListTile(
+              autofocus:
+                  selectedSeasonIndex == 0 && episode.getEpisodeNumber() == 1,
+              title: Row(
+                children: [
+                  Text(
+                    episode.getEpisodeNumber().toString(),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 50,
                     ),
                   ),
-                ),
-                for (Episode episode in season.getEpisodes())
-                  Builder(
-                    builder: (final context) {
-                      final currentEpisode = currentSerial?.episodes
-                          .firstWhereOrNull((final e) =>
-                              e.filmDetails.url == episode.episodeUrl &&
-                              e.watchedInSec > 0);
-                      final downloadedEpisode = downloadedSerial?.episodes
-                          .firstWhereOrNull(
-                              (final e) => e.film.url == episode.episodeUrl);
-
-                      return ListTile(
-                        autofocus:
-                            index == 0 && episode.getEpisodeNumber() == 1,
-                        title: Row(
-                          children: [
-                            Text(
-                              episode.getEpisodeNumber().toString(),
-                              style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontSize: 50),
-                            ),
-                            const SizedBox(width: 12.0),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(episode.getEpisodeTitle()),
-                                  const SizedBox(height: 4.0),
-                                  episodeDetails.isNotEmpty
-                                      ? episodeDetails[episode.episodeName]
-                                                  ?.desc
-                                                  .isNotEmpty ==
-                                              true
-                                          ? episodeDetails[episode.episodeName]!
-                                                      .desc ==
-                                                  widget.filmDetails.desc
-                                              ? const Text(
-                                                  "Brak opisu odcinka",
-                                                  style: TextStyle(
-                                                    fontSize: 12.0,
-                                                    color: Colors.grey,
-                                                  ),
-                                                )
-                                              : Text(
-                                                  episodeDetails[
-                                                          episode.episodeName]!
-                                                      .desc,
-                                                  style: const TextStyle(
-                                                    fontSize: 12.0,
-                                                    color: Colors.grey,
-                                                  ),
-                                                )
-                                          : const LinearProgressIndicator()
-                                      : const LinearProgressIndicator(),
-                                  currentEpisode != null
-                                      ? _buildProgressBar(currentEpisode)
-                                      : const SizedBox(),
-                                ],
-                              ),
-                            ),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              child: episodeDetails[episode.episodeName] != null
-                                  ? _buildDownloadIcon(context,
-                                      episodeDetails[episode.episodeName]!)
-                                  : const SizedBox(),
-                            ),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (final context) {
-                            if (downloadedEpisode != null) {
-                              return FilmanPlayer.fromDownload(
-                                downloaded: downloadedEpisode,
-                                parentDownloaded: downloadedSerial,
-                              );
-                            }
-                            if (episodeDetails[episode.episodeName] != null) {
-                              if (currentEpisode != null) {
-                                return FilmanPlayer.fromDetails(
-                                  filmDetails:
-                                      episodeDetails[episode.episodeName],
-                                  parentDetails: widget.filmDetails,
-                                  startFrom: currentEpisode.watchedInSec,
-                                  savedDuration: currentEpisode.totalInSec,
-                                );
-                              }
-                              return FilmanPlayer.fromDetails(
-                                filmDetails:
-                                    episodeDetails[episode.episodeName],
-                                parentDetails: widget.filmDetails,
-                              );
-                            }
-
-                            if (currentEpisode != null) {
-                              return FilmanPlayer(
-                                targetUrl: episode.episodeUrl,
-                                parentDetails: widget.filmDetails,
-                                startFrom: currentEpisode.watchedInSec,
-                                savedDuration: currentEpisode.totalInSec,
-                              );
-                            }
-
-                            return FilmanPlayer(
-                                targetUrl: episode.episodeUrl,
-                                parentDetails: widget.filmDetails);
-                          }));
-                        },
+                  const SizedBox(width: 12.0),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(episode.getEpisodeTitle()),
+                        const SizedBox(height: 4.0),
+                        episodeDetails[episode.episodeName] != null
+                            ? episodeDetails[episode.episodeName]!.desc.isNotEmpty
+                                ? episodeDetails[episode.episodeName]!.desc ==
+                                        widget.filmDetails.desc
+                                    ? const Text(
+                                        "Brak opisu odcinka",
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                          color: Colors.grey,
+                                        ),
+                                      )
+                                    : Text(
+                                        episodeDetails[episode.episodeName]!.desc,
+                                        style: const TextStyle(
+                                          fontSize: 12.0,
+                                          color: Colors.grey,
+                                        ),
+                                      )
+                                : const LinearProgressIndicator()
+                            : const LinearProgressIndicator(),
+                        currentEpisode != null
+                            ? _buildProgressBar(currentEpisode)
+                            : const SizedBox(),
+                      ],
+                    ),
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: episodeDetails[episode.episodeName] != null
+                        ? _buildDownloadIcon(
+                            context, episodeDetails[episode.episodeName]!)
+                        : const SizedBox(),
+                  ),
+                ],
+              ),
+              onTap: () {
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (final context) {
+                  if (downloadedEpisode != null) {
+                    return FilmanPlayer.fromDownload(
+                      downloaded: downloadedEpisode,
+                      parentDownloaded: downloadedSerial,
+                    );
+                  }
+                  if (episodeDetails[episode.episodeName] != null) {
+                    if (currentEpisode != null) {
+                      return FilmanPlayer.fromDetails(
+                        filmDetails: episodeDetails[episode.episodeName],
+                        parentDetails: widget.filmDetails,
+                        startFrom: currentEpisode.watchedInSec,
+                        savedDuration: currentEpisode.totalInSec,
                       );
-                    },
-                  )
-              ],
+                    }
+                    return FilmanPlayer.fromDetails(
+                      filmDetails: episodeDetails[episode.episodeName],
+                      parentDetails: widget.filmDetails,
+                    );
+                  }
+
+                  if (currentEpisode != null) {
+                    return FilmanPlayer(
+                      targetUrl: episode.episodeUrl,
+                      parentDetails: widget.filmDetails,
+                      startFrom: currentEpisode.watchedInSec,
+                      savedDuration: currentEpisode.totalInSec,
+                    );
+                  }
+
+                  return FilmanPlayer(
+                    targetUrl: episode.episodeUrl,
+                    parentDetails: widget.filmDetails,
+                  );
+                }));
+              },
             );
           },
         );
       },
+    );
+  }
+
+  @override
+  Widget build(final BuildContext context) {
+    return Column(
+      children: [
+        _buildSeasonSelector(),
+        Expanded(
+          child: SingleChildScrollView(
+            child: _buildEpisodesList(),
+          ),
+        ),
+      ],
     );
   }
 }
