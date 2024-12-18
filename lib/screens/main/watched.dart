@@ -72,7 +72,13 @@ void dispose() {
                 Navigator.of(context).pop();
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (final context) => FilmScreen.fromDetails(details: film.filmDetails),
+                    builder: (final context) => film.filmDetails.parentUrl != null
+                        ? FilmScreen(
+                            url: film.filmDetails.parentUrl!,
+                            image: film.filmDetails.imageUrl,
+                            title: film.filmDetails.title,
+                          )
+                        : FilmScreen.fromDetails(details: film.filmDetails),
                   ),
                 ).then((final _) {
                   setState(() {});
@@ -92,7 +98,6 @@ void dispose() {
       },
     );
   }
-
   void _showDeleteConfirmationDialog(final BuildContext context, final WatchedSingle film) {
     showDialog(
       context: context,
@@ -124,119 +129,142 @@ void dispose() {
   }
 
   Widget _buildWatchedFilmCard(
-  final BuildContext context, 
-  final WatchedSingle film, 
-  final int index,
-  {final bool isFirstItem = false}
-) {
-  return Focus(
-    focusNode: _focusNodes[index],
-    onKey: (final node, final event) {
-      if (event is RawKeyDownEvent) {
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          if (index + 3 < _focusNodes.length) {
-            _focusNodes[index + 3].requestFocus();
-            _scrollToVisible(index + 3);
+    final BuildContext context, 
+    final WatchedSingle film, 
+    final int index,
+    {final bool isFirstItem = false}
+  ) {
+    return Focus(
+      focusNode: _focusNodes[index],
+      onKey: (final node, final event) {
+        if (event is RawKeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            if (index + 3 < _focusNodes.length) {
+              _focusNodes[index + 3].requestFocus();
+              _scrollToVisible(index + 3);
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            if (index < 3) {
+              widget.onHoverStateChanged(false);
+              return KeyEventResult.handled;
+            } else if (index - 3 >= 0) {
+              _focusNodes[index - 3].requestFocus();
+              _scrollToVisible(index - 3);
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            if (index - 1 >= 0 && index % 3 != 0) {
+              _focusNodes[index - 1].requestFocus();
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            if (index + 1 < _focusNodes.length && (index + 1) % 3 != 0) {
+              _focusNodes[index + 1].requestFocus();
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.select ||
+                     event.logicalKey == LogicalKeyboardKey.enter) {
+            _showFilmMenu(context, film);
             return KeyEventResult.handled;
           }
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          if (index < 3) {
-            widget.onHoverStateChanged(false);
-            return KeyEventResult.handled;
-          } else if (index - 3 >= 0) {
-            _focusNodes[index - 3].requestFocus();
-            _scrollToVisible(index - 3);
-            return KeyEventResult.handled;
-          }
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          if (index - 1 >= 0 && index % 3 != 0) {
-            _focusNodes[index - 1].requestFocus();
-            return KeyEventResult.handled;
-          }
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          if (index + 1 < _focusNodes.length && (index + 1) % 3 != 0) {
-            _focusNodes[index + 1].requestFocus();
-            return KeyEventResult.handled;
-          }
-        } else if (event.logicalKey == LogicalKeyboardKey.select ||
-                   event.logicalKey == LogicalKeyboardKey.enter) {
-          _showFilmMenu(context, film);
-          return KeyEventResult.handled;
         }
-      }
-      return KeyEventResult.ignored;
-    },
-    onFocusChange: (final hasFocus) {
-      setState(() {});
-      if (isFirstItem) {
-        widget.onHoverStateChanged(hasFocus);
-      }
-    },
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: _focusNodes[index].hasFocus ? Colors.blue : Colors.transparent,
-          width: 3,
-        ),
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: GestureDetector(
-        onTap: () {
-          _showFilmMenu(context, film);
-        },
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
+        return KeyEventResult.ignored;
+      },
+      onFocusChange: (final hasFocus) {
+        setState(() {});
+        if (isFirstItem) {
+          widget.onHoverStateChanged(hasFocus);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _focusNodes[index].hasFocus ? Colors.blue : Colors.transparent,
+            width: 3,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 5,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
-                  child: Image.network(
-                    film.filmDetails.imageUrl,
-                    fit: BoxFit.cover,
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: GestureDetector(
+          onTap: () {
+            _showFilmMenu(context, film);
+          },
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
+                    child: Image.network(
+                      film.filmDetails.imageUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-              ),
-              LinearProgressIndicator(
-                value: film.watchedPercentage,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      film.filmDetails.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.0,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8.0),
-                    Text(
-                      "Pozostało: ${film.totalInSec ~/ 60} min",
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                LinearProgressIndicator(
+                  value: film.watchedPercentage,
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        film.filmDetails.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.0,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8.0),
+                      if (film.filmDetails.isEpisode)
+                        Column(
+                          children: [
+                            if (film.filmDetails.seasonEpisodeTag != null)
+                              Text(
+                                (film.filmDetails.seasonEpisodeTag?.split(" ")
+                                      ?..removeAt(0))
+                                    ?.join(" ") ?? "",
+                                maxLines: 1,
+                                overflow: TextOverflow.fade,
+                                textAlign: TextAlign.center,
+                              ),
+                            Text(
+                              'S${film.parentSeason?.seasonTitle.replaceAll('Sezon ', '')}:O${1 + (film.parentSeason?.episodes.indexWhere((final e) => e.episodeUrl == film.filmDetails.url) ?? 0)} z ${film.parentSeason?.episodes.length}',
+                              style: const TextStyle(
+                                fontSize: 16.0,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        )
+                      else
+                        Text(
+                          "Pozostało: ${film.totalInSec ~/ 60} min",
+                          textAlign: TextAlign.center,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   void _scrollToVisible(final int index) {
     final double position = (index ~/ 3) * 200.0;
