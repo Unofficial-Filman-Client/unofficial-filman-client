@@ -317,19 +317,19 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   switch (direction) {
     case SeekDirection.forward:
       setState(() {
-        _selectedControlIndex = (_selectedControlIndex + 1).clamp(0, 4);
+        _selectedControlIndex = (_selectedControlIndex + 1).clamp(0, _nextEpisode != null || _nextDwonloaded != null ? 4 : 3);
       });
       break;
     case SeekDirection.backward:
       setState(() {
-        _selectedControlIndex = (_selectedControlIndex - 1).clamp(0, 4);
+        _selectedControlIndex = (_selectedControlIndex - 1).clamp(0, _nextEpisode != null || _nextDwonloaded != null ? 4 : 3);
       });
       break;
     case SeekDirection.up:
       setState(() {
         if (_selectedControlIndex >= 0 && _selectedControlIndex <= 2) {
           _selectedControlIndex = 3;
-        } else if (_selectedControlIndex == 3) {
+        } else if (_selectedControlIndex == 3 && (_nextEpisode != null || _nextDwonloaded != null)) {
           _selectedControlIndex = 4;
         }
       });
@@ -429,6 +429,28 @@ Widget build(final BuildContext context) {
                       break;
                     case 3:
                       Navigator.of(context).pop();
+                      break;
+                    case 4:
+                      _saveWatched();
+                      if (_nextDwonloaded != null) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (final context) => FilmanPlayer.fromDownload(
+                              downloaded: _nextDwonloaded,
+                              parentDownloaded: widget.parentDownloaded,
+                            ),
+                          ),
+                        );
+                      } else if (_nextEpisode != null) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (final context) => FilmanPlayer.fromDetails(
+                              filmDetails: _nextEpisode,
+                              parentDetails: _parentDetails,
+                            ),
+                          ),
+                        );
+                      }
                       break;
                   }
                 } else {
@@ -555,69 +577,136 @@ void _handleSeekForwardStart() {
   }
 
   Widget _buildTopBar() {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        width: double.infinity,
-        height: 48,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withOpacity(0.7),
-              Colors.transparent,
-            ],
-          ),
+  return Align(
+    alignment: Alignment.topCenter,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withOpacity(0.7),
+            Colors.transparent,
+          ],
         ),
-        child: Stack(
-          children: [
+      ),
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: MouseRegion(
+              child: AnimatedScale(
+                scale: _selectedControlIndex == 3 ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: IconButton(
+                  key: _controlKeys[3],
+                  focusNode: FocusNode(),
+                  icon: const Icon(Icons.arrow_back),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _selectedControlIndex == 3
+                        ? Colors.white.withOpacity(0.2)
+                        : Colors.transparent,
+                  ),
+                  onPressed: () {
+                    _saveWatched();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: Consumer<SettingsNotifier>(
+              builder: (final context, final settings, final child) {
+                try {
+                  final displayTitle =
+                      getDisplayTitle(_filmDetails.title, settings);
+                  return Text(
+                    _filmDetails.isEpisode == true
+                        ? "$displayTitle - ${_filmDetails.seasonEpisodeTag}"
+                        : displayTitle,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  );
+                } catch (err) {
+                  return const SizedBox();
+                }
+              },
+            ),
+          ),
+          if (_nextEpisode != null || _nextDwonloaded != null)
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.centerRight,
               child: MouseRegion(
                 child: AnimatedScale(
-                  scale: _selectedControlIndex == 3 ? 1.1 : 1.0,
+                  scale: _selectedControlIndex == 4 ? 1.1 : 1.0,
                   duration: const Duration(milliseconds: 200),
-                  child: IconButton(
-                    key: _controlKeys[3],
-                    focusNode: FocusNode(),
-                    icon: const Icon(Icons.arrow_back),
-                    style: IconButton.styleFrom(
-                      backgroundColor: _selectedControlIndex == 3 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    onPressed: () {
-                      _saveWatched();
-                      Navigator.of(context).pop();
-                    },
+                    child: TextButton.icon(
+                      key: _controlKeys[4],
+                      focusNode: FocusNode(),
+                      icon: const Icon(Icons.skip_next, color: Colors.white),
+                      label: Text(
+                        _nextDwonloaded != null
+                            ? "${_nextDwonloaded!.film.seasonEpisodeTag}"
+                            : "${_nextEpisode?.seasonEpisodeTag}",
+                        style: const TextStyle(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: TextButton.styleFrom(
+                        backgroundColor: _selectedControlIndex == 4
+                            ? Colors.white.withOpacity(0.2)
+                            : Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20), // Matching border radius
+                        ),
+                      ),
+                      onPressed: () {
+                        _saveWatched();
+                        if (_nextDwonloaded != null) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (final context) =>
+                                  FilmanPlayer.fromDownload(
+                                downloaded: _nextDwonloaded,
+                                parentDownloaded: widget.parentDownloaded,
+                              ),
+                            ),
+                          );
+                        } else if (_nextEpisode != null) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (final context) => FilmanPlayer.fromDetails(
+                                filmDetails: _nextEpisode,
+                                parentDetails: _parentDetails,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
-            Center(
-              child: Consumer<SettingsNotifier>(
-                builder: (final context, final settings, final child) {
-                  try {
-                    final displayTitle = getDisplayTitle(_filmDetails.title, settings);
-                    return Text(
-                      _filmDetails.isEpisode == true
-                          ? "$displayTitle - ${_filmDetails.seasonEpisodeTag}"
-                          : displayTitle,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    );
-                  } catch (err) {
-                    return const SizedBox();
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCenterControls() {
     return Center(
