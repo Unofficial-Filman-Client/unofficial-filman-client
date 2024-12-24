@@ -11,6 +11,7 @@ Future<List<Language>> _getAvailableLanguages(
       languages.add(link.language);
     }
   }
+  languages.sort();
   return languages;
 }
 

@@ -17,31 +17,45 @@ abstract class VideoScraper {
   Future<String> getVideoLink();
 }
 
-enum Language {
+enum Language implements Comparable {
+  pl("PL"),
   dubbing("Dubbing"),
-  dubbingKino("Dubbing_Kino"),
-  eng("ENG"),
   lektor("Lektor"),
+  dubbingKino("Dubbing_Kino"),
   lektorIVO("Lektor_IVO"),
   napisy("Napisy"),
   napisyTansl("Napisy_Tansl"),
-  pl("PL");
+  eng("ENG");
 
   const Language(this.language);
   final String language;
 
   @override
+  int compareTo(final other) {
+    return Language.values
+        .indexOf(this)
+        .compareTo(Language.values.indexOf(other));
+  }
+
+  @override
   String toString() => language;
 }
 
-enum Quality {
-  p360("360p"),
-  p480("480p"),
+enum Quality implements Comparable {
+  p1080("1080p"),
   p720("720p"),
-  p1080("1080p");
+  p480("480p"),
+  p360("360p");
 
   const Quality(this.quality);
   final String quality;
+
+  @override
+  int compareTo(final other) {
+    return Quality.values
+        .indexOf(this)
+        .compareTo(Quality.values.indexOf(other));
+  }
 
   @override
   String toString() => quality;
