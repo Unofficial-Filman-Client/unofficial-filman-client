@@ -14,6 +14,7 @@ class _FilmanNotifier with FilmanNotifier implements _$FilmanNotifier {
   _FilmanNotifier();
 
   final _getFilmDetailsCached = <String, FilmDetails>{};
+  final _getCategoriesCached = <String, List<Category>>{};
 
   @override
   Future<FilmDetails> getFilmDetails(String link) async {
@@ -29,6 +30,27 @@ class _FilmanNotifier with FilmanNotifier implements _$FilmanNotifier {
       } finally {}
 
       _getFilmDetailsCached["${link.hashCode}"] = toReturn;
+
+      return toReturn;
+    } else {
+      return cachedValue;
+    }
+  }
+
+  @override
+  Future<List<Category>> getCategories() async {
+    final cachedValue = _getCategoriesCached[""];
+    if (cachedValue == null) {
+      final List<Category> toReturn;
+      try {
+        final result = super.getCategories();
+
+        toReturn = await result;
+      } catch (_) {
+        rethrow;
+      } finally {}
+
+      _getCategoriesCached[""] = toReturn;
 
       return toReturn;
     } else {

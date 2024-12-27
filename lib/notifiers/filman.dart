@@ -404,6 +404,7 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
     }
   }
 
+  @Cached()
   Future<List<Category>> getCategories() async {
     final response = await dio.get(
       "https://filman.cc/filmy-online-pl/",

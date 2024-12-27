@@ -88,9 +88,13 @@ Future<MediaLink?> selectBestLink(final List<MediaLink> links) async {
   final validLinks = <MediaLink>[];
 
   for (final link in links) {
-    await link.getDirectLink();
-    if (link.isVideoValid) {
-      validLinks.add(link);
+    try {
+      await link.getDirectLink();
+      if (link.isVideoValid) {
+        validLinks.add(link);
+      }
+    } catch (e) {
+      continue;
     }
   }
 
