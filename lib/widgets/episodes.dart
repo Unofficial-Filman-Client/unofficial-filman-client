@@ -127,7 +127,10 @@ class _EpisodesModalState extends State<EpisodesModal> {
         .any((final element) => element.film.url == filmDetails.url);
     return IconButton(
       icon: isDownloading
-          ? const CircularProgressIndicator()
+          ? Transform.scale(
+              scale: 0.7,
+              child: const CircularProgressIndicator(),
+            )
           : Icon(downloaded != null ? Icons.save : Icons.download),
       onPressed: () async {
         if (downloaded != null || filmDetails.links == null) {
