@@ -1,9 +1,21 @@
 import "package:unofficial_filman_client/screens/login.dart";
 import "package:unofficial_filman_client/screens/register.dart";
 import "package:flutter/material.dart";
+import "package:unofficial_filman_client/utils/updater.dart";
 
-class HelloScreen extends StatelessWidget {
+class HelloScreen extends StatefulWidget {
   const HelloScreen({super.key});
+
+  @override
+  State<HelloScreen> createState() => _HelloScreenState();
+}
+
+class _HelloScreenState extends State<HelloScreen> {
+  @override
+  void initState() {
+    super.initState();
+    checkForUpdates();
+  }
 
   @override
   Widget build(final BuildContext context) {
