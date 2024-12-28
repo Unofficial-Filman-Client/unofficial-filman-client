@@ -11,6 +11,7 @@ import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/hello.dart";
 import "package:unofficial_filman_client/screens/main.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
+import "package:unofficial_filman_client/utils/navigation_service.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,7 @@ class MyApp extends StatelessWidget {
       return MaterialApp(
         title: "Unofficial Filman.cc App",
         debugShowCheckedModeBanner: false,
+        navigatorKey: NavigationService.navigatorKey,
         theme: ThemeData(
           colorScheme: lightColorScheme ?? _defaultLightColorScheme,
           useMaterial3: true,
