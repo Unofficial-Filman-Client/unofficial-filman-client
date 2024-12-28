@@ -81,7 +81,10 @@ class Downloading {
           filename: filename,
           displayName: displayName,
           metaData: _compress(jsonEncode(toMap())),
-          updates: Updates.statusAndProgress);
+          updates: Updates.statusAndProgress,
+          headers: {
+            "referer": getBaseUrl(best!.url),
+          });
     }
 
     return _task!;
