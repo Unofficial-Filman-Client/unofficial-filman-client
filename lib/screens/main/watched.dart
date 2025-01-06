@@ -16,7 +16,7 @@ class WatchedPage extends StatefulWidget {
 }
 
 class _WatchedPageState extends State<WatchedPage> {
-  Widget _buildWatchedFilmCard(final BuildContext context,
+  Widget _buildWatchedFilmCard(
       final WatchedSingle film, final WatchedNotifier all) {
     return Card(
       child: Stack(
@@ -189,7 +189,7 @@ class _WatchedPageState extends State<WatchedPage> {
                     alignment: Alignment.topCenter,
                     child: SizedBox(
                       height: 250,
-                      child: _buildWatchedFilmCard(context, film, value),
+                      child: _buildWatchedFilmCard(film, value),
                     ),
                   );
                 },

@@ -111,7 +111,7 @@ class _FilmScreenState extends State<FilmScreen> {
                   children: [
                     _buildCategoryTags(film.categories),
                     const SizedBox(height: 16),
-                    _buildTitleAndImage(context, film),
+                    _buildTitleAndImage(film),
                     const SizedBox(height: 16),
                     _buildFilmDetailsChips(film),
                     const SizedBox(height: 16),
@@ -176,7 +176,7 @@ class _FilmScreenState extends State<FilmScreen> {
                               ? IconButton(
                                   onPressed: () async {
                                     final link = await getUserSelectedVersion(
-                                        context, snapshot.data?.links ?? []);
+                                        snapshot.data?.links ?? []);
                                     if (link == null) {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context)
@@ -304,8 +304,7 @@ class _FilmScreenState extends State<FilmScreen> {
     );
   }
 
-  Widget _buildTitleAndImage(
-      final BuildContext context, final FilmDetails film) {
+  Widget _buildTitleAndImage(final FilmDetails film) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.start,

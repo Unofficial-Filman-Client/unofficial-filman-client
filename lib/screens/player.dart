@@ -231,7 +231,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     if (widget.downloaded == null) {
       if (_filmDetails.links != null && mounted) {
         setState(() => _displayState = "Ładowanie listy mediów...");
-        final link = await getUserSelectedVersion(context, _filmDetails.links!);
+        final link = await getUserSelectedVersion(_filmDetails.links!);
         debugPrint("Selected link: $link");
         if (link == null) return _showNoLinksSnackbar();
         setState(() => _displayState = "Wydobywanie adresu video...");
@@ -362,13 +362,13 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
             controls: NoVideoControls,
             fit: BoxFit.fitWidth,
           ),
-          SafeArea(child: _buildOverlay(context)),
+          SafeArea(child: _buildOverlay()),
         ],
       ),
     );
   }
 
-  Widget _buildOverlay(final BuildContext context) {
+  Widget _buildOverlay() {
     return Stack(
       children: [
         _buildSeekingIcons(),
@@ -381,8 +381,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
                   children: [
                     _buildTopBar(),
                     _buildCenterPlayPauseButton(),
-                    _buildIconsBar(context),
-                    _buildBrightnessControl(context),
+                    _buildIconsBar(),
+                    _buildBrightnessControl(),
                     _buildBottomBar(),
                   ],
                 )
@@ -392,7 +392,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  Widget _buildIconsBar(final BuildContext context) {
+  Widget _buildIconsBar() {
     return Positioned(
         height: MediaQuery.of(context).size.height,
         right: 10,
@@ -506,7 +506,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> {
     );
   }
 
-  Widget _buildBrightnessControl(final BuildContext context) {
+  Widget _buildBrightnessControl() {
     return Positioned(
       left: 10,
       top: -10,

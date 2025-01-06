@@ -165,6 +165,7 @@ class CategoryCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: const BorderRadius.all(Radius.circular(12.0)),
         child: Stack(
+          fit: StackFit.expand,
           children: [
             FutureBuilder<List<Film>>(
               future: films,

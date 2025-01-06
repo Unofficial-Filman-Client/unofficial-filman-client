@@ -6,6 +6,7 @@ import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/download.dart";
+import "package:unofficial_filman_client/utils/navigation_service.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:unofficial_filman_client/widgets/episodes.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
@@ -13,19 +14,19 @@ import "package:fast_cached_network_image/fast_cached_network_image.dart";
 class OfflinePage extends StatelessWidget {
   const OfflinePage({super.key});
 
-  Widget _buildDownloadedCard(
-      final BuildContext context, final DownloadedSingle download) {
+  Widget _buildDownloadedCard(final DownloadedSingle download) {
     return Card(
       child: Stack(
         children: [
           InkWell(
             onTap: () {
-              Navigator.of(context).push(MaterialPageRoute(
+              Navigator.of(NavigationService.navigatorKey.currentContext!)
+                  .push(MaterialPageRoute(
                 builder: (final context) =>
                     FilmanPlayer.fromDownload(downloaded: download),
               ));
             },
-            onLongPress: () => _showDeleteDialog(context, download),
+            onLongPress: () => _showDeleteDialog(download),
             child: ClipRRect(
               borderRadius: const BorderRadius.all(Radius.circular(12.0)),
               child: FastCachedImage(url: download.film.imageUrl),
@@ -35,7 +36,9 @@ class OfflinePage extends StatelessWidget {
             right: 0,
             top: 0,
             child: IconButton(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              onPressed: () =>
+                  Navigator.of(NavigationService.navigatorKey.currentContext!)
+                      .push(MaterialPageRoute(
                 builder: (final context) =>
                     FilmScreen.fromDetails(details: download.film),
               )),
@@ -47,19 +50,22 @@ class OfflinePage extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadedSerialCard(
-      final BuildContext context, final DownloadedSerial download) {
+  Widget _buildDownloadedSerialCard(final DownloadedSerial download) {
     return Card(
       child: Stack(
         children: [
           InkWell(
             onTap: () {
               showModalBottomSheet(
-                context: context,
+                context: NavigationService.navigatorKey.currentContext!,
                 showDragHandle: true,
                 isScrollControlled: true,
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.9,
+                  maxHeight: MediaQuery.of(
+                              NavigationService.navigatorKey.currentContext!)
+                          .size
+                          .height *
+                      0.9,
                 ),
                 builder: (final context) =>
                     EpisodesModal(filmDetails: download.serial),
@@ -75,7 +81,9 @@ class OfflinePage extends StatelessWidget {
             right: 0,
             top: 0,
             child: IconButton(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              onPressed: () =>
+                  Navigator.of(NavigationService.navigatorKey.currentContext!)
+                      .push(MaterialPageRoute(
                 builder: (final context) =>
                     FilmScreen.fromDetails(details: download.serial),
               )),
@@ -87,8 +95,7 @@ class OfflinePage extends StatelessWidget {
     );
   }
 
-  Widget _buildDownloadingCard(
-      final BuildContext context, final Downloading download) {
+  Widget _buildDownloadingCard(final Downloading download) {
     return Card(
       child: Stack(
         children: [
@@ -169,7 +176,9 @@ class OfflinePage extends StatelessWidget {
             top: 0,
             child: IconButton(
               onPressed: () {
-                Provider.of<DownloadNotifier>(context, listen: false)
+                Provider.of<DownloadNotifier>(
+                        NavigationService.navigatorKey.currentContext!,
+                        listen: false)
                     .cancelDownload(download);
               },
               icon: const Icon(Icons.cancel),
@@ -180,10 +189,9 @@ class OfflinePage extends StatelessWidget {
     );
   }
 
-  void _showDeleteDialog(
-      final BuildContext context, final DownloadedSingle download) {
+  void _showDeleteDialog(final DownloadedSingle download) {
     showDialog(
-      context: context,
+      context: NavigationService.navigatorKey.currentContext!,
       builder: (final context) => AlertDialog(
         title: const Text("Usuwanie z historii"),
         content: Consumer<SettingsNotifier>(
@@ -241,21 +249,16 @@ class OfflinePage extends StatelessWidget {
                 child: Builder(
                   builder: (final context) {
                     if (index < value.downloaded.length) {
-                      return _buildDownloadedCard(
-                          context, value.downloaded[index]);
+                      return _buildDownloadedCard(value.downloaded[index]);
                     } else if (index <
                         value.downloaded.length +
                             value.downloadedSerials.length) {
-                      return _buildDownloadedSerialCard(
-                          context,
-                          value.downloadedSerials[
-                              index - value.downloaded.length]);
+                      return _buildDownloadedSerialCard(value
+                          .downloadedSerials[index - value.downloaded.length]);
                     } else {
-                      return _buildDownloadingCard(
-                          context,
-                          value.downloading[index -
-                              value.downloaded.length -
-                              value.downloadedSerials.length]);
+                      return _buildDownloadingCard(value.downloading[index -
+                          value.downloaded.length -
+                          value.downloadedSerials.length]);
                     }
                   },
                 ),
