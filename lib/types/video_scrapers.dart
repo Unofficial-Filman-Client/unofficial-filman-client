@@ -1,6 +1,8 @@
 import "dart:async";
+import "dart:convert";
 import "dart:math";
 import "package:dio/dio.dart";
+import "package:flutter/material.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/exceptions.dart";
 
@@ -143,78 +145,78 @@ class VidozaScraper extends VideoScraper {
   }
 }
 
-// class VtubeScraper extends VideoScraper {
-//   VtubeScraper(super.url);
+class VtubeScraper extends VideoScraper {
+  VtubeScraper(super.url);
 
-//   String deobfuscate(String p, final int a, int c, final List<String> k) {
-//     while (c-- > 0) {
-//       if (k[c] != "") {
-//         p = p.replaceAll(RegExp("\\b${c.toRadixString(a)}\\b"), k[c]);
-//       }
-//     }
-//     return p;
-//   }
+  String deobfuscate(String p, final int a, int c, final List<String> k) {
+    while (c-- > 0) {
+      if (k[c] != "") {
+        p = p.replaceAll(RegExp("\\b${c.toRadixString(a)}\\b"), k[c]);
+      }
+    }
+    return p;
+  }
 
-//   @override
-//   Future<String> getVideoLink() async {
-//     final Dio dio = Dio();
-//     final response = await dio.get(url,
-//         options: Options(headers: {"referer": "https://filman.cc/"}));
+  @override
+  Future<String> getVideoLink() async {
+    final Dio dio = Dio();
+    final response = await dio.get(url,
+        options: Options(headers: {"referer": "https://filman.cc/"}));
 
-//     final jsLineMatch = RegExp(
-//             r"(?<=<script type='text\/javascript'>eval\()(.*)(?=\)<\/script>)")
-//         .firstMatch(response.data.toString().replaceAll("\n", ""));
+    final jsLineMatch = RegExp(
+            r"(?<=<script type='text\/javascript'>eval\()(.*)(?=\)<\/script>)")
+        .firstMatch(response.data.toString().replaceAll("\n", ""));
 
-//     if (jsLineMatch == null || jsLineMatch.group(0) == null) {
-//       throw const NoSourcesException();
-//     }
+    if (jsLineMatch == null || jsLineMatch.group(0) == null) {
+      throw const NoSourcesException();
+    }
 
-//     final String jsLine = jsLineMatch.group(0)!;
+    final String jsLine = jsLineMatch.group(0)!;
 
-//     final removeStart = jsLine.replaceAll(
-//         "function(p,a,c,k,e,d){while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+c.toString(a)+'\\\\b','g'),k[c]);return p}(",
-//         "");
+    final removeStart = jsLine.replaceAll(
+        "function(p,a,c,k,e,d){while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+c.toString(a)+'\\\\b','g'),k[c]);return p}(",
+        "");
 
-//     final removeEnd = removeStart.substring(0, removeStart.length - 1);
+    final removeEnd = removeStart.substring(0, removeStart.length - 1);
 
-//     final firstArgMatch =
-//         RegExp(r"'([^'\\]*(?:\\.[^'\\]*)*)'").firstMatch(removeEnd);
+    final firstArgMatch =
+        RegExp(r"'([^'\\]*(?:\\.[^'\\]*)*)'").firstMatch(removeEnd);
 
-//     if (firstArgMatch == null || firstArgMatch.group(0) == null) {
-//       throw const NoSourcesException();
-//     }
+    if (firstArgMatch == null || firstArgMatch.group(0) == null) {
+      throw const NoSourcesException();
+    }
 
-//     final firstArg = firstArgMatch.group(0)!;
+    final firstArg = firstArgMatch.group(0)!;
 
-//     final stringWithoutFirstArg = removeEnd.replaceFirst(firstArg, "");
+    final stringWithoutFirstArg = removeEnd.replaceFirst(firstArg, "");
 
-//     final normalizedArgs =
-//         stringWithoutFirstArg.split(",").where((final i) => i.isNotEmpty);
+    final normalizedArgs =
+        stringWithoutFirstArg.split(",").where((final i) => i.isNotEmpty);
 
-//     final int secondArg = int.parse(normalizedArgs.first);
+    final int secondArg = int.parse(normalizedArgs.first);
 
-//     final int thirdArg = int.parse(normalizedArgs.elementAt(1));
+    final int thirdArg = int.parse(normalizedArgs.elementAt(1));
 
-//     final fourthArg = normalizedArgs
-//         .elementAt(2)
-//         .replaceAll(".split('|')", "")
-//         .replaceAll("'", "")
-//         .split("|");
+    final fourthArg = normalizedArgs
+        .elementAt(2)
+        .replaceAll(".split('|')", "")
+        .replaceAll("'", "")
+        .split("|");
 
-//     final String decoded =
-//         deobfuscate(firstArg, secondArg, thirdArg, fourthArg);
+    final String decoded =
+        deobfuscate(firstArg, secondArg, thirdArg, fourthArg);
 
-//     final directLink = decoded
-//         .split("jwplayer(\"vplayer\").setup({sources:[{file:\"")[1]
-//         .split("\"")[0];
+    final directLink = decoded
+        .split("jwplayer(\"vplayer\").setup({sources:[{file:\"")[1]
+        .split("\"")[0];
 
-//     return Uri.parse(directLink).toString();
-//   }
+    return Uri.parse(directLink).toString();
+  }
 
-//   static bool isSupported(final String url) {
-//     return url.contains("vtube");
-//   }
-// }
+  static bool isSupported(final String url) {
+    return url.contains("vtube");
+  }
+}
 
 class DoodStreamScraper extends VideoScraper {
   DoodStreamScraper(super.url);
@@ -284,19 +286,65 @@ class DoodStreamScraper extends VideoScraper {
   }
 }
 
-class ScraperFactory {
-  static VideoScraper getScraper(final String url) {
-    if (StreamtapeScraper.isSupported(url)) {
-      return StreamtapeScraper(url);
-    } else if (VidozaScraper.isSupported(url)) {
-      return VidozaScraper(url);
-      // } else if (VtubeScraper.isSupported(url)) { // m3u8
-      //   return VtubeScraper(url);
-    } else if (DoodStreamScraper.isSupported(url)) {
-      return DoodStreamScraper(url);
-    } else {
-      throw Exception("Unsupported host: $url");
+class VoeScraper extends VideoScraper {
+  VoeScraper(super.url);
+
+  @override
+  Future<String> getVideoLink() async {
+    final dio = Dio();
+    final res = await dio.get(url);
+    final hslRegex = RegExp("[\"']hls[\"']:\\s*[\"'](.*)[\"']");
+
+    String? hslContent = hslRegex.firstMatch(res.data)?.group(1);
+    if (hslContent == null) {
+      final redirectMatch =
+          RegExp(r"window\.location\.href = '([^']+)'").firstMatch(res.data);
+
+      if (redirectMatch != null) {
+        final redirectUrl = redirectMatch.group(1);
+        if (redirectUrl != null) {
+          final hlsMatch =
+              hslRegex.firstMatch((await dio.get(redirectUrl)).data);
+          hslContent = hlsMatch?.group(1);
+        }
+      }
     }
+
+    if (hslContent == null) {
+      throw const NoSourcesException();
+    }
+
+    return utf8.decoder.convert(base64Decode(hslContent));
+  }
+
+  static bool isSupported(final String url) {
+    return [
+      "voe.sx",
+      "tubelessceliolymph.com",
+      "simpulumlamerop.com",
+      "urochsunloath.com",
+      "yip.su",
+      "metagnathtuggers.com",
+      "donaldlineelse.com"
+    ].any((final domain) => url.contains(domain));
+  }
+}
+
+VideoScraper getScraper(final String url) {
+  if (StreamtapeScraper.isSupported(url)) {
+    return StreamtapeScraper(url);
+  } else if (VidozaScraper.isSupported(url)) {
+    return VidozaScraper(url);
+  } else if (VtubeScraper.isSupported(url)) {
+    // m3u8
+    return VtubeScraper(url);
+  } else if (DoodStreamScraper.isSupported(url)) {
+    return DoodStreamScraper(url);
+  } else if (VoeScraper.isSupported(url)) {
+    // m3u8
+    return VoeScraper(url);
+  } else {
+    throw Exception("Unsupported host: $url");
   }
 }
 
@@ -315,7 +363,7 @@ class MediaLink {
             .firstWhere((final lang) => lang.language == language),
         quality =
             Quality.values.firstWhere((final qual) => qual.quality == quality),
-        _scraper = ScraperFactory.getScraper(url);
+        _scraper = getScraper(url);
 
   MediaLink.fromMap(final Map<String, dynamic> map)
       : url = map["url"] as String,
@@ -323,7 +371,7 @@ class MediaLink {
             .firstWhere((final lang) => lang.language == map["language"]),
         quality = Quality.values
             .firstWhere((final qual) => qual.quality == map["quality"]),
-        _scraper = ScraperFactory.getScraper(map["url"] as String);
+        _scraper = getScraper(map["url"] as String);
 
   Map<String, dynamic> toMap() {
     return {
@@ -361,8 +409,11 @@ class MediaLink {
             followRedirects: true, headers: {"referer": getBaseUrl(url)}),
       );
       stopwatch.stop();
+      debugPrint(response.headers.toString());
       _isVideoValid = response.statusCode == 200 &&
-          response.headers.value("content-type")?.contains("video") == true;
+          (response.headers.value("content-type")?.contains("video") == true ||
+              response.headers.value("content-type")?.contains("mpegurl") ==
+                  true);
       _responseTime = stopwatch.elapsedMilliseconds;
     } catch (_) {
       _isVideoValid = false;
