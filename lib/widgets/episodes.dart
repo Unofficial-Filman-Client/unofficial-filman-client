@@ -118,8 +118,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
     );
   }
 
-  Widget _buildDownloadIcon(
-      final BuildContext context, final FilmDetails filmDetails) {
+  Widget _buildDownloadIcon(final FilmDetails filmDetails) {
     final downloaded = Provider.of<DownloadNotifier>(context, listen: false)
         .getEpisodeByUrl(widget.filmDetails, filmDetails.url);
     bool isDownloading = Provider.of<DownloadNotifier>(context, listen: false)
@@ -139,8 +138,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
         if (filmDetails.links?.isEmpty == true || !context.mounted) {
           return;
         }
-        final (l, q) =
-            await getUserSelectedPreferences(context, filmDetails.links!);
+        final (l, q) = await getUserSelectedPreferences(filmDetails.links!);
         if (l == null || q == null) {
           return;
         }
@@ -252,7 +250,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 300),
                               child: episodeDetails[episode.episodeName] != null
-                                  ? _buildDownloadIcon(context,
+                                  ? _buildDownloadIcon(
                                       episodeDetails[episode.episodeName]!)
                                   : const SizedBox(),
                             ),

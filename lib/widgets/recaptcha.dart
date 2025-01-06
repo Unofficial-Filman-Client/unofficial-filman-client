@@ -1,3 +1,5 @@
+import "dart:io";
+
 import "package:flutter/material.dart";
 import "package:flutter_inappwebview/flutter_inappwebview.dart";
 
@@ -60,6 +62,8 @@ class _GoogleReCaptchaState extends State<GoogleReCaptcha> {
     </html>
   ''';
 
+  final TextEditingController controller = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +75,31 @@ class _GoogleReCaptchaState extends State<GoogleReCaptcha> {
   @override
   Widget build(final BuildContext context) {
     if (!widget.controller.isVisible) return const SizedBox.shrink();
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: "Captcha",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () {
+                widget.controller.callTokenCallback(controller.text);
+                widget.controller.hide();
+              },
+              child: const Text("Submit"),
+            ),
+          ],
+        ),
+      );
+    }
     return Stack(
       children: [
         Container(

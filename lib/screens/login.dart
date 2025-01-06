@@ -142,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: recaptchaV2Controller,
             url: "https://filman.cc/logowanie",
             siteKey: "6LcQs24iAAAAALFibpEQwpQZiyhOCn-zdc-eFout",
+            languageCode: "pl",
           )
         ]));
   }

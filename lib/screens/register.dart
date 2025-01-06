@@ -232,6 +232,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: recaptchaV2Controller,
                 url: "https://filman.cc/rejestracja",
                 siteKey: "6LcQs24iAAAAALFibpEQwpQZiyhOCn-zdc-eFout",
+                languageCode: "pl",
               )
             ],
           )),

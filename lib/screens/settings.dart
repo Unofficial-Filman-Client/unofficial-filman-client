@@ -222,7 +222,7 @@ class ReorderLanguageScreen extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
-    List<Language> languages =
+    final List<Language> languages =
         Provider.of<SettingsNotifier>(context).preferredLanguages;
 
     return Scaffold(

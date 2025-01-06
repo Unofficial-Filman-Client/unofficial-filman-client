@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFilmCard(final BuildContext context, final Film film) {
+  Widget _buildFilmCard(final Film film) {
     return Card(
       child: InkWell(
         onTap: () {
@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  PreferredSizeWidget _buildBottomAppBar(final BuildContext context) {
+  PreferredSizeWidget _buildBottomAppBar() {
     return PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: Row(
@@ -152,7 +152,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    _buildBottomAppBar(context),
+                    _buildBottomAppBar(),
                     const SizedBox(height: 8),
                     for (final String category
                         in snapshot.data?.categories ?? [])
@@ -178,7 +178,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   for (final Film film
                                       in snapshot.data?.getFilms(category) ??
                                           [])
-                                    _buildFilmCard(context, film),
+                                    _buildFilmCard(film),
                                 ],
                               ),
                             ),

@@ -25,8 +25,7 @@ class _MainScreenState extends State<MainScreen> {
     checkForUpdates();
   }
 
-  AppBar _buildAppBar(final BuildContext context,
-      {final bool showProgress = false}) {
+  AppBar _buildAppBar({final bool showProgress = false}) {
     return AppBar(
       title: Text(createTimeBasedGreeting(
           Provider.of<FilmanNotifier>(context).user?.login ?? "")),
@@ -66,7 +65,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(final BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context),
+      appBar: _buildAppBar(),
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (final int index) {
           setState(() {
