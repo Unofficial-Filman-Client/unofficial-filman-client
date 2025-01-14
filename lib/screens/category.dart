@@ -23,6 +23,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   int selectedCategoryIndex = 0;
   final ScrollController _categoriesScrollController = ScrollController();
   final ScrollController _gridScrollController = ScrollController();
+  final FocusNode _backButtonFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   void dispose() {
     _categoriesScrollController.dispose();
     _gridScrollController.dispose();
+    _backButtonFocusNode.dispose();
     super.dispose();
   }
 
@@ -76,6 +78,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             forSeries: widget.forSeries,
             categoriesScrollController: _categoriesScrollController,
             gridScrollController: _gridScrollController,
+            backButtonFocusNode: _backButtonFocusNode,
           );
         },
       ),
@@ -90,6 +93,7 @@ class NetflixStyleLayout extends StatelessWidget {
   final bool forSeries;
   final ScrollController categoriesScrollController;
   final ScrollController gridScrollController;
+  final FocusNode backButtonFocusNode;
 
   static const double BUTTON_WIDTH = 150.0;
   static const double HORIZONTAL_PADDING = 16.0;
@@ -103,6 +107,7 @@ class NetflixStyleLayout extends StatelessWidget {
     required this.forSeries,
     required this.categoriesScrollController,
     required this.gridScrollController,
+    required this.backButtonFocusNode,
   });
 
   void _scrollToCategory(final BuildContext context, final int index, {final bool animate = true}) {
@@ -127,7 +132,7 @@ class NetflixStyleLayout extends StatelessWidget {
     }
   }
 
-  @override
+ @override
   Widget build(final BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,10 +141,38 @@ class NetflixStyleLayout extends StatelessWidget {
           padding: const EdgeInsets.only(left: 16.0, top: 16.0),
           child: Row(
             children: [
-              BackButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: ButtonStyle(
-                  iconSize: WidgetStateProperty.all(32),
+              Focus(
+                focusNode: backButtonFocusNode,
+                onKey: (node, event) {
+                  if (event is RawKeyDownEvent) {
+                    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                      // Find the CategoryButton with the selected index
+                      final FocusScopeNode scope = FocusScope.of(context);
+                      final categoryButtons = scope.traversalDescendants
+                          .where((element) =>
+                              element.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
+                          .toList();
+
+                      final targetButton = categoryButtons.firstWhere(
+                        (element) {
+                          final categoryButton = element.context?.findAncestorWidgetOfExactType<CategoryButton>();
+                          return categoryButton != null && 
+                                 (categoryButton as CategoryButton).index == selectedIndex;
+                        },
+                        orElse: () => categoryButtons.first,
+                      );
+
+                      targetButton.requestFocus();
+                      return KeyEventResult.handled;
+                    }
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: BackButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ButtonStyle(
+                    iconSize: MaterialStateProperty.all(32),
+                  ),
                 ),
               ),
               Text(
@@ -162,25 +195,24 @@ class NetflixStyleLayout extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: HORIZONTAL_PADDING),
                     itemCount: categories.length,
                     itemBuilder: (final context, final index) {
-  return Container(
-    width: BUTTON_WIDTH,
-    margin: const EdgeInsets.only(right: BUTTON_SPACING),
-    child: CategoryButton(
-      category: categories[index],
-      isSelected: index == selectedIndex,
-      onPressed: () {
-        onCategoryChanged(index);
-        _scrollToCategory(context, index);
-      },
-      autofocus: index == selectedIndex,
-      index: index,
-      onFocusFromGrid: () {
-        _scrollToCategory(context, selectedIndex, animate: false);
-      },
-    ),
-  );
-},
-
+                      return Container(
+                        width: BUTTON_WIDTH,
+                        margin: const EdgeInsets.only(right: BUTTON_SPACING),
+                        child: CategoryButton(
+                          category: categories[index],
+                          isSelected: index == selectedIndex,
+                          onPressed: () {
+                            onCategoryChanged(index);
+                            _scrollToCategory(context, index);
+                          },
+                          autofocus: index == selectedIndex,
+                          index: index,
+                          onFocusFromGrid: () {
+                            _scrollToCategory(context, selectedIndex, animate: false);
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -189,11 +221,15 @@ class NetflixStyleLayout extends StatelessWidget {
         ),
         Expanded(
           child: FocusTraversalGroup(
-            child: CategoryContent(
-              category: categories[selectedIndex],
-              forSeries: forSeries,
-              gridScrollController: gridScrollController,
-              currentCategoryIndex: selectedIndex,
+            child: PageStorage(
+              bucket: PageStorageBucket(),
+              child: CategoryContent(
+                key: PageStorageKey('${categories[selectedIndex].name}_$forSeries'),
+                category: categories[selectedIndex],
+                forSeries: forSeries,
+                gridScrollController: gridScrollController,
+                currentCategoryIndex: selectedIndex,
+              ),
             ),
           ),
         ),
@@ -256,6 +292,17 @@ class _CategoryButtonState extends State<CategoryButton> {
               movieTileFocus.requestFocus();
               return KeyEventResult.handled;
             }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            final FocusScopeNode scope = FocusScope.of(context);
+            final backButton = scope.traversalDescendants
+                .where((final element) => 
+                    element.context?.findAncestorWidgetOfExactType<BackButton>() != null)
+                .firstOrNull;
+            
+            if (backButton != null) {
+              backButton.requestFocus();
+              return KeyEventResult.handled;
+            }
           }
         }
         return KeyEventResult.ignored;
@@ -295,7 +342,7 @@ class _CategoryButtonState extends State<CategoryButton> {
   }
 }
 
-class CategoryContent extends StatelessWidget {
+class CategoryContent extends StatefulWidget {
   final Category category;
   final bool forSeries;
   final ScrollController gridScrollController;
@@ -312,10 +359,41 @@ class CategoryContent extends StatelessWidget {
   });
 
   @override
-  Widget build(final BuildContext context) {
+  State<CategoryContent> createState() => _CategoryContentState();
+}
+
+class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAliveClientMixin {
+  late Future<List<Film>> _filmsFuture;
+  Map<String, List<Film>> _cachedFilms = {};
+  static const int itemsPerRow = 6;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _filmsFuture = _loadFilms();
+  }
+
+  Future<List<Film>> _loadFilms() async {
+    final cacheKey = '${widget.category.name}_${widget.forSeries}';
+    if (_cachedFilms.containsKey(cacheKey)) {
+      return _cachedFilms[cacheKey]!;
+    }
+
+    final films = await Provider.of<FilmanNotifier>(context, listen: false)
+        .getMoviesByCategory(widget.category, widget.forSeries);
+    _cachedFilms[cacheKey] = films;
+    return films;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
     return FutureBuilder<List<Film>>(
-      future: Provider.of<FilmanNotifier>(context, listen: false)
-          .getMoviesByCategory(category, forSeries),
+      future: _filmsFuture,
       builder: (final context, final snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -325,28 +403,26 @@ class CategoryContent extends StatelessWidget {
         }
 
         final films = snapshot.data ?? [];
-        return ScrollConfiguration(
-          behavior: const ScrollBehavior().copyWith(scrollbars: false),
-          child: GridView.builder(
-            controller: gridScrollController,
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 6,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-            ),
-            itemCount: films.length,
-            itemBuilder: (final context, final index) => MovieTile(
-              film: films[index],
-              autofocus: index == 0,
-              gridController: gridScrollController,
-              index: index,
-              itemsPerRow: 6,
-              totalItems: films.length,
-              onCategoryChange: onCategoryChange,
-              currentCategoryIndex: currentCategoryIndex,
-            ),
+
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          controller: widget.gridScrollController,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: itemsPerRow,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 16,
+            childAspectRatio: 2/3, // Poprawiony aspect ratio dla obrazków filmowych
+          ),
+          itemCount: films.length,
+          itemBuilder: (final context, final index) => MovieTile(
+            film: films[index],
+            autofocus: index == 0,
+            gridController: widget.gridScrollController,
+            index: index,
+            itemsPerRow: itemsPerRow,
+            totalItems: films.length,
+            onCategoryChange: widget.onCategoryChange,
+            currentCategoryIndex: widget.currentCategoryIndex,
           ),
         );
       },
@@ -391,20 +467,17 @@ class _MovieTileState extends State<MovieTile> {
     super.dispose();
   }
 
-  void _ensureVisible() {
-    final int rowIndex = widget.index ~/ widget.itemsPerRow;
-    const itemHeight = 200.0;
-    final viewportHeight = widget.gridController.position.viewportDimension;
-    final maxScroll = widget.gridController.position.maxScrollExtent;
-    
-    double targetOffset = (rowIndex * itemHeight) - (viewportHeight / 3);
-    targetOffset = targetOffset.clamp(0.0, maxScroll);
-    
-    widget.gridController.animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+  void _scrollToVisible() {
+    if (!widget.gridController.hasClients) return;
+    final BuildContext? itemContext = focusNode.context;
+    if (itemContext != null) {
+      Scrollable.ensureVisible(
+        itemContext,
+        alignment: 0.3,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _handleFilmSelection() {
@@ -421,7 +494,7 @@ class _MovieTileState extends State<MovieTile> {
 
   @override
   Widget build(final BuildContext context) {
-    final scale = (isFocused || isHovered) ? 1.1 : 1.0;
+    final scale = (isFocused || isHovered) ? 1.05 : 1.0;
     final elevation = (isFocused || isHovered) ? 8.0 : 1.0;
 
     return Focus(
@@ -432,44 +505,49 @@ class _MovieTileState extends State<MovieTile> {
           isFocused = focused;
         });
         if (focused) {
-          _ensureVisible();
+          Future.delayed(const Duration(milliseconds: 50), _scrollToVisible);
         }
       },
       onKey: (final node, final event) {
         if (event is RawKeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowLeft || 
-              event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            final isLeftEdge = widget.index % widget.itemsPerRow == 0;
-            final isRightEdge = (widget.index + 1) % widget.itemsPerRow == 0;
+          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            if (widget.index < widget.itemsPerRow) {
+              final FocusScopeNode scope = FocusScope.of(context);
+              final categoryButtons = scope.traversalDescendants
+                  .where((element) =>
+                      element.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
+                  .toList();
 
-            if ((event.logicalKey == LogicalKeyboardKey.arrowLeft && isLeftEdge) ||
-                (event.logicalKey == LogicalKeyboardKey.arrowRight && isRightEdge)) {
+              final specificCategoryButton = categoryButtons.firstWhere(
+                (element) {
+                  final categoryButton =
+                      element.context?.findAncestorWidgetOfExactType<CategoryButton>();
+                  return categoryButton != null &&
+                      (categoryButton as CategoryButton).index == widget.currentCategoryIndex;
+                },
+                orElse: () => categoryButtons.first,
+              );
+
+              specificCategoryButton.requestFocus();
               return KeyEventResult.handled;
             }
-          }
-
-          if (event.logicalKey == LogicalKeyboardKey.arrowUp && widget.index < widget.itemsPerRow) {
-  final FocusScopeNode scope = FocusScope.of(context);
-  final categoryButtons = scope.traversalDescendants
-    .where((final element) =>
-      element.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
-    .toList();
-
-  final specificCategoryButton = categoryButtons.firstWhere(
-    (final element) {
-      final categoryButton = element.context?.findAncestorWidgetOfExactType<CategoryButton>();
-      return categoryButton != null &&
-             categoryButton.index == widget.currentCategoryIndex;
-    },
-    orElse: () => categoryButtons.first,
-  );
-
-  specificCategoryButton.requestFocus();
-  return KeyEventResult.handled;
-}
-
-        
-          if (event.logicalKey == LogicalKeyboardKey.enter || 
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            if (widget.index + widget.itemsPerRow < widget.totalItems) {
+              FocusScope.of(context).focusInDirection(TraversalDirection.down);
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            if (widget.index % widget.itemsPerRow != 0) {
+              FocusScope.of(context).focusInDirection(TraversalDirection.left);
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            if ((widget.index + 1) % widget.itemsPerRow != 0 && 
+                widget.index + 1 < widget.totalItems) {
+              FocusScope.of(context).focusInDirection(TraversalDirection.right);
+              return KeyEventResult.handled;
+            }
+          } else if (event.logicalKey == LogicalKeyboardKey.enter ||
               event.logicalKey == LogicalKeyboardKey.select) {
             _handleFilmSelection();
             return KeyEventResult.handled;
@@ -477,28 +555,39 @@ class _MovieTileState extends State<MovieTile> {
         }
         return KeyEventResult.ignored;
       },
-      child: MouseRegion(
-        onEnter: (final _) => setState(() => isHovered = true),
-        onExit: (final _) => setState(() => isHovered = false),
-        child: GestureDetector(
-          onTap: _handleFilmSelection,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            transformAlignment: Alignment.center,
-            transform: Matrix4.identity()..scale(scale),
-            child: Material(
-              elevation: elevation,
-              borderRadius: BorderRadius.circular(12),
-              child: ClipRRect(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: MouseRegion(
+          onEnter: (final _) => setState(() => isHovered = true),
+          onExit: (final _) => setState(() => isHovered = false),
+          child: GestureDetector(
+            onTap: _handleFilmSelection,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              transformAlignment: Alignment.center,
+              transform: Matrix4.identity()..scale(scale),
+              child: Material(
+                elevation: elevation,
                 borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
                 child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    FastCachedImage(
-                      url: widget.film.imageUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (final context, final progress) => Center(
-                        child: CircularProgressIndicator(
-                          value: progress.progressPercentage.value,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: FastCachedImage(
+                        url: widget.film.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Icon(Icons.error_outline, size: 40),
+                        ),
+                        loadingBuilder: (final context, final progress) => Center(
+                          child: CircularProgressIndicator(
+                            value: progress.progressPercentage.value,
+                          ),
                         ),
                       ),
                     ),
@@ -507,7 +596,7 @@ class _MovieTileState extends State<MovieTile> {
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: Colors.blue,
-                            width: 3,
+                            width: 2,
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),

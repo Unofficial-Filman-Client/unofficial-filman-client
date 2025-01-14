@@ -5,6 +5,8 @@ enum TitleDisplayType { first, second, all }
 
 class SettingsNotifier extends ChangeNotifier {
   TitleDisplayType? _titleType = TitleDisplayType.all;
+  bool _useCustomKeyboard = false;
+  bool get useCustomKeyboard => _useCustomKeyboard;
 
   ThemeMode _theme = ThemeMode.system;
 
@@ -17,12 +19,16 @@ class SettingsNotifier extends ChangeNotifier {
       _titleType = TitleDisplayType.values.firstWhere(
           (final element) => element.toString() == titleDisplayType);
     }
+    
     final theme = prefs?.getString("Theme");
     if (theme != null) {
       _theme = ThemeMode.values.firstWhere(
           (final element) => element.toString() == theme,
           orElse: () => ThemeMode.system);
     }
+    
+    _useCustomKeyboard = prefs?.getBool("UseCustomKeyboard") ?? false;
+    
     notifyListeners();
   }
 
@@ -39,6 +45,12 @@ class SettingsNotifier extends ChangeNotifier {
   void setTheme(final ThemeMode theme) {
     _theme = theme;
     prefs?.setString("Theme", theme.toString());
+    notifyListeners();
+  }
+
+  void setUseCustomKeyboard(final bool value) {
+    _useCustomKeyboard = value;
+    prefs?.setBool("UseCustomKeyboard", value);
     notifyListeners();
   }
 }

@@ -75,6 +75,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   late final AnimationController _overlayAnimationController;
 
   bool _isOverlayVisible = false;
+  bool _userInteracting = false;
   bool _isBuffering = true;
   bool _isPlaying = false;
   bool _isSeekingForward = false;
@@ -112,10 +113,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
     );
 
     _isOverlayVisible = true;
+    _isInitialOverlay = true;
     _initMediaKit();
     _initSubscriptions();
     _initPlayer();
-    _initOverlayTimer();
     
     super.initState();
   }
@@ -172,29 +173,46 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
         _isPlaying = playing;
         if (_isInitialOverlay && playing) {
           _isInitialOverlay = false;
-          _initOverlayTimer();
+          if (!_isSeekingForward && !_isSeekingBackward) {
+            _initOverlayTimer();
+        }
         }
       });
     });
 
     _bufferingSubscription = _controller.player.stream.buffering.listen((final buffering) {
-      setState(() => _isBuffering = buffering);
-    });
-  }
+    setState(() => _isBuffering = buffering);
+    
+    if (!buffering && _isPlaying && !_isSeekingForward && !_isSeekingBackward) {
+      _initOverlayTimer();
+    }
+  });
+}
 
   void _initOverlayTimer() {
-    _overlayTimer?.cancel();
-    if (_isPlaying && !_isBuffering && !_isInitialOverlay) {
-      _overlayTimer = Timer(const Duration(seconds: 5), () {
-        if (mounted && _isPlaying) {
-          setState(() {
-            _isOverlayVisible = false;
-          });
-          _overlayAnimationController.reverse();
-        }
-      });
-    }
+  _overlayTimer?.cancel();
+  
+  if (_isPlaying && 
+      !_isBuffering && 
+      !_userInteracting && 
+      !_isSeekingForward && 
+      !_isSeekingBackward &&
+      _isOverlayVisible) {
+    _overlayTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && 
+          _isPlaying && 
+          !_isBuffering && 
+          !_userInteracting && 
+          !_isSeekingForward && 
+          !_isSeekingBackward) {
+        setState(() {
+          _isOverlayVisible = false;
+        });
+        _overlayAnimationController.reverse();
+      }
+    });
   }
+}
 
   Future<void> _initPlayer() async {
     if (widget.filmDetails == null) {
@@ -251,6 +269,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
           .path));
     }
   }
+
 
   void _saveWatched() {
     if (_duration.inSeconds == 0) return;
@@ -361,10 +380,21 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   }
 
   void _handlePlayPause() {
-    _saveWatched();
-    _player.playOrPause();
+  _saveWatched();
+  _player.playOrPause();
+  
+  setState(() {
+    _isPlaying = !_isPlaying;
+    _isOverlayVisible = true;
+  });
+  _overlayAnimationController.forward();
+  
+  if (_isPlaying) {
     _initOverlayTimer();
+  } else {
+    _overlayTimer?.cancel();
   }
+}
 
   Widget _buildMainStack(final BuildContext context) {
   return Stack(
@@ -501,6 +531,25 @@ Widget build(final BuildContext context) {
     );
   }
 
+void _startUserInteraction() {
+    setState(() {
+      _userInteracting = true;
+      _isOverlayVisible = true;
+    });
+    _overlayAnimationController.forward();
+    _overlayTimer?.cancel();
+  }
+
+void _endUserInteraction() {
+    setState(() {
+      _userInteracting = false;
+    });
+    
+    if (_isPlaying && !_isSeekingForward && !_isSeekingBackward) {
+      _initOverlayTimer();
+    }
+  }
+
   Widget _buildLoadingIcon() {
     if (_isBuffering) {
       return Center(
@@ -521,30 +570,34 @@ Widget build(final BuildContext context) {
   }
 
 void _handleSeekForwardStart() {
-    if (_isSeekingForward) return;
-    
+    _overlayTimer?.cancel();
     setState(() {
       _isSeekingForward = true;
       _seekSpeed = 10;
+      _isOverlayVisible = true;
     });
+    _overlayAnimationController.forward();
     
     _seekRelative(_seekSpeed);
 
+    _seekTimer?.cancel();
     _seekTimer = Timer(const Duration(milliseconds: 500), () {
       _startContinuousSeeking(true);
     });
   }
 
   void _handleSeekBackwardStart() {
-    if (_isSeekingBackward) return;
-    
+    _overlayTimer?.cancel();
     setState(() {
       _isSeekingBackward = true;
       _seekSpeed = 10;
+      _isOverlayVisible = true;
     });
+    _overlayAnimationController.forward();
     
     _seekRelative(-_seekSpeed);
-    
+
+    _seekTimer?.cancel();
     _seekTimer = Timer(const Duration(milliseconds: 500), () {
       _startContinuousSeeking(false);
     });
@@ -553,6 +606,7 @@ void _handleSeekForwardStart() {
   void _startContinuousSeeking(final bool forward) {
     _seekTimer?.cancel();
     _seekSpeedTimer?.cancel();
+    _overlayTimer?.cancel();
     
     _seekTimer = Timer.periodic(const Duration(milliseconds: 200), (final timer) {
       _seekRelative(forward ? _seekSpeed : -_seekSpeed);
@@ -566,15 +620,19 @@ void _handleSeekForwardStart() {
   }
 
   void _handleSeekStop() {
-    setState(() {
-      _isSeekingForward = false;
-      _isSeekingBackward = false;
-      _seekSpeed = 10;
-    });
-    
-    _seekTimer?.cancel();
-    _seekSpeedTimer?.cancel();
+  _seekTimer?.cancel();
+  _seekSpeedTimer?.cancel();
+  
+  setState(() {
+    _isSeekingForward = false;
+    _isSeekingBackward = false;
+    _seekSpeed = 10;
+  });
+
+  if (!_isBuffering) {
+    _initOverlayTimer();
   }
+}
 
   Widget _buildTopBar() {
   return Align(
@@ -671,7 +729,7 @@ void _handleSeekForwardStart() {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 4),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20), // Matching border radius
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
                       onPressed: () {
@@ -709,92 +767,141 @@ void _handleSeekForwardStart() {
 }
 
   Widget _buildCenterControls() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              MouseRegion(
-                child: AnimatedScale(
-                  scale: _selectedControlIndex == 0 ? 1.1 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: GestureDetector(
-                    onTapDown: (final _) => _handleSeekBackwardStart(),
-                    onTapUp: (final _) => _handleSeekStop(),
-                    onTapCancel: _handleSeekStop,
-                    child: IconButton(
-                      key: _controlKeys[0],
-                      focusNode: FocusNode(),
-                      iconSize: 40,
-                      icon: Icon(
-                        Icons.replay_10,
-                        color: _isSeekingBackward ? Theme.of(context).primaryColor : Colors.white
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: _selectedControlIndex == 0 ? Colors.white.withOpacity(0.2) : Colors.transparent,
-                      ),
-                      onPressed: () => _seekRelative(-10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 32),
-              MouseRegion(
-                child: AnimatedScale(
-                  scale: _selectedControlIndex == 1 ? 1.1 : 1.0,
-                  duration: const Duration(milliseconds: 200),
+  return Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            MouseRegion(
+              onEnter: (final _) => _startUserInteraction(),
+              onExit: (final _) => _endUserInteraction(),
+              child: AnimatedScale(
+                scale: _selectedControlIndex == 0 ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: GestureDetector(
+                  onTapDown: (final _) => _handleSeekBackwardStart(),
+                  onTapUp: (final _) {
+                    _handleSeekStop();
+                    _endUserInteraction();
+                  },
+                  onTapCancel: () {
+                    _handleSeekStop();
+                    _endUserInteraction();
+                  },
                   child: IconButton(
-                    key: _controlKeys[1],
+                    key: _controlKeys[0],
                     focusNode: FocusNode(),
-                    iconSize: 56,
+                    iconSize: 40,
+                    icon: Icon(
+                      Icons.replay_10,
+                      color: _isSeekingBackward
+                          ? Theme.of(context).primaryColor
+                          : Colors.white,
+                    ),
                     style: IconButton.styleFrom(
-                      backgroundColor: _selectedControlIndex == 1 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                      backgroundColor: _selectedControlIndex == 0
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
                     ),
-                    icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white),
-                    onPressed: _handlePlayPause,
+                    onPressed: () {
+                      _overlayTimer?.cancel();
+                      _seekRelative(-10);
+                      if (_isPlaying) {
+                        _initOverlayTimer();
+                      }
+                    },
                   ),
                 ),
               ),
-              const SizedBox(width: 32),
-              MouseRegion(
-                child: AnimatedScale(
-                  scale: _selectedControlIndex == 2 ? 1.1 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: GestureDetector(
-                    onTapDown: (final _) => _handleSeekForwardStart(),
-                    onTapUp: (final _) => _handleSeekStop(),
-                    onTapCancel: _handleSeekStop,
-                    child: IconButton(
-                      key: _controlKeys[2],
-                      focusNode: FocusNode(),
-                      iconSize: 40,
-                      style: IconButton.styleFrom(
-                        backgroundColor: _selectedControlIndex == 2 ? Colors.white.withOpacity(0.2) : Colors.transparent,
-                      ),
-                      icon: Icon(
-                        Icons.forward_10,
-                        color: _isSeekingForward ? Theme.of(context).primaryColor : Colors.white
-                      ),
-                      onPressed: () => _seekRelative(10),
+            ),
+            const SizedBox(width: 32),
+            MouseRegion(
+              child: AnimatedScale(
+                scale: _selectedControlIndex == 1 ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: IconButton(
+                  key: _controlKeys[1],
+                  focusNode: FocusNode(),
+                  iconSize: 56,
+                  style: IconButton.styleFrom(
+                    backgroundColor: _selectedControlIndex == 1
+                        ? Colors.white.withOpacity(0.2)
+                        : Colors.transparent,
+                  ),
+                  icon: Icon(
+                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: Colors.white,
+                  ),
+                  onPressed: _handlePlayPause,
+                ),
+              ),
+            ),
+            const SizedBox(width: 32),
+            MouseRegion(
+              child: AnimatedScale(
+                scale: _selectedControlIndex == 2 ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: GestureDetector(
+                  onTapDown: (final _) => _handleSeekForwardStart(),
+                  onTapUp: (final _) => _handleSeekStop(),
+                  onTapCancel: _handleSeekStop,
+                  child: IconButton(
+                    key: _controlKeys[2],
+                    focusNode: FocusNode(),
+                    iconSize: 40,
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedControlIndex == 2
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
                     ),
+                    icon: Icon(
+                      Icons.forward_10,
+                      color: _isSeekingForward
+                          ? Theme.of(context).primaryColor
+                          : Colors.white,
+                    ),
+                    onPressed: () {
+                      _overlayTimer?.cancel();
+                      setState(() {
+                        _isOverlayVisible = true;
+                      });
+                      _overlayAnimationController.forward();
+
+                      _seekRelative(10);
+
+                      if (_isPlaying) {
+                        Future.delayed(const Duration(milliseconds: 200), () {
+                          if (mounted) {
+                            _initOverlayTimer();
+                          }
+                        });
+                      }
+                    },
                   ),
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
 
   void _seekRelative(final int seconds) {
-    final newPosition =
-        max(0, min(_position.inSeconds + seconds, _duration.inSeconds));
-    _player.seek(Duration(seconds: newPosition));
-  }
+  _overlayTimer?.cancel();
+  setState(() {
+    _isOverlayVisible = true;
+  });
+  _overlayAnimationController.forward();
+  
+  final newPosition = max(0, min(_position.inSeconds + seconds, _duration.inSeconds));
+  _player.seek(Duration(seconds: newPosition));
+}
+
 
   Widget _buildBottomBar() {
     final timeText = '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}';

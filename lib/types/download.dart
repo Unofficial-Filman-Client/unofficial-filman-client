@@ -3,6 +3,7 @@ import "dart:convert";
 import "dart:io";
 
 import "package:background_downloader/background_downloader.dart";
+import "package:path_provider/path_provider.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
@@ -118,6 +119,11 @@ class DownloadedSingle {
         displayName = map["displayName"],
         filename =
             "${Uri.encodeComponent(FilmDetails.fromMap(map["film"]).title)}.mp4";
+
+  Future<String> getFilePath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return "${directory.path}/downloads/$filename";
+  }
 
   Map<String, dynamic> toMap() {
     return {

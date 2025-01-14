@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use
 
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
@@ -15,10 +15,7 @@ import "dart:math" as math;
 class HomePage extends StatefulWidget {
   final Function(bool) onHoverStateChanged;
   
-  const HomePage({
-    required this.onHoverStateChanged,
-    super.key,
-  });
+  const HomePage({required this.onHoverStateChanged, super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -30,57 +27,18 @@ class _HomePageState extends State<HomePage> {
   final Map<String, List<FocusNode>> _focusNodes = {};
   final List<FocusScopeNode> _categoryScopeNodes = [];
   int _currentFilmIndex = 0;
-  final GlobalKey _mainScrollKey = GlobalKey();
   HomePageResponse? _cachedResponse;
   bool _isActive = true;
   bool _isFirstRowHovered = false;
 
   static const String recommendedFilms = "Polecane filmy";
   static const String recommendedCategories = "Polecane kategorie";
-  
+
   @override
   void initState() {
     super.initState();
     homePageLoader = _loadHomePage();
     checkForUpdates(context);
-  }
-
-void focusFirstElement() {
-    if (_focusNodes.isNotEmpty) {
-      final firstCategory = _focusNodes.keys.first;
-      final firstCategoryNodes = _focusNodes[firstCategory];
-      if (firstCategoryNodes != null && firstCategoryNodes.isNotEmpty) {
-        setState(() {
-          _currentFilmIndex = 0;
-          _isFirstRowHovered = true;
-          widget.onHoverStateChanged(true);
-        });
-        firstCategoryNodes[0].requestFocus();
-        Future.microtask(() {
-          _scrollToVisibleVertical(firstCategory);
-          _scrollToVisibleHorizontal(firstCategory, 0);
-        });
-      }
-    }
-  }
-  void _handleFocusChange(final bool hasFocus) {
-    if (mounted && _isActive != hasFocus) {
-      setState(() {
-        _isActive = hasFocus;
-      });
-    }
-  }
-
-  void _handleFilmFocus(final String category, final int index, final bool hasFocus) {
-    if (hasFocus) {
-      _handleFocusChange(true);
-      setState(() {
-        _currentFilmIndex = index;
-        final categories = _focusNodes.keys.toList();
-        _isFirstRowHovered = categories.isNotEmpty && categories.first == category;
-        widget.onHoverStateChanged(_isFirstRowHovered);
-      });
-    }
   }
 
   @override
@@ -109,14 +67,14 @@ void focusFirstElement() {
         final films = data.getFilms(category);
         _focusNodes[category] = List.generate(
           films?.length ?? 0,
-          (final index) => FocusNode(),
+          (final _) => FocusNode()
         );
       }
       
       if (_categoryScopeNodes.isEmpty) {
-        for (var i = 0; i < categories.length; i++) {
-          _categoryScopeNodes.add(FocusScopeNode());
-        }
+        _categoryScopeNodes.addAll(
+          List.generate(categories.length, (final _) => FocusScopeNode())
+        );
       }
     }
   }
@@ -131,53 +89,29 @@ void focusFirstElement() {
     switch (event.logicalKey) {
       case LogicalKeyboardKey.arrowRight:
         if (filmIndex < currentFilms.length - 1) {
-          setState(() {
-            _currentFilmIndex = filmIndex + 1;
-          });
+          setState(() => _currentFilmIndex = filmIndex + 1);
           currentFilms[_currentFilmIndex].requestFocus();
-          _scrollToVisibleHorizontal(category, _currentFilmIndex);
+          _scrollToFilm(category, _currentFilmIndex);
         }
         break;
       
       case LogicalKeyboardKey.arrowLeft:
         if (filmIndex > 0) {
-          setState(() {
-            _currentFilmIndex = filmIndex - 1;
-          });
+          setState(() => _currentFilmIndex = filmIndex - 1);
           currentFilms[_currentFilmIndex].requestFocus();
-          _scrollToVisibleHorizontal(category, _currentFilmIndex);
+          _scrollToFilm(category, _currentFilmIndex);
         }
         break;
       
       case LogicalKeyboardKey.arrowDown:
         if (currentCategoryIndex < categories.length - 1) {
-          final nextCategory = categories[currentCategoryIndex + 1];
-          final nextFilms = _focusNodes[nextCategory] ?? [];
-          if (nextFilms.isNotEmpty) {
-            setState(() {
-              _currentFilmIndex = math.min(filmIndex, nextFilms.length - 1);
-              _isFirstRowHovered = false;
-              widget.onHoverStateChanged(false);
-            });
-            nextFilms[_currentFilmIndex].requestFocus();
-            _scrollToVisibleVertical(nextCategory);
-          }
+          _moveToCategory(categories[currentCategoryIndex + 1], filmIndex, false);
         }
         break;
       
       case LogicalKeyboardKey.arrowUp:
         if (currentCategoryIndex > 0) {
-          final previousCategory = categories[currentCategoryIndex - 1];
-          final previousFilms = _focusNodes[previousCategory] ?? [];
-          if (previousFilms.isNotEmpty) {
-            setState(() {
-              _currentFilmIndex = math.min(filmIndex, previousFilms.length - 1);
-              _isFirstRowHovered = currentCategoryIndex == 1;
-              widget.onHoverStateChanged(_isFirstRowHovered);
-            });
-            previousFilms[_currentFilmIndex].requestFocus();
-            _scrollToVisibleVertical(previousCategory);
-          }
+          _moveToCategory(categories[currentCategoryIndex - 1], filmIndex, currentCategoryIndex == 1);
         }
         break;
       
@@ -185,14 +119,32 @@ void focusFirstElement() {
       case LogicalKeyboardKey.select:
         _openFilmDetails(category, filmIndex);
         break;
+
+      case LogicalKeyboardKey.browserBack:
+      case LogicalKeyboardKey.goBack:
+        Navigator.of(context).maybePop();
+        break;
     }
   }
 
-  void _scrollToVisibleHorizontal(final String category, final int index) {
-    final BuildContext? filmContext = _focusNodes[category]?[index].context;
-    if (filmContext != null) {
+  void _moveToCategory(final String category, final int currentIndex, final bool isFirstRow) {
+    final films = _focusNodes[category] ?? [];
+    if (films.isNotEmpty) {
+      setState(() {
+        _currentFilmIndex = math.min(currentIndex, films.length - 1);
+        _isFirstRowHovered = isFirstRow;
+        widget.onHoverStateChanged(isFirstRow);
+      });
+      films[_currentFilmIndex].requestFocus();
+      _scrollToCategory(category);
+    }
+  }
+
+  void _scrollToFilm(final String category, final int index) {
+    final context = _focusNodes[category]?[index].context;
+    if (context != null) {
       Scrollable.ensureVisible(
-        filmContext,
+        context,
         alignment: 0.5,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
@@ -200,11 +152,11 @@ void focusFirstElement() {
     }
   }
 
-  void _scrollToVisibleVertical(final String category) {
-    final BuildContext? categoryContext = _focusNodes[category]?[_currentFilmIndex].context;
-    if (categoryContext != null) {
+  void _scrollToCategory(final String category) {
+    final context = _focusNodes[category]?[_currentFilmIndex].context;
+    if (context != null) {
       Scrollable.ensureVisible(
-        categoryContext,
+        context,
         alignment: 0.3,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
@@ -214,74 +166,72 @@ void focusFirstElement() {
 
   Future<void> _openFilmDetails(final String category, final int index) async {
     try {
-      Film? selectedFilm;
+      Film? selectedFilm = _getFilm(category, index);
       
-      if (_cachedResponse != null) {
-        final films = _cachedResponse!.getFilms(category);
-        if (films != null && films.length > index) {
-          selectedFilm = films[index];
-        }
-      }
-
       if (selectedFilm == null) {
         final response = await Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
-        final films = response.getFilms(category);
-        if (films != null && films.length > index) {
-          selectedFilm = films[index];
-        }
+        selectedFilm = response.getFilms(category)?[index];
       }
       
       if (selectedFilm != null && mounted) {
         if (category == recommendedFilms || category == recommendedCategories) {
-          final updatedResponse = await Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
-          _cachedResponse = updatedResponse;
-          final updatedFilms = updatedResponse.getFilms(category);
-          
-          if (updatedFilms != null && updatedFilms.length > index) {
-            final updatedFilm = updatedFilms[index];
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (final context) => FilmScreen(
-                  url: updatedFilm.link,
-                  title: updatedFilm.title,
-                  image: updatedFilm.imageUrl,
-                ),
-              ),
-            );
-            if (mounted) {
-              setState(() {
-                homePageLoader = _loadHomePage();
-              });
-            }
-          }
+          await _handleRecommendedFilm(category, index);
         } else {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (final context) => FilmScreen(
-                url: selectedFilm?.link ?? "",
-                title: selectedFilm?.title ?? "",
-                image: selectedFilm?.imageUrl ?? "",
-              ),
-            ),
-          );
+          await _navigateToFilm(selectedFilm);
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Błąd przy otwieraniu filmu: ${e.toString()}")),
+          SnackBar(content: Text("Błąd przy otwieraniu filmu: $e"))
         );
       }
     }
+  }
+
+  Film? _getFilm(final String category, final int index) {
+    return _cachedResponse?.getFilms(category)?[index];
+  }
+
+  Future<void> _handleRecommendedFilm(final String category, final int index) async {
+    final updatedResponse = await Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
+    _cachedResponse = updatedResponse;
+    final film = updatedResponse.getFilms(category)?[index];
+    
+    if (film != null && mounted) {
+      await _navigateToFilm(film);
+      if (mounted) {
+        setState(() => homePageLoader = _loadHomePage());
+      }
+    }
+  }
+
+  Future<void> _navigateToFilm(final Film film) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (final context) => FilmScreen(
+          url: film.link,
+          title: film.title,
+          image: film.imageUrl,
+        ),
+      ),
+    );
   }
 
   Widget _buildFilmCard(final BuildContext context, final Film film, final String category, final int index) {
     return Focus(
       focusNode: _focusNodes[category]?[index],
       onFocusChange: (final hasFocus) {
-        _handleFilmFocus(category, index, hasFocus);
+        if (hasFocus) {
+          setState(() {
+            _isActive = true;
+            _currentFilmIndex = index;
+            _isFirstRowHovered = _focusNodes.keys.firstOrNull == category;
+            widget.onHoverStateChanged(_isFirstRowHovered);
+          });
+        }
       },
-      onKey: (final node, final event) {
+      onKey: (final _, final event) {
         _handleKeyEvent(event, category, index);
         return KeyEventResult.handled;
       },
@@ -311,10 +261,10 @@ void focusFirstElement() {
                   fit: BoxFit.cover,
                   height: 180,
                   width: 116,
-                  loadingBuilder: (final context, final progress) => const Center(
+                  loadingBuilder: (final _, final __) => const Center(
                     child: CircularProgressIndicator(),
                   ),
-                  errorBuilder: (final context, final error, final stackTrace) => const Center(
+                  errorBuilder: (final _, final __, final ___) => const Center(
                     child: Icon(Icons.error),
                   ),
                 ),
@@ -327,8 +277,8 @@ void focusFirstElement() {
   }
 
   Widget _buildCategorySection(final BuildContext context, final String category, final HomePageResponse data, final int categoryIndex) {
-    final films = data.getFilms(category) ?? [];
-    if (films.isEmpty) return const SizedBox.shrink();
+    final films = data.getFilms(category);
+    if (films == null || films.isEmpty) return const SizedBox.shrink();
     
     return FocusScope(
       node: _categoryScopeNodes[categoryIndex],
@@ -367,59 +317,66 @@ void focusFirstElement() {
 
   @override
   Widget build(final BuildContext context) {
-    return FutureBuilder<HomePageResponse>(
-      future: homePageLoader,
-      builder: (final context, final AsyncSnapshot<HomePageResponse> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (snapshot.hasError) {
-          return ErrorHandling(
-            error: snapshot.error!,
-            onLogin: (final auth) => setState(() {
-              homePageLoader = _loadHomePage();
-            }),
-          );
+    return WillPopScope(
+      onWillPop: () async {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+          return false;
         }
+        SystemNavigator.pop();
+        return false;
+      },
+      child: FutureBuilder<HomePageResponse>(
+        future: homePageLoader,
+        builder: (final context, final snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          
+          if (snapshot.hasError) {
+            return ErrorHandling(
+              error: snapshot.error!,
+              onLogin: (final auth) => setState(() => homePageLoader = _loadHomePage()),
+            );
+          }
 
-        final categories = snapshot.data?.categories ?? [];
-        _initializeFocusNodes(categories, snapshot.data!);
+          final categories = snapshot.data?.categories ?? [];
+          _initializeFocusNodes(categories, snapshot.data!);
 
-        return Scaffold(
-          body: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  homePageLoader = _loadHomePage();
-                });
-              },
-              child: CustomScrollView(
-                key: _mainScrollKey,
-                controller: _scrollController,
-                slivers: [
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (final context, final index) {
-                        if (index >= categories.length) return null;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _buildCategorySection(
-                            context,
-                            categories[index],
-                            snapshot.data!,
-                            index,
-                          ),
-                        );
-                      },
+          return Scaffold(
+            body: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() => homePageLoader = _loadHomePage());
+                },
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (final context, final index) {
+                          if (index >= categories.length) return null;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _buildCategorySection(
+                              context,
+                              categories[index],
+                              snapshot.data!,
+                              index,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

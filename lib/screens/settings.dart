@@ -25,6 +25,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(final BuildContext context) {
     final TitleDisplayType? titleType =
         Provider.of<SettingsNotifier>(context).titleDisplayType;
+    final bool useCustomKeyboard =
+        Provider.of<SettingsNotifier>(context).useCustomKeyboard;
 
     return Scaffold(
       appBar: AppBar(
@@ -49,10 +51,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const Divider(),
+          ListTile(
+            title: const Text("Klawiatura aplikacji"),
+            subtitle: const Text(
+                "Jeśli masz problemy z klawiaturą systemową lub jej wygląd Ci nie odpowiada, możesz włączyć klawiaturę aplikacji."),
+            trailing: Switch(
+              value: useCustomKeyboard,
+              onChanged: (final bool value) {
+                Provider.of<SettingsNotifier>(context, listen: false)
+                    .setUseCustomKeyboard(value);
+              },
+            ),
+          ),
+          const Divider(),
           const ListTile(
             title: Text("Wyświetlanie tytułów"),
             subtitle: Text(
-                "Tytuły na filamn.cc są dzielone '/' na człony, w zależności od języka. Wybierz, które tytuły chcesz wyświetlać:"),
+                "Tytuły na filman.cc są dzielone '/' na człony, w zależności od języka. Wybierz, które tytuły chcesz wyświetlać:"),
           ),
           RadioListTile<TitleDisplayType>(
             title: const Text("Cały tytuł"),

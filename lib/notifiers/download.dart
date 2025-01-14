@@ -23,6 +23,43 @@ class DownloadNotifier extends ChangeNotifier {
 
   SharedPreferences? prefs;
 
+  Future<void> removeDownloaded(final DownloadedSingle download) async {
+    try {
+      final filePath = await download.getFilePath();
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint("Error deleting file: $e");
+    }
+
+    if (_downloaded.contains(download)) {
+      _downloaded.remove(download);
+      await prefs?.setStringList(
+        "downloaded",
+        _downloaded.map((final e) => jsonEncode(e.toMap())).toList(),
+      );
+    }
+
+    for (var serial in _downloadedSerials) {
+      if (serial.episodes.contains(download)) {
+        serial.episodes.remove(download);
+        if (serial.episodes.isEmpty) {
+          _downloadedSerials.remove(serial);
+        }
+        
+        await prefs?.setStringList(
+          "downloadedSerials",
+          _downloadedSerials.map((final e) => jsonEncode(e.toMap())).toList(),
+        );
+        break;
+      }
+    }
+
+    notifyListeners();
+  }
+
   void loadSaved() async {
     prefs = await SharedPreferences.getInstance();
     final downloaded = prefs?.getStringList("downloaded");
