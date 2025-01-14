@@ -146,7 +146,6 @@ class NetflixStyleLayout extends StatelessWidget {
                 onKey: (node, event) {
                   if (event is RawKeyDownEvent) {
                     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                      // Find the CategoryButton with the selected index
                       final FocusScopeNode scope = FocusScope.of(context);
                       final categoryButtons = scope.traversalDescendants
                           .where((element) =>
@@ -411,7 +410,7 @@ class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAli
             crossAxisCount: itemsPerRow,
             crossAxisSpacing: 12,
             mainAxisSpacing: 16,
-            childAspectRatio: 2/3, // Poprawiony aspect ratio dla obrazków filmowych
+            childAspectRatio: 2/3,
           ),
           itemCount: films.length,
           itemBuilder: (final context, final index) => MovieTile(
