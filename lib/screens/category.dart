@@ -1,6 +1,7 @@
-// ignore_for_file: constant_identifier_names, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
 import "package:flutter/material.dart";
+import "package:flutter/rendering.dart";
 import "package:flutter/services.dart";
 import "package:provider/provider.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
@@ -28,8 +29,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   @override
   void initState() {
     super.initState();
-    categoryLoader =
-        Provider.of<FilmanNotifier>(context, listen: false).getCategories();
+    categoryLoader = Provider.of<FilmanNotifier>(context, listen: false).getCategories();
   }
 
   @override
@@ -54,21 +54,18 @@ class _CategoryScreenState extends State<CategoryScreen> {
               error: snapshot.error!,
               onLogin: (final response) => Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (final context) =>
-                      CategoryScreen(forSeries: widget.forSeries),
+                  builder: (final context) => CategoryScreen(forSeries: widget.forSeries),
                 ),
               ),
             );
           }
 
-          final List<Category> categories = snapshot.data as List<Category>;
-          return NetflixStyleLayout(
+          final categories = snapshot.data as List<Category>;
+          return StyleLayout(
             categories: categories,
             selectedIndex: selectedCategoryIndex,
             onCategoryChanged: (final index) {
-              setState(() {
-                selectedCategoryIndex = index;
-              });
+              setState(() => selectedCategoryIndex = index);
               _categoriesScrollController.animateTo(
                 index * 100.0,
                 duration: const Duration(milliseconds: 300),
@@ -86,7 +83,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 }
 
-class NetflixStyleLayout extends StatelessWidget {
+class StyleLayout extends StatelessWidget {
+  static const double buttonWidth = 150.0;
+  static const double horizontalPadding = 16.0;
+  static const double buttonSpacing = 16.0;
+
   final List<Category> categories;
   final int selectedIndex;
   final Function(int) onCategoryChanged;
@@ -95,11 +96,7 @@ class NetflixStyleLayout extends StatelessWidget {
   final ScrollController gridScrollController;
   final FocusNode backButtonFocusNode;
 
-  static const double BUTTON_WIDTH = 150.0;
-  static const double HORIZONTAL_PADDING = 16.0;
-  static const double BUTTON_SPACING = 16.0;
-
-  const NetflixStyleLayout({
+  const StyleLayout({
     super.key,
     required this.categories,
     required this.selectedIndex,
@@ -113,13 +110,11 @@ class NetflixStyleLayout extends StatelessWidget {
   void _scrollToCategory(final BuildContext context, final int index, {final bool animate = true}) {
     if (!categoriesScrollController.hasClients) return;
 
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double centerPosition = screenWidth / 2;
-    
-    final double targetPosition = (BUTTON_WIDTH + BUTTON_SPACING) * index;
-    double offset = targetPosition - centerPosition + (BUTTON_WIDTH / 2);
-    final maxScroll = categoriesScrollController.position.maxScrollExtent;
-    offset = offset.clamp(0.0, maxScroll);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final centerPosition = screenWidth / 2;
+    final targetPosition = (buttonWidth + buttonSpacing) * index;
+    double offset = targetPosition - centerPosition + (buttonWidth / 2);
+    offset = offset.clamp(0.0, categoriesScrollController.position.maxScrollExtent);
 
     if (animate) {
       categoriesScrollController.animateTo(
@@ -132,7 +127,7 @@ class NetflixStyleLayout extends StatelessWidget {
     }
   }
 
- @override
+  @override
   Widget build(final BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,28 +138,23 @@ class NetflixStyleLayout extends StatelessWidget {
             children: [
               Focus(
                 focusNode: backButtonFocusNode,
-                onKey: (node, event) {
-                  if (event is RawKeyDownEvent) {
-                    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                      // Find the CategoryButton with the selected index
-                      final FocusScopeNode scope = FocusScope.of(context);
-                      final categoryButtons = scope.traversalDescendants
-                          .where((element) =>
-                              element.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
-                          .toList();
+                onKey: (final node, final event) {
+                  if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    final scope = FocusScope.of(context);
+                    final categoryButtons = scope.traversalDescendants
+                        .where((final e) => e.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
+                        .toList();
 
-                      final targetButton = categoryButtons.firstWhere(
-                        (element) {
-                          final categoryButton = element.context?.findAncestorWidgetOfExactType<CategoryButton>();
-                          return categoryButton != null && 
-                                 (categoryButton as CategoryButton).index == selectedIndex;
-                        },
-                        orElse: () => categoryButtons.first,
-                      );
+                    final targetButton = categoryButtons.firstWhere(
+                      (final e) {
+                        final btn = e.context?.findAncestorWidgetOfExactType<CategoryButton>();
+                        return btn != null && (btn).index == selectedIndex;
+                      },
+                      orElse: () => categoryButtons.first,
+                    );
 
-                      targetButton.requestFocus();
-                      return KeyEventResult.handled;
-                    }
+                    targetButton.requestFocus();
+                    return KeyEventResult.handled;
                   }
                   return KeyEventResult.ignored;
                 },
@@ -182,55 +172,39 @@ class NetflixStyleLayout extends StatelessWidget {
             ],
           ),
         ),
-        FocusTraversalGroup(
-          child: SizedBox(
-            height: 50,
-            child: ScrollConfiguration(
-              behavior: const ScrollBehavior().copyWith(scrollbars: false),
-              child: LayoutBuilder(
-                builder: (final context, final constraints) {
-                  return ListView.builder(
-                    controller: categoriesScrollController,
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: HORIZONTAL_PADDING),
-                    itemCount: categories.length,
-                    itemBuilder: (final context, final index) {
-                      return Container(
-                        width: BUTTON_WIDTH,
-                        margin: const EdgeInsets.only(right: BUTTON_SPACING),
-                        child: CategoryButton(
-                          category: categories[index],
-                          isSelected: index == selectedIndex,
-                          onPressed: () {
-                            onCategoryChanged(index);
-                            _scrollToCategory(context, index);
-                          },
-                          autofocus: index == selectedIndex,
-                          index: index,
-                          onFocusFromGrid: () {
-                            _scrollToCategory(context, selectedIndex, animate: false);
-                          },
-                        ),
-                      );
-                    },
-                  );
-                },
+        SizedBox(
+          height: 50,
+          child: ScrollConfiguration(
+            behavior: const ScrollBehavior().copyWith(scrollbars: false),
+            child: ListView.builder(
+              controller: categoriesScrollController,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
+              itemCount: categories.length,
+              itemBuilder: (final context, final index) => Container(
+                width: buttonWidth,
+                margin: const EdgeInsets.only(right: buttonSpacing),
+                child: CategoryButton(
+                  category: categories[index],
+                  isSelected: index == selectedIndex,
+                  onPressed: () {
+                    onCategoryChanged(index);
+                    _scrollToCategory(context, index);
+                  },
+                  autofocus: index == selectedIndex,
+                  index: index,
+                ),
               ),
             ),
           ),
         ),
         Expanded(
-          child: FocusTraversalGroup(
-            child: PageStorage(
-              bucket: PageStorageBucket(),
-              child: CategoryContent(
-                key: PageStorageKey('${categories[selectedIndex].name}_$forSeries'),
-                category: categories[selectedIndex],
-                forSeries: forSeries,
-                gridScrollController: gridScrollController,
-                currentCategoryIndex: selectedIndex,
-              ),
-            ),
+          child: CategoryContent(
+            key: PageStorageKey("${categories[selectedIndex].name}_$forSeries"),
+            category: categories[selectedIndex],
+            forSeries: forSeries,
+            gridScrollController: gridScrollController,
+            currentCategoryIndex: selectedIndex,
           ),
         ),
       ],
@@ -243,7 +217,6 @@ class CategoryButton extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onPressed;
   final bool autofocus;
-  final VoidCallback? onFocusFromGrid;
   final int index;
 
   const CategoryButton({
@@ -251,9 +224,8 @@ class CategoryButton extends StatefulWidget {
     required this.category,
     required this.isSelected,
     required this.onPressed,
-    this.autofocus = false,
-    this.onFocusFromGrid,
     required this.index,
+    this.autofocus = false,
   });
 
   @override
@@ -272,31 +244,25 @@ class _CategoryButtonState extends State<CategoryButton> {
     return Focus(
       autofocus: widget.autofocus,
       onFocusChange: (final focused) {
-        setState(() {
-          isFocused = focused;
-        });
-        if (focused) {
-          widget.onPressed();
-        }
+        setState(() => isFocused = focused);
+        if (focused) widget.onPressed();
       },
       onKey: (final node, final event) {
         if (event is RawKeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            final FocusScopeNode scope = FocusScope.of(context);
-            final movieTileFocus = scope.traversalDescendants
-                .where((final element) => 
-                    element.context?.findAncestorWidgetOfExactType<MovieTile>() != null)
+            final scope = FocusScope.of(context);
+            final movieTile = scope.traversalDescendants
+                .where((final e) => e.context?.findAncestorWidgetOfExactType<MovieTile>() != null)
                 .firstOrNull;
             
-            if (movieTileFocus != null) {
-              movieTileFocus.requestFocus();
+            if (movieTile != null) {
+              movieTile.requestFocus();
               return KeyEventResult.handled;
             }
           } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-            final FocusScopeNode scope = FocusScope.of(context);
+            final scope = FocusScope.of(context);
             final backButton = scope.traversalDescendants
-                .where((final element) => 
-                    element.context?.findAncestorWidgetOfExactType<BackButton>() != null)
+                .where((final e) => e.context?.findAncestorWidgetOfExactType<BackButton>() != null)
                 .firstOrNull;
             
             if (backButton != null) {
@@ -309,12 +275,10 @@ class _CategoryButtonState extends State<CategoryButton> {
       },
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        onEnter: (final _) {
-          setState(() {
-            isHovered = true;
-            widget.onPressed();
-          });
-        },
+        onEnter: (final _) => setState(() {
+          isHovered = true;
+          widget.onPressed();
+        }),
         onExit: (final _) => setState(() => isHovered = false),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -347,7 +311,6 @@ class CategoryContent extends StatefulWidget {
   final bool forSeries;
   final ScrollController gridScrollController;
   final int currentCategoryIndex;
-  final Function(int)? onCategoryChange;
 
   const CategoryContent({
     super.key,
@@ -355,7 +318,6 @@ class CategoryContent extends StatefulWidget {
     required this.forSeries,
     required this.gridScrollController,
     required this.currentCategoryIndex,
-    this.onCategoryChange,
   });
 
   @override
@@ -364,7 +326,7 @@ class CategoryContent extends StatefulWidget {
 
 class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAliveClientMixin {
   late Future<List<Film>> _filmsFuture;
-  Map<String, List<Film>> _cachedFilms = {};
+  final Map<String, List<Film>> _cachedFilms = {};
   static const int itemsPerRow = 6;
 
   @override
@@ -377,10 +339,8 @@ class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAli
   }
 
   Future<List<Film>> _loadFilms() async {
-    final cacheKey = '${widget.category.name}_${widget.forSeries}';
-    if (_cachedFilms.containsKey(cacheKey)) {
-      return _cachedFilms[cacheKey]!;
-    }
+    final cacheKey = "${widget.category.name}_${widget.forSeries}";
+    if (_cachedFilms.containsKey(cacheKey)) return _cachedFilms[cacheKey]!;
 
     final films = await Provider.of<FilmanNotifier>(context, listen: false)
         .getMoviesByCategory(widget.category, widget.forSeries);
@@ -389,7 +349,7 @@ class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAli
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     super.build(context);
 
     return FutureBuilder<List<Film>>(
@@ -411,7 +371,7 @@ class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAli
             crossAxisCount: itemsPerRow,
             crossAxisSpacing: 12,
             mainAxisSpacing: 16,
-            childAspectRatio: 2/3, // Poprawiony aspect ratio dla obrazków filmowych
+            childAspectRatio: 2/3,
           ),
           itemCount: films.length,
           itemBuilder: (final context, final index) => MovieTile(
@@ -421,7 +381,6 @@ class _CategoryContentState extends State<CategoryContent> with AutomaticKeepAli
             index: index,
             itemsPerRow: itemsPerRow,
             totalItems: films.length,
-            onCategoryChange: widget.onCategoryChange,
             currentCategoryIndex: widget.currentCategoryIndex,
           ),
         );
@@ -437,7 +396,6 @@ class MovieTile extends StatefulWidget {
   final int index;
   final int itemsPerRow;
   final int totalItems;
-  final Function(int)? onCategoryChange;
   final int currentCategoryIndex;
 
   const MovieTile({
@@ -447,9 +405,8 @@ class MovieTile extends StatefulWidget {
     required this.index,
     required this.itemsPerRow,
     required this.totalItems,
-    this.onCategoryChange,
-    this.autofocus = false,
     required this.currentCategoryIndex,
+    this.autofocus = false,
   });
 
   @override
@@ -459,7 +416,7 @@ class MovieTile extends StatefulWidget {
 class _MovieTileState extends State<MovieTile> {
   bool isFocused = false;
   bool isHovered = false;
-  FocusNode focusNode = FocusNode();
+  final focusNode = FocusNode();
 
   @override
   void dispose() {
@@ -469,13 +426,31 @@ class _MovieTileState extends State<MovieTile> {
 
   void _scrollToVisible() {
     if (!widget.gridController.hasClients) return;
-    final BuildContext? itemContext = focusNode.context;
-    if (itemContext != null) {
-      Scrollable.ensureVisible(
-        itemContext,
-        alignment: 0.3,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+    
+    final RenderObject? renderObject = focusNode.context?.findRenderObject();
+    if (renderObject == null) return;
+
+    final RenderAbstractViewport viewport = RenderAbstractViewport.of(renderObject);
+    final RevealedOffset topOffset = viewport.getOffsetToReveal(renderObject, 0.0);
+    final RevealedOffset centerOffset = viewport.getOffsetToReveal(renderObject, 0.3);
+    final isScrollingUp = widget.gridController.offset > topOffset.offset;
+    double targetOffset;
+    if (isScrollingUp) {
+      final RenderBox? box = renderObject as RenderBox?;
+      final double itemHeight = box?.size.height ?? 0;
+      targetOffset = topOffset.offset + (itemHeight * 0.3);
+      final double minScroll = widget.gridController.offset - itemHeight;
+      targetOffset = targetOffset.clamp(minScroll, widget.gridController.offset);
+    } else {
+      targetOffset = centerOffset.offset;
+    }
+
+    targetOffset = targetOffset.clamp(0.0, widget.gridController.position.maxScrollExtent);
+    if ((targetOffset - widget.gridController.offset).abs() > 1.0) {
+      widget.gridController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
       );
     }
   }
@@ -501,34 +476,29 @@ class _MovieTileState extends State<MovieTile> {
       focusNode: focusNode,
       autofocus: widget.autofocus,
       onFocusChange: (final focused) {
-        setState(() {
-          isFocused = focused;
-        });
+        setState(() => isFocused = focused);
         if (focused) {
-          Future.delayed(const Duration(milliseconds: 50), _scrollToVisible);
+          _scrollToVisible();
         }
       },
       onKey: (final node, final event) {
         if (event is RawKeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
             if (widget.index < widget.itemsPerRow) {
-              final FocusScopeNode scope = FocusScope.of(context);
+              final scope = FocusScope.of(context);
               final categoryButtons = scope.traversalDescendants
-                  .where((element) =>
-                      element.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
+                  .where((final e) => e.context?.findAncestorWidgetOfExactType<CategoryButton>() != null)
                   .toList();
 
-              final specificCategoryButton = categoryButtons.firstWhere(
-                (element) {
-                  final categoryButton =
-                      element.context?.findAncestorWidgetOfExactType<CategoryButton>();
-                  return categoryButton != null &&
-                      (categoryButton as CategoryButton).index == widget.currentCategoryIndex;
+              final targetButton = categoryButtons.firstWhere(
+                (final e) {
+                  final btn = e.context?.findAncestorWidgetOfExactType<CategoryButton>();
+                  return btn != null && (btn).index == widget.currentCategoryIndex;
                 },
                 orElse: () => categoryButtons.first,
               );
 
-              specificCategoryButton.requestFocus();
+              targetButton.requestFocus();
               return KeyEventResult.handled;
             }
           } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
@@ -548,7 +518,7 @@ class _MovieTileState extends State<MovieTile> {
               return KeyEventResult.handled;
             }
           } else if (event.logicalKey == LogicalKeyboardKey.enter ||
-              event.logicalKey == LogicalKeyboardKey.select) {
+                    event.logicalKey == LogicalKeyboardKey.select) {
             _handleFilmSelection();
             return KeyEventResult.handled;
           }
@@ -581,7 +551,7 @@ class _MovieTileState extends State<MovieTile> {
                       child: FastCachedImage(
                         url: widget.film.imageUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Center(
+                        errorBuilder: (final context, final error, final stackTrace) => const Center(
                           child: Icon(Icons.error_outline, size: 40),
                         ),
                         loadingBuilder: (final context, final progress) => Center(

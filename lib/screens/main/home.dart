@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     homePageLoader = _loadHomePage();
-    checkForUpdates(context);
+    checkForUpdates();
   }
 
   @override

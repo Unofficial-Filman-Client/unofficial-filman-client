@@ -1,6 +1,8 @@
 import "dart:async";
 
 import "package:flutter/material.dart";
+import "package:provider/provider.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 Future<List<Language>> _getAvailableLanguages(
@@ -11,6 +13,7 @@ Future<List<Language>> _getAvailableLanguages(
       languages.add(link.language);
     }
   }
+  languages.sort();
   return languages;
 }
 
@@ -51,19 +54,31 @@ Future<dynamic> _showSelectionDialog(
 }
 
 Future<(Language?, Quality?)> getUserSelectedPreferences(
-    final BuildContext context, final List<MediaLink> directs,
-    [final bool supportm3u8 = true]) async {
-  directs
-      .removeWhere((final link) => link.url.contains(".m3u8") && !supportm3u8);
+  final BuildContext context,
+  final List<MediaLink> directs,
+  /*[final bool supportm3u8 = true]*/
+) async {
+  // directs.removeWhere((final link) => link.url.contains(".m3u8") && !supportm3u8);
 
   final List<Language> languages = await _getAvailableLanguages(directs);
   late Language lang;
   if (languages.length > 1 && context.mounted) {
-    lang = await _showSelectionDialog(
-      context,
-      languages,
-      "Wybierz język",
-    );
+    if (Provider.of<SettingsNotifier>(context).autoLanguage) {
+      final List<Language> preferredLanguages =
+          Provider.of<SettingsNotifier>(context).preferredLanguages;
+      for (final preferredLanguage in preferredLanguages) {
+        if (languages.contains(preferredLanguage)) {
+          lang = preferredLanguage;
+          break;
+        }
+      }
+    } else {
+      lang = await _showSelectionDialog(
+        context,
+        languages,
+        "Wybierz język",
+      );
+    }
   } else if (languages.isNotEmpty) {
     lang = languages.first;
   } else {
@@ -72,9 +87,7 @@ Future<(Language?, Quality?)> getUserSelectedPreferences(
   final List<Quality> qualities =
       await _getAvaliableQualitiesForLanguage(lang, directs);
   late Quality quality;
-  if (qualities.length > 1 && context.mounted) {
-    quality = await _showSelectionDialog(context, qualities, "Wybierz jakość");
-  } else if (qualities.isNotEmpty) {
+  if (qualities.isNotEmpty) {
     quality = qualities.first;
   } else {
     return (lang, null);
@@ -87,9 +100,14 @@ Future<MediaLink?> selectBestLink(final List<MediaLink> links) async {
   final validLinks = <MediaLink>[];
 
   for (final link in links) {
-    await link.getDirectLink();
-    if (link.isVideoValid) {
-      validLinks.add(link);
+    try {
+      await link.getDirectLink();
+      await link.verifyDirectVideoUrl();
+      if (link.isVideoValid) {
+        validLinks.add(link);
+      }
+    } catch (e) {
+      continue;
     }
   }
 

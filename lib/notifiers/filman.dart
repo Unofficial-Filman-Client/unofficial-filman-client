@@ -13,8 +13,13 @@ import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
+import "package:cached_annotation/cached_annotation.dart";
 
-class FilmanNotifier {
+part "filman.cached.dart";
+
+@WithCache()
+abstract mixin class FilmanNotifier implements _$FilmanNotifier {
+  factory FilmanNotifier() = _FilmanNotifier;
   final List<String> cookies = [];
   late final SharedPreferences prefs;
   late final Dio dio;
@@ -228,6 +233,8 @@ class FilmanNotifier {
     }
   }
 
+  @Cached(ttl: 30)
+
   Future<FilmDetails> getFilmDetails(final String link) async {
     final response = await dio.get(
       link,
@@ -397,6 +404,8 @@ class FilmanNotifier {
     }
   }
 
+  @Cached(ttl: 30)
+
   Future<List<Category>> getCategories() async {
     final response = await dio.get(
       "https://filman.cc/filmy/",
@@ -427,6 +436,8 @@ class FilmanNotifier {
     return categories;
   }
 
+  @Cached(ttl: 30)
+  
   Future<List<Film>> getMoviesByCategory(
       final Category category, final bool forSeries) async {
     final response = await dio.get(

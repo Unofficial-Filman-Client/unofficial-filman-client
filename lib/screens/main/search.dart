@@ -493,7 +493,7 @@ class _SearchDialogState extends State<_SearchDialog> {
   final GlobalKey<CustomKeyboardState> _keyboardKey = GlobalKey<CustomKeyboardState>();
   bool isKeyboardVisible = true;
   SearchResults? previewResults;
-  Key _previewKey = UniqueKey(); // Add this line to force rebuilds
+  Key _previewKey = UniqueKey();
 
   @override
   void initState() {
@@ -532,7 +532,7 @@ class _SearchDialogState extends State<_SearchDialog> {
       if (mounted) {
         setState(() {
           previewResults = results;
-          _previewKey = UniqueKey(); // Force rebuild of preview section
+          _previewKey = UniqueKey();
         });
       }
     } else {
@@ -550,7 +550,7 @@ class _SearchDialogState extends State<_SearchDialog> {
 
     final previewFilms = previewResults!.getFilms().take(3).toList();
     return KeyedSubtree(
-      key: _previewKey, // Add key to force rebuild
+      key: _previewKey,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: previewFilms.map((final film) => Padding(

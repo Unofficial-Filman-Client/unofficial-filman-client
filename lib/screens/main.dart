@@ -11,6 +11,7 @@ import "package:unofficial_filman_client/screens/main/offline.dart";
 import "package:unofficial_filman_client/screens/main/watched.dart";
 import "package:unofficial_filman_client/screens/settings.dart";
 import "package:unofficial_filman_client/screens/main/search.dart";
+import "package:unofficial_filman_client/utils/updater.dart";
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -32,6 +33,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    checkForUpdates();
     navigationBarFocusNode = FocusNode();
     keyboardListenerNode = FocusNode();
 

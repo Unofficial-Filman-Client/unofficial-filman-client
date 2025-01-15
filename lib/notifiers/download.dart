@@ -11,6 +11,7 @@ import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:shared_preferences/shared_preferences.dart";
+import "package:permission_handler/permission_handler.dart";
 
 class DownloadNotifier extends ChangeNotifier {
   final List<Downloading> _downloading = [];
@@ -173,6 +174,9 @@ class DownloadNotifier extends ChangeNotifier {
         language: language,
         quality: quality);
     _downloading.add(download);
+
+    await Permission.notification.request();
+
 
     final queued = await FileDownloader().enqueue(await download.getTask());
 
