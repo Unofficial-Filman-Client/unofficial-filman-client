@@ -38,6 +38,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   final FocusNode _emptyStateFocusNode = FocusNode();
   final FocusNode clearButtonFocus = FocusNode();
   List<FocusNode> _resultFocusNodes = [];
+  DateTime _lastScrollTime = DateTime.now();
   
   static const _gridSettings = {
     "columns": 6,
@@ -126,7 +127,6 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   void _clearSearch() {
   setState(() {
     searchController.clear();
-    // No need to set lazySearch since the UI already handles empty searchController state
   });
 }
 
@@ -170,16 +170,30 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   void _scrollToVisible(final int index, final int totalItems) {
-    if (!_scrollController.hasClients) return;
-    final itemContext = _resultFocusNodes[index].context;
-    if (itemContext != null) {
-      Scrollable.ensureVisible(
-        itemContext,
-        alignment: 0.3,
-        duration: const Duration(milliseconds: 200),
-      );
-    }
+  if (!_scrollController.hasClients) return;
+  
+  final itemContext = _resultFocusNodes[index].context;
+  if (itemContext == null) return;
+
+  final isRapidMovement = DateTime.now().difference(_lastScrollTime).inMilliseconds < 100;
+  _lastScrollTime = DateTime.now();
+
+  if (isRapidMovement) {
+    Scrollable.ensureVisible(
+      itemContext,
+      duration: Duration.zero,
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+    );
+  } else {
+    Scrollable.ensureVisible(
+      itemContext,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+    );
   }
+}
 
   Widget _buildMicButton() {
     return Focus(
@@ -474,6 +488,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   KeyEventResult _handleGridItemKey(final RawKeyEvent event, final int index, final int totalItems, final dynamic film) {
+    if (event is RawKeyDownEvent) {
+    } else if (event is RawKeyUpEvent) {
+    }
+
     if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
 
     final int columns = _gridSettings["columns"] as int;
