@@ -61,7 +61,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           }
 
           final categories = snapshot.data as List<Category>;
-          return NetflixStyleLayout(
+          return StyleLayout(
             categories: categories,
             selectedIndex: selectedCategoryIndex,
             onCategoryChanged: (final index) {
@@ -83,7 +83,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 }
 
-class NetflixStyleLayout extends StatelessWidget {
+class StyleLayout extends StatelessWidget {
   static const double buttonWidth = 150.0;
   static const double horizontalPadding = 16.0;
   static const double buttonSpacing = 16.0;
@@ -96,7 +96,7 @@ class NetflixStyleLayout extends StatelessWidget {
   final ScrollController gridScrollController;
   final FocusNode backButtonFocusNode;
 
-  const NetflixStyleLayout({
+  const StyleLayout({
     super.key,
     required this.categories,
     required this.selectedIndex,
