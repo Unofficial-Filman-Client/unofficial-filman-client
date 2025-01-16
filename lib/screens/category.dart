@@ -507,16 +507,20 @@ class _MovieTileState extends State<MovieTile> {
               return KeyEventResult.handled;
             }
           } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            if (widget.index % widget.itemsPerRow != 0) {
+            final isFirstInRow = widget.index % widget.itemsPerRow == 0;
+            if (!isFirstInRow) {
               FocusScope.of(context).focusInDirection(TraversalDirection.left);
               return KeyEventResult.handled;
             }
+            return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            if ((widget.index + 1) % widget.itemsPerRow != 0 && 
-                widget.index + 1 < widget.totalItems) {
+            final isLastInRow = (widget.index + 1) % widget.itemsPerRow == 0;
+            final isLastItem = widget.index + 1 >= widget.totalItems;
+            if (!isLastInRow && !isLastItem) {
               FocusScope.of(context).focusInDirection(TraversalDirection.right);
               return KeyEventResult.handled;
             }
+            return KeyEventResult.handled;
           } else if (event.logicalKey == LogicalKeyboardKey.enter ||
                     event.logicalKey == LogicalKeyboardKey.select) {
             _handleFilmSelection();

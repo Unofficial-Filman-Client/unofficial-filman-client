@@ -207,6 +207,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
           !_isSeekingBackward) {
         setState(() {
           _isOverlayVisible = false;
+          _selectedControlIndex = 1;
         });
         _overlayAnimationController.reverse();
       }

@@ -29,13 +29,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   late Future<SearchResults> lazySearch;
   late AnimationController _micScaleController;
   late AnimationController _searchScaleController;
+  late AnimationController _clearScaleController;
   late final TextEditingController searchController;
   final FocusNode searchButtonFocus = FocusNode();
   final FocusScopeNode _focusScope = FocusScopeNode();
   final ScrollController _scrollController = ScrollController();
   final FocusNode micButtonFocus = FocusNode();
   final FocusNode _emptyStateFocusNode = FocusNode();
+  final FocusNode clearButtonFocus = FocusNode();
   List<FocusNode> _resultFocusNodes = [];
+  DateTime _lastScrollTime = DateTime.now();
   
   static const _gridSettings = {
     "columns": 6,
@@ -56,27 +59,33 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   void _initializeControllers() {
-    searchController = TextEditingController();
-    _micScaleController = AnimationController(
-      duration: _gridSettings["duration"] as Duration,
-      vsync: this,
-      lowerBound: _gridSettings["defaultScale"] as double,
-      upperBound: _gridSettings["hoverScale"] as double,
-    );
-    _searchScaleController = AnimationController(
-      duration: _gridSettings["duration"] as Duration,
-      vsync: this,
-      lowerBound: _gridSettings["defaultScale"] as double,
-      upperBound: _gridSettings["hoverScale"] as double,
-    );
-  }
-
+  searchController = TextEditingController();
+  _micScaleController = AnimationController(
+    duration: _gridSettings["duration"] as Duration,
+    vsync: this,
+    lowerBound: _gridSettings["defaultScale"] as double,
+    upperBound: _gridSettings["hoverScale"] as double,
+  );
+  _searchScaleController = AnimationController(
+    duration: _gridSettings["duration"] as Duration,
+    vsync: this,
+    lowerBound: _gridSettings["defaultScale"] as double,
+    upperBound: _gridSettings["hoverScale"] as double,
+  );
+  _clearScaleController = AnimationController(
+    duration: _gridSettings["duration"] as Duration,
+    vsync: this,
+    lowerBound: _gridSettings["defaultScale"] as double,
+    upperBound: _gridSettings["hoverScale"] as double,
+  );
+}
 
   void _setupFocusNodes() {
-    searchButtonFocus.addListener(_handleFocusChange);
-    micButtonFocus.addListener(_handleFocusChange);
-    _resultFocusNodes = List.generate(100, (final _) => FocusNode());
-  }
+  searchButtonFocus.addListener(_handleFocusChange);
+  micButtonFocus.addListener(_handleFocusChange);
+  clearButtonFocus.addListener(_handleFocusChange);
+  _resultFocusNodes = List.generate(100, (final _) => FocusNode());
+}
 
   void _requestInitialFocus() {
     WidgetsBinding.instance.addPostFrameCallback((final _) {
@@ -92,26 +101,34 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   void _disposeControllers() {
-    searchController.dispose();
-    _micScaleController.dispose();
-    _searchScaleController.dispose();
-    _scrollController.dispose();
-  }
+  searchController.dispose();
+  _micScaleController.dispose();
+  _searchScaleController.dispose();
+  _clearScaleController.dispose();
+  _scrollController.dispose();
+}
 
   void _disposeFocusNodes() {
-    searchButtonFocus.removeListener(_handleFocusChange);
-    searchButtonFocus.dispose();
-    micButtonFocus.dispose();
-    _focusScope.dispose();
-    _emptyStateFocusNode.dispose();
-    for (var node in _resultFocusNodes) {
-      node.dispose();
-    }
+  searchButtonFocus.removeListener(_handleFocusChange);
+  searchButtonFocus.dispose();
+  micButtonFocus.dispose();
+  clearButtonFocus.dispose();
+  _focusScope.dispose();
+  _emptyStateFocusNode.dispose();
+  for (var node in _resultFocusNodes) {
+    node.dispose();
   }
+}
 
   void _handleFocusChange() {
     widget.onHoverStateChanged(searchButtonFocus.hasFocus || micButtonFocus.hasFocus);
   }
+
+  void _clearSearch() {
+  setState(() {
+    searchController.clear();
+  });
+}
 
   Future<void> _showSearchDialog() async {
     final useCustomKeyboard = Provider.of<SettingsNotifier>(context, listen: false).useCustomKeyboard;
@@ -153,16 +170,30 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   void _scrollToVisible(final int index, final int totalItems) {
-    if (!_scrollController.hasClients) return;
-    final itemContext = _resultFocusNodes[index].context;
-    if (itemContext != null) {
-      Scrollable.ensureVisible(
-        itemContext,
-        alignment: 0.3,
-        duration: const Duration(milliseconds: 200),
-      );
-    }
+  if (!_scrollController.hasClients) return;
+  
+  final itemContext = _resultFocusNodes[index].context;
+  if (itemContext == null) return;
+
+  final isRapidMovement = DateTime.now().difference(_lastScrollTime).inMilliseconds < 100;
+  _lastScrollTime = DateTime.now();
+
+  if (isRapidMovement) {
+    Scrollable.ensureVisible(
+      itemContext,
+      duration: Duration.zero,
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+    );
+  } else {
+    Scrollable.ensureVisible(
+      itemContext,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+    );
   }
+}
 
   Widget _buildMicButton() {
     return Focus(
@@ -199,6 +230,72 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       ),
     );
   }
+
+  Widget _buildClearButton() {
+  return MouseRegion(
+    onEnter: (final _) => _clearScaleController.forward(),
+    onExit: (final _) => _clearScaleController.reverse(),
+    child: Focus(
+      focusNode: clearButtonFocus,
+      onFocusChange: (final hasFocus) {
+        widget.onHoverStateChanged(hasFocus);
+        if (hasFocus) {
+          _clearScaleController.forward();
+        } else {
+          _clearScaleController.reverse();
+        }
+      },
+      onKey: (final _, final event) {
+        if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
+
+        switch (event.logicalKey) {
+          case LogicalKeyboardKey.arrowUp:
+            widget.onNavigateToNavBar();
+            return KeyEventResult.handled;
+          case LogicalKeyboardKey.arrowLeft:
+            searchButtonFocus.requestFocus();
+            return KeyEventResult.handled;
+          case LogicalKeyboardKey.arrowDown:
+            if (searchController.text.isNotEmpty) {
+              _resultFocusNodes[0].requestFocus();
+            }
+            return KeyEventResult.handled;
+          case LogicalKeyboardKey.select:
+          case LogicalKeyboardKey.enter:
+            _clearSearch();
+            return KeyEventResult.handled;
+          default:
+            return KeyEventResult.ignored;
+        }
+      },
+      child: ScaleTransition(
+        scale: _clearScaleController,
+        child: GestureDetector(
+          onTap: _clearSearch,
+          child: Container(
+            height: 48,
+            width: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color.fromARGB(20, 0, 0, 0),
+              border: Border.all(
+                color: clearButtonFocus.hasFocus
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
+                width: 2.5,
+              ),
+            ),
+            child: Icon(
+              Icons.clear,
+              color: Theme.of(context).colorScheme.onSurface,
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
   KeyEventResult _handleMicButtonKey(final RawKeyEvent event) {
     if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
@@ -279,28 +376,33 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   KeyEventResult _handleSearchButtonKey(final RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
+  if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
 
-    switch (event.logicalKey) {
-      case LogicalKeyboardKey.arrowUp:
-        widget.onNavigateToNavBar();
-        return KeyEventResult.handled;
-      case LogicalKeyboardKey.arrowLeft:
-        micButtonFocus.requestFocus();
-        return KeyEventResult.handled;
-      case LogicalKeyboardKey.arrowDown:
-        if (searchController.text.isNotEmpty) {
-          _resultFocusNodes[0].requestFocus();
-        }
-        return KeyEventResult.handled;
-      case LogicalKeyboardKey.select:
-      case LogicalKeyboardKey.enter:
-        _showSearchDialog();
-        return KeyEventResult.handled;
-      default:
-        return KeyEventResult.ignored;
-    }
+  switch (event.logicalKey) {
+    case LogicalKeyboardKey.arrowUp:
+      widget.onNavigateToNavBar();
+      return KeyEventResult.handled;
+    case LogicalKeyboardKey.arrowLeft:
+      micButtonFocus.requestFocus();
+      return KeyEventResult.handled;
+    case LogicalKeyboardKey.arrowRight:
+      if (searchController.text.isNotEmpty) {
+        clearButtonFocus.requestFocus();
+      }
+      return KeyEventResult.handled;
+    case LogicalKeyboardKey.arrowDown:
+      if (searchController.text.isNotEmpty) {
+        _resultFocusNodes[0].requestFocus();
+      }
+      return KeyEventResult.handled;
+    case LogicalKeyboardKey.select:
+    case LogicalKeyboardKey.enter:
+      _showSearchDialog();
+      return KeyEventResult.handled;
+    default:
+      return KeyEventResult.ignored;
   }
+}
 
   Widget _buildSearchResults(final SearchResults? results) {
     if (results?.isNotEmpty() != true) {
@@ -386,6 +488,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   KeyEventResult _handleGridItemKey(final RawKeyEvent event, final int index, final int totalItems, final dynamic film) {
+    if (event is RawKeyDownEvent) {
+    } else if (event is RawKeyUpEvent) {
+    }
+
     if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
 
     final int columns = _gridSettings["columns"] as int;
@@ -440,6 +546,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                 _buildMicButton(),
                 const SizedBox(width: 24),
                 _buildSearchButton(),
+                if (searchController.text.isNotEmpty) ...[
+                  const SizedBox(width: 24),
+                  _buildClearButton(),
+                ],
               ],
             ),
           ),
