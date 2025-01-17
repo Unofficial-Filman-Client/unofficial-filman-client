@@ -2,6 +2,7 @@
 
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
+import "package:unofficial_filman_client/utils/updater.dart";
 import "package:unofficial_filman_client/widgets/error_handling.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
@@ -13,7 +14,7 @@ import "dart:math" as math;
 
 class HomePage extends StatefulWidget {
   final Function(bool) onHoverStateChanged;
-  
+
   const HomePage({required this.onHoverStateChanged, super.key});
 
   @override
@@ -55,30 +56,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<HomePageResponse> _loadHomePage() async {
-    final response = await Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
+    final response = await Provider.of<FilmanNotifier>(context, listen: false)
+        .getFilmanPage();
     _cachedResponse = response;
     return response;
   }
 
-  void _initializeFocusNodes(final List<String> categories, final HomePageResponse data) {
+  void _initializeFocusNodes(
+      final List<String> categories, final HomePageResponse data) {
     if (_focusNodes.isEmpty) {
       for (var category in categories) {
         final films = data.getFilms(category);
-        _focusNodes[category] = List.generate(
-          films?.length ?? 0,
-          (final _) => FocusNode()
-        );
+        _focusNodes[category] =
+            List.generate(films?.length ?? 0, (final _) => FocusNode());
       }
-      
+
       if (_categoryScopeNodes.isEmpty) {
         _categoryScopeNodes.addAll(
-          List.generate(categories.length, (final _) => FocusScopeNode())
-        );
+            List.generate(categories.length, (final _) => FocusScopeNode()));
       }
     }
   }
 
-  void _handleKeyEvent(final RawKeyEvent event, final String category, final int filmIndex) {
+  void _handleKeyEvent(
+      final RawKeyEvent event, final String category, final int filmIndex) {
     if (event is! RawKeyDownEvent) return;
 
     final categories = _focusNodes.keys.toList();
@@ -93,7 +94,7 @@ class _HomePageState extends State<HomePage> {
           _scrollToFilm(category, _currentFilmIndex);
         }
         break;
-      
+
       case LogicalKeyboardKey.arrowLeft:
         if (filmIndex > 0) {
           setState(() => _currentFilmIndex = filmIndex - 1);
@@ -101,19 +102,21 @@ class _HomePageState extends State<HomePage> {
           _scrollToFilm(category, _currentFilmIndex);
         }
         break;
-      
+
       case LogicalKeyboardKey.arrowDown:
         if (currentCategoryIndex < categories.length - 1) {
-          _moveToCategory(categories[currentCategoryIndex + 1], filmIndex, false);
+          _moveToCategory(
+              categories[currentCategoryIndex + 1], filmIndex, false);
         }
         break;
-      
+
       case LogicalKeyboardKey.arrowUp:
         if (currentCategoryIndex > 0) {
-          _moveToCategory(categories[currentCategoryIndex - 1], filmIndex, currentCategoryIndex == 1);
+          _moveToCategory(categories[currentCategoryIndex - 1], filmIndex,
+              currentCategoryIndex == 1);
         }
         break;
-      
+
       case LogicalKeyboardKey.enter:
       case LogicalKeyboardKey.select:
         _openFilmDetails(category, filmIndex);
@@ -126,7 +129,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _moveToCategory(final String category, final int currentIndex, final bool isFirstRow) {
+  void _moveToCategory(
+      final String category, final int currentIndex, final bool isFirstRow) {
     final films = _focusNodes[category] ?? [];
     if (films.isNotEmpty) {
       setState(() {
@@ -166,12 +170,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _openFilmDetails(final String category, final int index) async {
     try {
       Film? selectedFilm = _getFilm(category, index);
-      
+
       if (selectedFilm == null) {
-        final response = await Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
+        final response =
+            await Provider.of<FilmanNotifier>(context, listen: false)
+                .getFilmanPage();
         selectedFilm = response.getFilms(category)?[index];
       }
-      
+
       if (selectedFilm != null && mounted) {
         if (category == recommendedFilms || category == recommendedCategories) {
           await _handleRecommendedFilm(category, index);
@@ -182,8 +188,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Błąd przy otwieraniu filmu: $e"))
-        );
+            SnackBar(content: Text("Błąd przy otwieraniu filmu: $e")));
       }
     }
   }
@@ -192,11 +197,14 @@ class _HomePageState extends State<HomePage> {
     return _cachedResponse?.getFilms(category)?[index];
   }
 
-  Future<void> _handleRecommendedFilm(final String category, final int index) async {
-    final updatedResponse = await Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
+  Future<void> _handleRecommendedFilm(
+      final String category, final int index) async {
+    final updatedResponse =
+        await Provider.of<FilmanNotifier>(context, listen: false)
+            .getFilmanPage();
     _cachedResponse = updatedResponse;
     final film = updatedResponse.getFilms(category)?[index];
-    
+
     if (film != null && mounted) {
       await _navigateToFilm(film);
       if (mounted) {
@@ -217,7 +225,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildFilmCard(final BuildContext context, final Film film, final String category, final int index) {
+  Widget _buildFilmCard(final BuildContext context, final Film film,
+      final String category, final int index) {
     return Focus(
       focusNode: _focusNodes[category]?[index],
       onFocusChange: (final hasFocus) {
@@ -235,7 +244,9 @@ class _HomePageState extends State<HomePage> {
         return KeyEventResult.handled;
       },
       child: AnimatedScale(
-        scale: _focusNodes[category]?[index].hasFocus == true && _isActive ? 1.1 : 1.0,
+        scale: _focusNodes[category]?[index].hasFocus == true && _isActive
+            ? 1.1
+            : 1.0,
         duration: const Duration(milliseconds: 200),
         child: Container(
           width: 116,
@@ -275,10 +286,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCategorySection(final BuildContext context, final String category, final HomePageResponse data, final int categoryIndex) {
+  Widget _buildCategorySection(
+      final BuildContext context,
+      final String category,
+      final HomePageResponse data,
+      final int categoryIndex) {
     final films = data.getFilms(category);
     if (films == null || films.isEmpty) return const SizedBox.shrink();
-    
+
     return FocusScope(
       node: _categoryScopeNodes[categoryIndex],
       child: Padding(
@@ -291,8 +306,8 @@ class _HomePageState extends State<HomePage> {
               child: Text(
                 category,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
             SizedBox(
@@ -333,11 +348,12 @@ class _HomePageState extends State<HomePage> {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          
+
           if (snapshot.hasError) {
             return ErrorHandling(
               error: snapshot.error!,
-              onLogin: (final auth) => setState(() => homePageLoader = _loadHomePage()),
+              onLogin: (final auth) =>
+                  setState(() => homePageLoader = _loadHomePage()),
             );
           }
 

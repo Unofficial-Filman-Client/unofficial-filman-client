@@ -8,14 +8,13 @@ import "package:open_file/open_file.dart";
 import "package:package_info_plus/package_info_plus.dart";
 import "package:path_provider/path_provider.dart";
 import "package:unofficial_filman_client/utils/navigation_service.dart";
-import "package:url_launcher/url_launcher.dart";
 import "package:version/version.dart";
 import "package:permission_handler/permission_handler.dart";
 
 Future<void> checkForUpdates() async {
   final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
-    "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
+    "https://api.github.com/repos/Unofficial-Filman-Client/unofficial-filman-client-tv/releases/latest",
   );
 
   final Version currentVersion = Version.parse(packageInfo.version);
@@ -36,49 +35,24 @@ Future<void> checkForUpdates() async {
               onPressed: () => Navigator.pop(context),
               child: const Text("Może później"),
             ),
-            Platform.isAndroid
-                ? TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      downloadAndInstallApk(response, (final e) {
-                        ScaffoldMessenger.of(
-                                NavigationService.navigatorKey.currentContext!)
-                            .showSnackBar(
-                          SnackBar(
-                            content: Text(e.toString()),
-                            dismissDirection: DismissDirection.horizontal,
-                            behavior: SnackBarBehavior.floating,
-                            showCloseIcon: true,
-                          ),
-                        );
-                      });
-                    },
-                    child: const Text("Aktualizuj"),
-                  )
-                : TextButton(
-                    onPressed: () async {
-                      final url = Uri.parse(
-                        "https://github.com/majusss/unofficial-filman-flutter/releases/latest",
-                      );
-                      if (!await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      )) {
-                        ScaffoldMessenger.of(
-                                NavigationService.navigatorKey.currentContext!)
-                            .showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text("Nie można otworzyć linku w przeglądarce"),
-                            dismissDirection: DismissDirection.horizontal,
-                            behavior: SnackBarBehavior.floating,
-                            showCloseIcon: true,
-                          ),
-                        );
-                      }
-                    },
-                    child: const Text("Przejdź do wydania"),
-                  ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                downloadAndInstallApk(response, (final e) {
+                  ScaffoldMessenger.of(
+                          NavigationService.navigatorKey.currentContext!)
+                      .showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      dismissDirection: DismissDirection.horizontal,
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                    ),
+                  );
+                });
+              },
+              child: const Text("Aktualizuj"),
+            )
           ],
         );
       },

@@ -51,7 +51,8 @@ class _FilmScreenState extends State<FilmScreen> {
         : context.read<FilmanNotifier>().getFilmDetails(widget.url);
   }
 
-  Widget _buildActionButton(final IconData icon, final String label, final bool hasFocus) {
+  Widget _buildActionButton(
+      final IconData icon, final String label, final bool hasFocus) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 50,
@@ -145,7 +146,7 @@ class _FilmScreenState extends State<FilmScreen> {
       return;
     }
 
-    final (link, quality) = await getUserSelectedPreferences(context, film.links!);
+    final (link, quality) = await getUserSelectedPreferences(film.links!);
     if (link == null || quality == null) {
       return;
     }
@@ -182,10 +183,12 @@ class _FilmScreenState extends State<FilmScreen> {
     final isDownloading = downloadNotifier.downloading
         .any((final element) => element.film.url == film.url);
 
-    final icon =
-        isDownloading ? Icons.downloading : (downloaded != null ? Icons.save : Icons.download);
-    final label =
-        isDownloading ? "Pobieranie..." : (downloaded != null ? "Zapisane" : "Pobierz");
+    final icon = isDownloading
+        ? Icons.downloading
+        : (downloaded != null ? Icons.save : Icons.download);
+    final label = isDownloading
+        ? "Pobieranie..."
+        : (downloaded != null ? "Zapisane" : "Pobierz");
 
     return _buildActionButton(icon, label, hasFocus);
   }
@@ -306,8 +309,8 @@ class _FilmScreenState extends State<FilmScreen> {
             const SizedBox(height: 12),
             Consumer<WatchedNotifier>(
               builder: (final context, final watchedNotifier, final _) {
-                final watched = watchedNotifier.films
-                    .firstWhereOrNull((final e) => e.filmDetails.url == widget.url);
+                final watched = watchedNotifier.films.firstWhereOrNull(
+                    (final e) => e.filmDetails.url == widget.url);
                 return watched != null
                     ? LinearProgressIndicator(value: watched.watchedPercentage)
                     : const SizedBox();
@@ -331,7 +334,8 @@ class _FilmScreenState extends State<FilmScreen> {
           if (snapshot.hasError) {
             return ErrorHandling(
               error: snapshot.error!,
-              onLogin: (final response) => Navigator.of(context).pushReplacement(
+              onLogin: (final response) =>
+                  Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                   builder: (final context) => FilmScreen(
                     url: widget.url,

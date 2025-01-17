@@ -8,7 +8,6 @@ import "package:unofficial_filman_client/notifiers/download.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/download.dart";
-import "package:unofficial_filman_client/utils/navigation_service.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 
 class OfflinePage extends StatefulWidget {

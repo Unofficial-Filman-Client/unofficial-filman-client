@@ -54,10 +54,10 @@ Future<dynamic> _showSelectionDialog(final List items, final String title) {
 }
 
 Future<(Language?, Quality?)> getUserSelectedPreferences(
-  final BuildContext context,
   final List<MediaLink> directs,
   /*[final bool supportm3u8 = true]*/
 ) async {
+  final context = NavigationService.navigatorKey.currentContext!;
   // directs.removeWhere((final link) => link.url.contains(".m3u8") && !supportm3u8);
 
   final List<Language> languages = await _getAvailableLanguages(directs);
@@ -74,7 +74,6 @@ Future<(Language?, Quality?)> getUserSelectedPreferences(
       }
     } else {
       lang = await _showSelectionDialog(
-        context,
         languages,
         "Wybierz język",
       );

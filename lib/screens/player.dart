@@ -65,7 +65,8 @@ class FilmanPlayer extends StatefulWidget {
 
 enum SeekDirection { forward, backward, up, down }
 
-class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderStateMixin {
+class _FilmanPlayerState extends State<FilmanPlayer>
+    with SingleTickerProviderStateMixin {
   late final Player _player;
   late final VideoController _controller;
   late final StreamSubscription<Duration> _positionSubscription;
@@ -88,9 +89,10 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   Timer? _seekTimer;
   static const int maxSeekSpeed = 60;
   bool _isInitialOverlay = true;
-  
+
   int _selectedControlIndex = 1;
-  final List<GlobalKey> _controlKeys = List.generate(5, (final _) => GlobalKey());
+  final List<GlobalKey> _controlKeys =
+      List.generate(5, (final _) => GlobalKey());
 
   late FilmDetails _filmDetails;
   FilmDetails? _parentDetails;
@@ -117,7 +119,7 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
     _initMediaKit();
     _initSubscriptions();
     _initPlayer();
-    
+
     super.initState();
   }
 
@@ -129,7 +131,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   }
 
   void _initSubscriptions() {
-    _positionSubscription = _controller.player.stream.position.listen((final position) {
+    _positionSubscription =
+        _controller.player.stream.position.listen((final position) {
       if (widget.startFrom != 0) {
         if (position.inSeconds != 0) {
           setState(() => _position = position);
@@ -137,9 +140,9 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
       } else {
         setState(() => _position = position);
       }
-      
-      if (_duration.inSeconds > 0 && 
-          position.inSeconds >= _duration.inSeconds - 1 && 
+
+      if (_duration.inSeconds > 0 &&
+          position.inSeconds >= _duration.inSeconds - 1 &&
           (_nextEpisode != null || _nextDwonloaded != null)) {
         setState(() {
           _isOverlayVisible = true;
@@ -148,7 +151,8 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
       }
     });
 
-    _durationSubscription = _controller.player.stream.duration.listen((final duration) {
+    _durationSubscription =
+        _controller.player.stream.duration.listen((final duration) {
       if (duration.inSeconds > widget.savedDuration) {
         setState(() {
           _duration = duration;
@@ -168,52 +172,57 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
       });
     });
 
-    _playingSubscription = _controller.player.stream.playing.listen((final playing) {
+    _playingSubscription =
+        _controller.player.stream.playing.listen((final playing) {
       setState(() {
         _isPlaying = playing;
         if (_isInitialOverlay && playing) {
           _isInitialOverlay = false;
           if (!_isSeekingForward && !_isSeekingBackward) {
             _initOverlayTimer();
-        }
+          }
         }
       });
     });
 
-    _bufferingSubscription = _controller.player.stream.buffering.listen((final buffering) {
-    setState(() => _isBuffering = buffering);
-    
-    if (!buffering && _isPlaying && !_isSeekingForward && !_isSeekingBackward) {
-      _initOverlayTimer();
-    }
-  });
-}
+    _bufferingSubscription =
+        _controller.player.stream.buffering.listen((final buffering) {
+      setState(() => _isBuffering = buffering);
 
-  void _initOverlayTimer() {
-  _overlayTimer?.cancel();
-  
-  if (_isPlaying && 
-      !_isBuffering && 
-      !_userInteracting && 
-      !_isSeekingForward && 
-      !_isSeekingBackward &&
-      _isOverlayVisible) {
-    _overlayTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted && 
-          _isPlaying && 
-          !_isBuffering && 
-          !_userInteracting && 
-          !_isSeekingForward && 
+      if (!buffering &&
+          _isPlaying &&
+          !_isSeekingForward &&
           !_isSeekingBackward) {
-        setState(() {
-          _isOverlayVisible = false;
-          _selectedControlIndex = 1;
-        });
-        _overlayAnimationController.reverse();
+        _initOverlayTimer();
       }
     });
   }
-}
+
+  void _initOverlayTimer() {
+    _overlayTimer?.cancel();
+
+    if (_isPlaying &&
+        !_isBuffering &&
+        !_userInteracting &&
+        !_isSeekingForward &&
+        !_isSeekingBackward &&
+        _isOverlayVisible) {
+      _overlayTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted &&
+            _isPlaying &&
+            !_isBuffering &&
+            !_userInteracting &&
+            !_isSeekingForward &&
+            !_isSeekingBackward) {
+          setState(() {
+            _isOverlayVisible = false;
+            _selectedControlIndex = 1;
+          });
+          _overlayAnimationController.reverse();
+        }
+      });
+    }
+  }
 
   Future<void> _initPlayer() async {
     if (widget.filmDetails == null) {
@@ -271,7 +280,6 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
     }
   }
 
-
   void _saveWatched() {
     if (_duration.inSeconds == 0) return;
     if (_parentDetails != null && _filmDetails.isEpisode == true) {
@@ -327,44 +335,47 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   }
 
   void _handleDirectionalNavigation(final SeekDirection direction) {
-  if (!_isOverlayVisible) {
-    setState(() => _isOverlayVisible = true);
-    _overlayAnimationController.forward();
-    _initOverlayTimer();
-    return;
+    if (!_isOverlayVisible) {
+      setState(() => _isOverlayVisible = true);
+      _overlayAnimationController.forward();
+      _initOverlayTimer();
+      return;
+    }
+
+    switch (direction) {
+      case SeekDirection.forward:
+        setState(() {
+          _selectedControlIndex = (_selectedControlIndex + 1).clamp(
+              0, _nextEpisode != null || _nextDwonloaded != null ? 4 : 3);
+        });
+        break;
+      case SeekDirection.backward:
+        setState(() {
+          _selectedControlIndex = (_selectedControlIndex - 1).clamp(
+              0, _nextEpisode != null || _nextDwonloaded != null ? 4 : 3);
+        });
+        break;
+      case SeekDirection.up:
+        setState(() {
+          if (_selectedControlIndex >= 0 && _selectedControlIndex <= 2) {
+            _selectedControlIndex = 3;
+          } else if (_selectedControlIndex == 3 &&
+              (_nextEpisode != null || _nextDwonloaded != null)) {
+            _selectedControlIndex = 4;
+          }
+        });
+        break;
+      case SeekDirection.down:
+        setState(() {
+          if (_selectedControlIndex == 4) {
+            _selectedControlIndex = 3;
+          } else if (_selectedControlIndex == 3) {
+            _selectedControlIndex = 1;
+          }
+        });
+        break;
+    }
   }
-  
-  switch (direction) {
-    case SeekDirection.forward:
-      setState(() {
-        _selectedControlIndex = (_selectedControlIndex + 1).clamp(0, _nextEpisode != null || _nextDwonloaded != null ? 4 : 3);
-      });
-      break;
-    case SeekDirection.backward:
-      setState(() {
-        _selectedControlIndex = (_selectedControlIndex - 1).clamp(0, _nextEpisode != null || _nextDwonloaded != null ? 4 : 3);
-      });
-      break;
-    case SeekDirection.up:
-      setState(() {
-        if (_selectedControlIndex >= 0 && _selectedControlIndex <= 2) {
-          _selectedControlIndex = 3;
-        } else if (_selectedControlIndex == 3 && (_nextEpisode != null || _nextDwonloaded != null)) {
-          _selectedControlIndex = 4;
-        }
-      });
-      break;
-    case SeekDirection.down:
-      setState(() {
-        if (_selectedControlIndex == 4) {
-          _selectedControlIndex = 3;
-        } else if (_selectedControlIndex == 3) {
-          _selectedControlIndex = 1;
-        }
-      });
-      break;
-  }
-}
 
   @override
   void dispose() {
@@ -381,138 +392,140 @@ class _FilmanPlayerState extends State<FilmanPlayer> with SingleTickerProviderSt
   }
 
   void _handlePlayPause() {
-  _saveWatched();
-  _player.playOrPause();
-  
-  setState(() {
-    _isPlaying = !_isPlaying;
-    _isOverlayVisible = true;
-  });
-  _overlayAnimationController.forward();
-  
-  if (_isPlaying) {
-    _initOverlayTimer();
-  } else {
-    _overlayTimer?.cancel();
+    _saveWatched();
+    _player.playOrPause();
+
+    setState(() {
+      _isPlaying = !_isPlaying;
+      _isOverlayVisible = true;
+    });
+    _overlayAnimationController.forward();
+
+    if (_isPlaying) {
+      _initOverlayTimer();
+    } else {
+      _overlayTimer?.cancel();
+    }
   }
-}
 
   Widget _buildMainStack(final BuildContext context) {
-  return Stack(
-    children: [
-      Video(
-        controller: _controller,
-        controls: NoVideoControls,
-        fit: BoxFit.fitWidth,
-      ),
-      FadeTransition(
-        opacity: _overlayAnimationController,
-        child: Container(
-          color: Colors.black.withOpacity(0.4),
+    return Stack(
+      children: [
+        Video(
+          controller: _controller,
+          controls: NoVideoControls,
+          fit: BoxFit.fitWidth,
         ),
-      ),
-      GestureDetector(
-        onTap: () {
-          setState(() {
-            _isOverlayVisible = !_isOverlayVisible;
-          });
-          if (_isOverlayVisible) {
-            _overlayAnimationController.forward();
-            _initOverlayTimer();
-          } else {
-            _overlayAnimationController.reverse();
-          }
-        },
-        child: Container(
-          color: Colors.transparent,
-          child: SafeArea(
-            child: _buildOverlay(context),
+        FadeTransition(
+          opacity: _overlayAnimationController,
+          child: Container(
+            color: Colors.black.withOpacity(0.4),
           ),
         ),
-      ),
-    ],
-  );
-}
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isOverlayVisible = !_isOverlayVisible;
+            });
+            if (_isOverlayVisible) {
+              _overlayAnimationController.forward();
+              _initOverlayTimer();
+            } else {
+              _overlayAnimationController.reverse();
+            }
+          },
+          child: Container(
+            color: Colors.transparent,
+            child: SafeArea(
+              child: _buildOverlay(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
-Widget build(final BuildContext context) {
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+  Widget build(final BuildContext context) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations(
+        [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
 
-  return Scaffold(
-      body: Focus(
-          autofocus: true,
-          onKeyEvent: (final FocusNode node, final KeyEvent event) {
-            if (event is KeyDownEvent) {
-              if (event.logicalKey == LogicalKeyboardKey.select ||
-                  event.logicalKey == LogicalKeyboardKey.enter) {
-                if (_isOverlayVisible) {
-                  switch (_selectedControlIndex) {
-                    case 0:
-                      _handleSeekBackwardStart();
-                      break;
-                    case 1:
-                      _handlePlayPause();
-                      break;
-                    case 2:
-                      _handleSeekForwardStart();
-                      break;
-                    case 3:
-                      Navigator.of(context).pop();
-                      break;
-                    case 4:
-                      _saveWatched();
-                      if (_nextDwonloaded != null) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (final context) => FilmanPlayer.fromDownload(
-                              downloaded: _nextDwonloaded,
-                              parentDownloaded: widget.parentDownloaded,
+    return Scaffold(
+        body: Focus(
+            autofocus: true,
+            onKeyEvent: (final FocusNode node, final KeyEvent event) {
+              if (event is KeyDownEvent) {
+                if (event.logicalKey == LogicalKeyboardKey.select ||
+                    event.logicalKey == LogicalKeyboardKey.enter) {
+                  if (_isOverlayVisible) {
+                    switch (_selectedControlIndex) {
+                      case 0:
+                        _handleSeekBackwardStart();
+                        break;
+                      case 1:
+                        _handlePlayPause();
+                        break;
+                      case 2:
+                        _handleSeekForwardStart();
+                        break;
+                      case 3:
+                        Navigator.of(context).pop();
+                        break;
+                      case 4:
+                        _saveWatched();
+                        if (_nextDwonloaded != null) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (final context) =>
+                                  FilmanPlayer.fromDownload(
+                                downloaded: _nextDwonloaded,
+                                parentDownloaded: widget.parentDownloaded,
+                              ),
                             ),
-                          ),
-                        );
-                      } else if (_nextEpisode != null) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (final context) => FilmanPlayer.fromDetails(
-                              filmDetails: _nextEpisode,
-                              parentDetails: _parentDetails,
+                          );
+                        } else if (_nextEpisode != null) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (final context) =>
+                                  FilmanPlayer.fromDetails(
+                                filmDetails: _nextEpisode,
+                                parentDetails: _parentDetails,
+                              ),
                             ),
-                          ),
-                        );
-                      }
-                      break;
+                          );
+                        }
+                        break;
+                    }
+                  } else {
+                    setState(() => _isOverlayVisible = true);
+                    _overlayAnimationController.forward();
+                    _initOverlayTimer();
                   }
-                } else {
-                  setState(() => _isOverlayVisible = true);
-                  _overlayAnimationController.forward();
-                  _initOverlayTimer();
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                  _handleDirectionalNavigation(SeekDirection.backward);
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                  _handleDirectionalNavigation(SeekDirection.forward);
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                  _handleDirectionalNavigation(SeekDirection.up);
+                  return KeyEventResult.handled;
+                } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                  _handleDirectionalNavigation(SeekDirection.down);
+                  return KeyEventResult.handled;
                 }
-                return KeyEventResult.handled;
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                _handleDirectionalNavigation(SeekDirection.backward);
-                return KeyEventResult.handled;
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-                _handleDirectionalNavigation(SeekDirection.forward);
-                return KeyEventResult.handled;
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                _handleDirectionalNavigation(SeekDirection.up);
-                return KeyEventResult.handled;
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                _handleDirectionalNavigation(SeekDirection.down);
-                return KeyEventResult.handled;
+              } else if (event is KeyUpEvent) {
+                if (_isSeekingForward || _isSeekingBackward) {
+                  _handleSeekStop();
+                  return KeyEventResult.handled;
+                }
               }
-            } else if (event is KeyUpEvent) {
-              if (_isSeekingForward || _isSeekingBackward) {
-                _handleSeekStop();
-                return KeyEventResult.handled;
-              }
-            }
-            return KeyEventResult.ignored;
-          },
-          child: _buildMainStack(context)));
-}
+              return KeyEventResult.ignored;
+            },
+            child: _buildMainStack(context)));
+  }
 
   Widget _buildOverlay() {
     return Stack(
@@ -532,7 +545,7 @@ Widget build(final BuildContext context) {
     );
   }
 
-void _startUserInteraction() {
+  void _startUserInteraction() {
     setState(() {
       _userInteracting = true;
       _isOverlayVisible = true;
@@ -541,11 +554,11 @@ void _startUserInteraction() {
     _overlayTimer?.cancel();
   }
 
-void _endUserInteraction() {
+  void _endUserInteraction() {
     setState(() {
       _userInteracting = false;
     });
-    
+
     if (_isPlaying && !_isSeekingForward && !_isSeekingBackward) {
       _initOverlayTimer();
     }
@@ -570,7 +583,7 @@ void _endUserInteraction() {
     return const SizedBox();
   }
 
-void _handleSeekForwardStart() {
+  void _handleSeekForwardStart() {
     _overlayTimer?.cancel();
     setState(() {
       _isSeekingForward = true;
@@ -578,7 +591,7 @@ void _handleSeekForwardStart() {
       _isOverlayVisible = true;
     });
     _overlayAnimationController.forward();
-    
+
     _seekRelative(_seekSpeed);
 
     _seekTimer?.cancel();
@@ -595,7 +608,7 @@ void _handleSeekForwardStart() {
       _isOverlayVisible = true;
     });
     _overlayAnimationController.forward();
-    
+
     _seekRelative(-_seekSpeed);
 
     _seekTimer?.cancel();
@@ -608,11 +621,12 @@ void _handleSeekForwardStart() {
     _seekTimer?.cancel();
     _seekSpeedTimer?.cancel();
     _overlayTimer?.cancel();
-    
-    _seekTimer = Timer.periodic(const Duration(milliseconds: 200), (final timer) {
+
+    _seekTimer =
+        Timer.periodic(const Duration(milliseconds: 200), (final timer) {
       _seekRelative(forward ? _seekSpeed : -_seekSpeed);
     });
-    
+
     _seekSpeedTimer = Timer.periodic(const Duration(seconds: 1), (final timer) {
       setState(() {
         _seekSpeed = min(_seekSpeed * 2, maxSeekSpeed);
@@ -621,293 +635,295 @@ void _handleSeekForwardStart() {
   }
 
   void _handleSeekStop() {
-  _seekTimer?.cancel();
-  _seekSpeedTimer?.cancel();
-  
-  setState(() {
-    _isSeekingForward = false;
-    _isSeekingBackward = false;
-    _seekSpeed = 10;
-  });
+    _seekTimer?.cancel();
+    _seekSpeedTimer?.cancel();
 
-  if (!_isBuffering) {
-    _initOverlayTimer();
+    setState(() {
+      _isSeekingForward = false;
+      _isSeekingBackward = false;
+      _seekSpeed = 10;
+    });
+
+    if (!_isBuffering) {
+      _initOverlayTimer();
+    }
   }
-}
 
   Widget _buildTopBar() {
-  return Align(
-    alignment: Alignment.topCenter,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      width: double.infinity,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.7),
-            Colors.transparent,
-          ],
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.7),
+              Colors.transparent,
+            ],
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: MouseRegion(
-              child: AnimatedScale(
-                scale: _selectedControlIndex == 3 ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: IconButton(
-                  key: _controlKeys[3],
-                  focusNode: FocusNode(),
-                  icon: const Icon(Icons.arrow_back),
-                  style: IconButton.styleFrom(
-                    backgroundColor: _selectedControlIndex == 3
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.transparent,
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 3 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: IconButton(
+                    key: _controlKeys[3],
+                    focusNode: FocusNode(),
+                    icon: const Icon(Icons.arrow_back),
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedControlIndex == 3
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
+                    ),
+                    onPressed: () {
+                      _saveWatched();
+                      Navigator.of(context).pop();
+                    },
                   ),
-                  onPressed: () {
-                    _saveWatched();
-                    Navigator.of(context).pop();
-                  },
                 ),
               ),
             ),
-          ),
-          Center(
-            child: Consumer<SettingsNotifier>(
-              builder: (final context, final settings, final child) {
-                try {
-                  final displayTitle =
-                      getDisplayTitle(_filmDetails.title, settings);
-                  return Text(
-                    _filmDetails.isEpisode == true
-                        ? "$displayTitle - ${_filmDetails.seasonEpisodeTag}"
-                        : displayTitle,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  );
-                } catch (err) {
-                  return const SizedBox();
-                }
-              },
+            Center(
+              child: Consumer<SettingsNotifier>(
+                builder: (final context, final settings, final child) {
+                  try {
+                    final displayTitle =
+                        getDisplayTitle(_filmDetails.title, settings);
+                    return Text(
+                      _filmDetails.isEpisode == true
+                          ? "$displayTitle - ${_filmDetails.seasonEpisodeTag}"
+                          : displayTitle,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    );
+                  } catch (err) {
+                    return const SizedBox();
+                  }
+                },
+              ),
             ),
-          ),
-          if (_nextEpisode != null || _nextDwonloaded != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: MouseRegion(
-                child: AnimatedScale(
-                  scale: _selectedControlIndex == 4 ? 1.1 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 1.0,
+            if (_nextEpisode != null || _nextDwonloaded != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: MouseRegion(
+                  child: AnimatedScale(
+                    scale: _selectedControlIndex == 4 ? 1.1 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      child: TextButton.icon(
+                        key: _controlKeys[4],
+                        focusNode: FocusNode(),
+                        icon: const Icon(Icons.skip_next, color: Colors.white),
+                        label: Text(
+                          _nextDwonloaded != null
+                              ? "${_nextDwonloaded!.film.seasonEpisodeTag}"
+                              : "${_nextEpisode?.seasonEpisodeTag}",
+                          style: const TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: _selectedControlIndex == 4
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () {
+                          _saveWatched();
+                          if (_nextDwonloaded != null) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (final context) =>
+                                    FilmanPlayer.fromDownload(
+                                  downloaded: _nextDwonloaded,
+                                  parentDownloaded: widget.parentDownloaded,
+                                ),
+                              ),
+                            );
+                          } else if (_nextEpisode != null) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (final context) =>
+                                    FilmanPlayer.fromDetails(
+                                  filmDetails: _nextEpisode,
+                                  parentDetails: _parentDetails,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
                     ),
-                    child: TextButton.icon(
-                      key: _controlKeys[4],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterControls() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              MouseRegion(
+                onEnter: (final _) => _startUserInteraction(),
+                onExit: (final _) => _endUserInteraction(),
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 0 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: GestureDetector(
+                    onTapDown: (final _) => _handleSeekBackwardStart(),
+                    onTapUp: (final _) {
+                      _handleSeekStop();
+                      _endUserInteraction();
+                    },
+                    onTapCancel: () {
+                      _handleSeekStop();
+                      _endUserInteraction();
+                    },
+                    child: IconButton(
+                      key: _controlKeys[0],
                       focusNode: FocusNode(),
-                      icon: const Icon(Icons.skip_next, color: Colors.white),
-                      label: Text(
-                        _nextDwonloaded != null
-                            ? "${_nextDwonloaded!.film.seasonEpisodeTag}"
-                            : "${_nextEpisode?.seasonEpisodeTag}",
-                        style: const TextStyle(color: Colors.white),
-                        overflow: TextOverflow.ellipsis,
+                      iconSize: 40,
+                      icon: Icon(
+                        Icons.replay_10,
+                        color: _isSeekingBackward
+                            ? Theme.of(context).primaryColor
+                            : Colors.white,
                       ),
-                      style: TextButton.styleFrom(
-                        backgroundColor: _selectedControlIndex == 4
+                      style: IconButton.styleFrom(
+                        backgroundColor: _selectedControlIndex == 0
                             ? Colors.white.withOpacity(0.2)
                             : Colors.transparent,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
                       ),
                       onPressed: () {
-                        _saveWatched();
-                        if (_nextDwonloaded != null) {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (final context) =>
-                                  FilmanPlayer.fromDownload(
-                                downloaded: _nextDwonloaded,
-                                parentDownloaded: widget.parentDownloaded,
-                              ),
-                            ),
-                          );
-                        } else if (_nextEpisode != null) {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (final context) => FilmanPlayer.fromDetails(
-                                filmDetails: _nextEpisode,
-                                parentDetails: _parentDetails,
-                              ),
-                            ),
-                          );
+                        _overlayTimer?.cancel();
+                        _seekRelative(-10);
+                        if (_isPlaying) {
+                          _initOverlayTimer();
                         }
                       },
                     ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 32),
+              MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 1 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: IconButton(
+                    key: _controlKeys[1],
+                    focusNode: FocusNode(),
+                    iconSize: 56,
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedControlIndex == 1
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
+                    ),
+                    icon: Icon(
+                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                    ),
+                    onPressed: _handlePlayPause,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 32),
+              MouseRegion(
+                child: AnimatedScale(
+                  scale: _selectedControlIndex == 2 ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: GestureDetector(
+                    onTapDown: (final _) => _handleSeekForwardStart(),
+                    onTapUp: (final _) => _handleSeekStop(),
+                    onTapCancel: _handleSeekStop,
+                    child: IconButton(
+                      key: _controlKeys[2],
+                      focusNode: FocusNode(),
+                      iconSize: 40,
+                      style: IconButton.styleFrom(
+                        backgroundColor: _selectedControlIndex == 2
+                            ? Colors.white.withOpacity(0.2)
+                            : Colors.transparent,
+                      ),
+                      icon: Icon(
+                        Icons.forward_10,
+                        color: _isSeekingForward
+                            ? Theme.of(context).primaryColor
+                            : Colors.white,
+                      ),
+                      onPressed: () {
+                        _overlayTimer?.cancel();
+                        setState(() {
+                          _isOverlayVisible = true;
+                        });
+                        _overlayAnimationController.forward();
+
+                        _seekRelative(10);
+
+                        if (_isPlaying) {
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            if (mounted) {
+                              _initOverlayTimer();
+                            }
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-    ),
-  );
-}
-
-  Widget _buildCenterControls() {
-  return Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            MouseRegion(
-              onEnter: (final _) => _startUserInteraction(),
-              onExit: (final _) => _endUserInteraction(),
-              child: AnimatedScale(
-                scale: _selectedControlIndex == 0 ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: GestureDetector(
-                  onTapDown: (final _) => _handleSeekBackwardStart(),
-                  onTapUp: (final _) {
-                    _handleSeekStop();
-                    _endUserInteraction();
-                  },
-                  onTapCancel: () {
-                    _handleSeekStop();
-                    _endUserInteraction();
-                  },
-                  child: IconButton(
-                    key: _controlKeys[0],
-                    focusNode: FocusNode(),
-                    iconSize: 40,
-                    icon: Icon(
-                      Icons.replay_10,
-                      color: _isSeekingBackward
-                          ? Theme.of(context).primaryColor
-                          : Colors.white,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: _selectedControlIndex == 0
-                          ? Colors.white.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
-                    onPressed: () {
-                      _overlayTimer?.cancel();
-                      _seekRelative(-10);
-                      if (_isPlaying) {
-                        _initOverlayTimer();
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 32),
-            MouseRegion(
-              child: AnimatedScale(
-                scale: _selectedControlIndex == 1 ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: IconButton(
-                  key: _controlKeys[1],
-                  focusNode: FocusNode(),
-                  iconSize: 56,
-                  style: IconButton.styleFrom(
-                    backgroundColor: _selectedControlIndex == 1
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.transparent,
-                  ),
-                  icon: Icon(
-                    _isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: Colors.white,
-                  ),
-                  onPressed: _handlePlayPause,
-                ),
-              ),
-            ),
-            const SizedBox(width: 32),
-            MouseRegion(
-              child: AnimatedScale(
-                scale: _selectedControlIndex == 2 ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: GestureDetector(
-                  onTapDown: (final _) => _handleSeekForwardStart(),
-                  onTapUp: (final _) => _handleSeekStop(),
-                  onTapCancel: _handleSeekStop,
-                  child: IconButton(
-                    key: _controlKeys[2],
-                    focusNode: FocusNode(),
-                    iconSize: 40,
-                    style: IconButton.styleFrom(
-                      backgroundColor: _selectedControlIndex == 2
-                          ? Colors.white.withOpacity(0.2)
-                          : Colors.transparent,
-                    ),
-                    icon: Icon(
-                      Icons.forward_10,
-                      color: _isSeekingForward
-                          ? Theme.of(context).primaryColor
-                          : Colors.white,
-                    ),
-                    onPressed: () {
-                      _overlayTimer?.cancel();
-                      setState(() {
-                        _isOverlayVisible = true;
-                      });
-                      _overlayAnimationController.forward();
-
-                      _seekRelative(10);
-
-                      if (_isPlaying) {
-                        Future.delayed(const Duration(milliseconds: 200), () {
-                          if (mounted) {
-                            _initOverlayTimer();
-                          }
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   void _seekRelative(final int seconds) {
-  _overlayTimer?.cancel();
-  setState(() {
-    _isOverlayVisible = true;
-  });
-  _overlayAnimationController.forward();
-  
-  final newPosition = max(0, min(_position.inSeconds + seconds, _duration.inSeconds));
-  _player.seek(Duration(seconds: newPosition));
-}
+    _overlayTimer?.cancel();
+    setState(() {
+      _isOverlayVisible = true;
+    });
+    _overlayAnimationController.forward();
 
+    final newPosition =
+        max(0, min(_position.inSeconds + seconds, _duration.inSeconds));
+    _player.seek(Duration(seconds: newPosition));
+  }
 
   Widget _buildBottomBar() {
-    final timeText = '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}';
-    final durationText = '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}';
-    
+    final timeText =
+        '${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}';
+    final durationText =
+        '${_duration.inMinutes}:${(_duration.inSeconds % 60).toString().padLeft(2, '0')}';
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
@@ -942,8 +958,8 @@ void _handleSeekForwardStart() {
                     ),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
-                      widthFactor: _duration.inSeconds > 0 
-                          ? _position.inSeconds / _duration.inSeconds 
+                      widthFactor: _duration.inSeconds > 0
+                          ? _position.inSeconds / _duration.inSeconds
                           : 0,
                       child: Container(
                         decoration: BoxDecoration(

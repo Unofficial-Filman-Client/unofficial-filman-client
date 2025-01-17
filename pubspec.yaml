@@ -1,7 +1,7 @@
 name: unofficial_filman_client
 description: "This app allows you to browse, search, and watch movies and TV shows available on filman.cc."
 publish_to: "none"
-version: 1.5.6
+version: 1.5.1
 
 environment:
   sdk: ">=3.3.3 <4.0.0"
@@ -25,11 +25,9 @@ dependencies:
   provider: ^6.1.2
   share_plus: ^9.0.0
   shared_preferences: ^2.2.2
-  url_launcher: ^6.2.5
   version: ^3.0.2
   wakelock_plus: ^1.2.5
   fast_cached_network_image: ^1.2.9
-  flutter_inappwebview: ^6.0.0
   bonsoir: ^5.1.10
   cached_annotation: ^1.7.0
   device_info_plus: ^10.1.2
@@ -44,3 +42,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/logo.png

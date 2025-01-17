@@ -6,7 +6,6 @@ import "package:unofficial_filman_client/utils/title.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:provider/provider.dart";
-import "package:unofficial_filman_client/types/video_scrapers.dart";
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -210,7 +209,7 @@ class _ReorderLanguageScreenState extends State<ReorderLanguageScreen> {
         Provider.of<SettingsNotifier>(context, listen: false).preferredLanguages);
   }
 
-  void _moveItem(bool moveUp) {
+  void _moveItem(final bool moveUp) {
     setState(() {
       final index = _selectedIndex;
       if (moveUp && index > 0) {
@@ -234,37 +233,37 @@ class _ReorderLanguageScreenState extends State<ReorderLanguageScreen> {
         .setPreferredLanguages(_languages);
   }
 
-  void _handleKeyEvent(RawKeyEvent event) {
+  void _handleKeyEvent(final RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
       setState(() {
         if (_isEditMode) {
           switch (event.logicalKey.keyLabel) {
-            case 'Arrow Up':
+            case "Arrow Up":
               _moveItem(true);
               break;
-            case 'Arrow Down':
+            case "Arrow Down":
               _moveItem(false);
               break;
-            case 'Select':
-            case 'Enter':
-            case 'Back':
+            case "Select":
+            case "Enter":
+            case "Back":
               _isEditMode = false;
               break;
           }
         } else {
           switch (event.logicalKey.keyLabel) {
-            case 'Arrow Up':
+            case "Arrow Up":
               if (_selectedIndex > 0) {
                 _selectedIndex--;
               }
               break;
-            case 'Arrow Down':
+            case "Arrow Down":
               if (_selectedIndex < _languages.length - 1) {
                 _selectedIndex++;
               }
               break;
-            case 'Select':
-            case 'Enter':
+            case "Select":
+            case "Enter":
               _isEditMode = true;
               break;
           }
@@ -274,7 +273,7 @@ class _ReorderLanguageScreenState extends State<ReorderLanguageScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Kolejność języków"),
@@ -284,7 +283,7 @@ class _ReorderLanguageScreenState extends State<ReorderLanguageScreen> {
         onKey: _handleKeyEvent,
         child: ListView.builder(
           itemCount: _languages.length,
-          itemBuilder: (context, index) {
+          itemBuilder: (final context, final index) {
             final isSelected = index == _selectedIndex;
             final isEditing = isSelected && _isEditMode;
 

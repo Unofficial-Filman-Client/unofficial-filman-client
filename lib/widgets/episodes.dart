@@ -50,11 +50,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
 
   Future<void> _loadEpisode(final Episode episode) async {
     if (!mounted) return;
-    
+
     setState(() => loadingEpisodes.add(episode.episodeName));
 
     try {
-      final data = await context.read<FilmanNotifier>().getFilmDetails(episode.episodeUrl);
+      final data = await context
+          .read<FilmanNotifier>()
+          .getFilmDetails(episode.episodeUrl);
       if (!mounted) return;
       setState(() {
         episodeDetails[episode.episodeName] = data;
@@ -67,22 +69,26 @@ class _EpisodesModalState extends State<EpisodesModal> {
   }
 
   Future<void> _startLoadingEpisodes() async {
-    final downloadedSerial = context.read<DownloadNotifier>()
+    final downloadedSerial = context
+        .read<DownloadNotifier>()
         .downloadedSerials
         .firstWhereOrNull((final s) => s.serial.url == widget.filmDetails.url);
-    final savedSerial = context.read<WatchedNotifier>()
+    final savedSerial = context
+        .read<WatchedNotifier>()
         .serials
-        .firstWhereOrNull((final s) => s.filmDetails.url == widget.filmDetails.url);
+        .firstWhereOrNull(
+            (final s) => s.filmDetails.url == widget.filmDetails.url);
 
     for (Episode episode in seasons[selectedSeasonIndex].getEpisodes()) {
       if (!mounted) return;
 
       final watched = savedSerial?.episodes
-          .firstWhereOrNull((final e) => e.filmDetails.url == episode.episodeUrl)
-          ?.filmDetails ?? 
+              .firstWhereOrNull(
+                  (final e) => e.filmDetails.url == episode.episodeUrl)
+              ?.filmDetails ??
           downloadedSerial?.episodes
-          .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl)
-          ?.film;
+              .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl)
+              ?.film;
 
       if (watched != null) {
         if (!mounted) return;
@@ -102,27 +108,33 @@ class _EpisodesModalState extends State<EpisodesModal> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('${watched.inMinutes}:${(watched.inSeconds % 60).toString().padLeft(2, '0')}'),
+          Text(
+              '${watched.inMinutes}:${(watched.inSeconds % 60).toString().padLeft(2, '0')}'),
           const SizedBox(width: 5),
           Expanded(
-            child: LinearProgressIndicator(value: currentEpisode.watchedPercentage),
+            child: LinearProgressIndicator(
+                value: currentEpisode.watchedPercentage),
           ),
           const SizedBox(width: 5),
-          Text('${total.inMinutes}:${(total.inSeconds % 60).toString().padLeft(2, '0')}'),
+          Text(
+              '${total.inMinutes}:${(total.inSeconds % 60).toString().padLeft(2, '0')}'),
         ],
       ),
     );
   }
 
-  Widget _buildDownloadIcon(final BuildContext context, final FilmDetails filmDetails) {
-    final downloaded = context.read<DownloadNotifier>()
+  Widget _buildDownloadIcon(
+      final BuildContext context, final FilmDetails filmDetails) {
+    final downloaded = context
+        .read<DownloadNotifier>()
         .getEpisodeByUrl(widget.filmDetails, filmDetails.url);
-    final isDownloading = context.read<DownloadNotifier>()
+    final isDownloading = context
+        .read<DownloadNotifier>()
         .downloading
         .any((final e) => e.film.url == filmDetails.url);
 
     return IconButton(
-      icon: isDownloading 
+      icon: isDownloading
           ? const CircularProgressIndicator()
           : Icon(downloaded != null ? Icons.save : Icons.download),
       onPressed: () async {
@@ -130,23 +142,24 @@ class _EpisodesModalState extends State<EpisodesModal> {
           return;
         }
 
-        final (link, quality) = await getUserSelectedPreferences(context, filmDetails.links!);
+        final (link, quality) =
+            await getUserSelectedPreferences(filmDetails.links!);
         if (link == null || quality == null || !context.mounted) return;
 
         context.read<DownloadNotifier>().addFilmToDownload(
-          filmDetails,
-          link,
-          quality,
-          context.read<SettingsNotifier>(),
-          widget.filmDetails,
-        );
+              filmDetails,
+              link,
+              quality,
+              context.read<SettingsNotifier>(),
+              widget.filmDetails,
+            );
       },
     );
   }
 
   void _onSeasonSelected(final int index) {
     if (selectedSeasonIndex == index) return;
-    
+
     setState(() {
       selectedSeasonIndex = index;
       episodeDetails.clear();
@@ -200,11 +213,13 @@ class _EpisodesModalState extends State<EpisodesModal> {
   Widget _buildEpisodesList() {
     return Consumer<WatchedNotifier>(
       builder: (final context, final watchedNotifier, final _) {
-        final currentSerial = watchedNotifier.serials
-            .firstWhereOrNull((final s) => s.filmDetails.url == widget.filmDetails.url);
-        final downloadedSerial = context.watch<DownloadNotifier>()
+        final currentSerial = watchedNotifier.serials.firstWhereOrNull(
+            (final s) => s.filmDetails.url == widget.filmDetails.url);
+        final downloadedSerial = context
+            .watch<DownloadNotifier>()
             .downloadedSerials
-            .firstWhereOrNull((final s) => s.serial.url == widget.filmDetails.url);
+            .firstWhereOrNull(
+                (final s) => s.serial.url == widget.filmDetails.url);
 
         return ListView.builder(
           shrinkWrap: true,
@@ -212,16 +227,20 @@ class _EpisodesModalState extends State<EpisodesModal> {
           itemCount: seasons[selectedSeasonIndex].getEpisodes().length,
           itemBuilder: (final context, final index) {
             final episode = seasons[selectedSeasonIndex].getEpisodes()[index];
-            final currentEpisode = currentSerial?.episodes
-                .firstWhereOrNull((final e) => e.filmDetails.url == episode.episodeUrl && e.watchedInSec > 0);
+            final currentEpisode = currentSerial?.episodes.firstWhereOrNull(
+                (final e) =>
+                    e.filmDetails.url == episode.episodeUrl &&
+                    e.watchedInSec > 0);
             final downloadedEpisode = downloadedSerial?.episodes
-                .firstWhereOrNull((final e) => e.film.url == episode.episodeUrl);
-            
+                .firstWhereOrNull(
+                    (final e) => e.film.url == episode.episodeUrl);
+
             final isLoading = loadingEpisodes.contains(episode.episodeName);
             final details = episodeDetails[episode.episodeName];
 
             return ListTile(
-              autofocus: selectedSeasonIndex == 0 && episode.getEpisodeNumber() == 1,
+              autofocus:
+                  selectedSeasonIndex == 0 && episode.getEpisodeNumber() == 1,
               title: Row(
                 children: [
                   Text(
@@ -241,14 +260,17 @@ class _EpisodesModalState extends State<EpisodesModal> {
                         if (isLoading)
                           const LinearProgressIndicator()
                         else if (details != null)
-                          details.desc.isNotEmpty && details.desc != widget.filmDetails.desc
+                          details.desc.isNotEmpty &&
+                                  details.desc != widget.filmDetails.desc
                               ? Text(
                                   details.desc,
-                                  style: const TextStyle(fontSize: 12.0, color: Colors.grey),
+                                  style: const TextStyle(
+                                      fontSize: 12.0, color: Colors.grey),
                                 )
                               : const Text(
                                   "Brak opisu odcinka",
-                                  style: TextStyle(fontSize: 12.0, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 12.0, color: Colors.grey),
                                 ),
                         if (currentEpisode != null)
                           _buildProgressBar(currentEpisode),
@@ -267,7 +289,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                 if (details == null && !isLoading) {
                   await _loadEpisode(episode);
                 }
-                
+
                 if (!mounted) return;
                 final loadedDetails = episodeDetails[episode.episodeName];
                 if (loadedDetails == null) return;
