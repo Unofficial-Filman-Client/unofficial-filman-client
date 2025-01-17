@@ -1,7 +1,10 @@
 import "dart:async";
 
 import "package:flutter/material.dart";
+import "package:provider/provider.dart";
+import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
+import "package:unofficial_filman_client/utils/navigation_service.dart";
 
 Future<List<Language>> _getAvailableLanguages(
     final List<MediaLink> links) async {
@@ -11,6 +14,7 @@ Future<List<Language>> _getAvailableLanguages(
       languages.add(link.language);
     }
   }
+  languages.sort();
   return languages;
 }
 
@@ -28,10 +32,9 @@ Future<List<Quality>> _getAvaliableQualitiesForLanguage(
   return qualities;
 }
 
-Future<dynamic> _showSelectionDialog(
-    final BuildContext context, final List items, final String title) {
+Future<dynamic> _showSelectionDialog(final List items, final String title) {
   return showDialog(
-    context: context,
+    context: NavigationService.navigatorKey.currentContext!,
     barrierDismissible: false,
     builder: (final context) => AlertDialog(
       title: Text(title),
@@ -51,19 +54,31 @@ Future<dynamic> _showSelectionDialog(
 }
 
 Future<(Language?, Quality?)> getUserSelectedPreferences(
-    final BuildContext context, final List<MediaLink> directs,
-    [final bool supportm3u8 = true]) async {
-  directs
-      .removeWhere((final link) => link.url.contains(".m3u8") && !supportm3u8);
+  final List<MediaLink> directs,
+  /*[final bool supportm3u8 = true]*/
+) async {
+  final context = NavigationService.navigatorKey.currentContext!;
+  // directs.removeWhere((final link) => link.url.contains(".m3u8") && !supportm3u8);
 
   final List<Language> languages = await _getAvailableLanguages(directs);
   late Language lang;
   if (languages.length > 1 && context.mounted) {
-    lang = await _showSelectionDialog(
-      context,
-      languages,
-      "Wybierz język",
-    );
+    if (Provider.of<SettingsNotifier>(context, listen: false).autoLanguage) {
+      final List<Language> preferredLanguages =
+          Provider.of<SettingsNotifier>(context, listen: false)
+              .preferredLanguages;
+      for (final preferredLanguage in preferredLanguages) {
+        if (languages.contains(preferredLanguage)) {
+          lang = preferredLanguage;
+          break;
+        }
+      }
+    } else {
+      lang = await _showSelectionDialog(
+        languages,
+        "Wybierz język",
+      );
+    }
   } else if (languages.isNotEmpty) {
     lang = languages.first;
   } else {
@@ -72,9 +87,7 @@ Future<(Language?, Quality?)> getUserSelectedPreferences(
   final List<Quality> qualities =
       await _getAvaliableQualitiesForLanguage(lang, directs);
   late Quality quality;
-  if (qualities.length > 1 && context.mounted) {
-    quality = await _showSelectionDialog(context, qualities, "Wybierz jakość");
-  } else if (qualities.isNotEmpty) {
+  if (qualities.isNotEmpty) {
     quality = qualities.first;
   } else {
     return (lang, null);
@@ -87,9 +100,14 @@ Future<MediaLink?> selectBestLink(final List<MediaLink> links) async {
   final validLinks = <MediaLink>[];
 
   for (final link in links) {
-    await link.getDirectLink();
-    if (link.isVideoValid) {
-      validLinks.add(link);
+    try {
+      await link.getDirectLink();
+      await link.verifyDirectVideoUrl();
+      if (link.isVideoValid) {
+        validLinks.add(link);
+      }
+    } catch (e) {
+      continue;
     }
   }
 
@@ -101,11 +119,9 @@ Future<MediaLink?> selectBestLink(final List<MediaLink> links) async {
   return validLinks.first;
 }
 
-Future<MediaLink?> getUserSelectedVersion(
-    final BuildContext context, final List<MediaLink> links) async {
+Future<MediaLink?> getUserSelectedVersion(final List<MediaLink> links) async {
   // links.removeWhere((final link) => link.url.contains(".m3u8") && !supportm3u8);
-  if (!context.mounted) return null;
-  final (lang, quality) = await getUserSelectedPreferences(context, links);
+  final (lang, quality) = await getUserSelectedPreferences(links);
   if (lang == null || quality == null) {
     return null;
   }

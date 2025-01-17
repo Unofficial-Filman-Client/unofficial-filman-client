@@ -1,15 +1,15 @@
 import "package:collection/collection.dart";
 import "package:flutter/material.dart";
+import "package:provider/provider.dart";
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/notifiers/settings.dart";
 import "package:unofficial_filman_client/notifiers/watched.dart";
 import "package:unofficial_filman_client/screens/player.dart";
 import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/season.dart";
-import "package:provider/provider.dart";
 import "package:unofficial_filman_client/types/watched.dart";
-import "package:unofficial_filman_client/notifiers/download.dart";
 import "package:unofficial_filman_client/utils/select_dialog.dart";
+import "package:unofficial_filman_client/notifiers/download.dart";
 
 class EpisodesModal extends StatefulWidget {
   final FilmDetails filmDetails;
@@ -66,12 +66,22 @@ class _EpisodesModalState extends State<EpisodesModal> {
             episodeDetails[episode.episodeName] = watched;
           });
         } else {
-          final FilmDetails data =
-              await Provider.of<FilmanNotifier>(context, listen: false)
-                  .getFilmDetails(episode.episodeUrl);
-          if (!mounted) return;
-          setState(() {
-            episodeDetails[episode.episodeName] = data;
+          Provider.of<FilmanNotifier>(context, listen: false)
+              .getFilmDetails(episode.episodeUrl)
+              .then((final data) {
+            if (!mounted) return;
+            setState(() {
+              episodeDetails[episode.episodeName] = data;
+            });
+          }).catchError((final err) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(err.toString()),
+                dismissDirection: DismissDirection.horizontal,
+                behavior: SnackBarBehavior.floating,
+                showCloseIcon: true,
+              ));
+            }
           });
         }
       }
@@ -108,8 +118,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
     );
   }
 
-  Widget _buildDownloadIcon(
-      final BuildContext context, final FilmDetails filmDetails) {
+  Widget _buildDownloadIcon(final FilmDetails filmDetails) {
     final downloaded = Provider.of<DownloadNotifier>(context, listen: false)
         .getEpisodeByUrl(widget.filmDetails, filmDetails.url);
     bool isDownloading = Provider.of<DownloadNotifier>(context, listen: false)
@@ -117,7 +126,10 @@ class _EpisodesModalState extends State<EpisodesModal> {
         .any((final element) => element.film.url == filmDetails.url);
     return IconButton(
       icon: isDownloading
-          ? const CircularProgressIndicator()
+          ? Transform.scale(
+              scale: 0.7,
+              child: const CircularProgressIndicator(),
+            )
           : Icon(downloaded != null ? Icons.save : Icons.download),
       onPressed: () async {
         if (downloaded != null || filmDetails.links == null) {
@@ -126,8 +138,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
         if (filmDetails.links?.isEmpty == true || !context.mounted) {
           return;
         }
-        final (l, q) =
-            await getUserSelectedPreferences(context, filmDetails.links!);
+        final (l, q) = await getUserSelectedPreferences(filmDetails.links!);
         if (l == null || q == null) {
           return;
         }
@@ -241,7 +252,7 @@ class _EpisodesModalState extends State<EpisodesModal> {
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 300),
                               child: episodeDetails[episode.episodeName] != null
-                                  ? _buildDownloadIcon(context,
+                                  ? _buildDownloadIcon(
                                       episodeDetails[episode.episodeName]!)
                                   : const SizedBox(),
                             ),

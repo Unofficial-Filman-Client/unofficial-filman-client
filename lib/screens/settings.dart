@@ -1,4 +1,5 @@
 import "package:unofficial_filman_client/notifiers/settings.dart";
+import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:flutter/material.dart";
 import "package:provider/provider.dart";
@@ -99,8 +100,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               settings))
                     ],
                   )))),
+          const Divider(),
+          ListTile(
+            title: const Text("Automatyczny wybór języka"),
+            subtitle: const Text(
+                "Kolejność w jakiej odtwarzacz będzie preferował języki."),
+            onTap: () => Provider.of<SettingsNotifier>(context, listen: false)
+                .setAutoLanguage(
+                    !Provider.of<SettingsNotifier>(context, listen: false)
+                        .autoLanguage),
+            trailing: Switch(
+              value: Provider.of<SettingsNotifier>(context, listen: false)
+                  .autoLanguage,
+              onChanged: (final bool value) {
+                Provider.of<SettingsNotifier>(context, listen: false)
+                    .setAutoLanguage(value);
+              },
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (final context) => const ReorderLanguageScreen()));
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Zmień kolejność języków"),
+                    Icon(Icons.arrow_right)
+                  ]),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class ReorderLanguageScreen extends StatelessWidget {
+  const ReorderLanguageScreen({super.key});
+
+  @override
+  Widget build(final BuildContext context) {
+    final List<Language> languages =
+        Provider.of<SettingsNotifier>(context).preferredLanguages;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Kolejność języków"),
+      ),
+      body: StatefulBuilder(
+          builder: (final context, final setState) => ReorderableListView(
+              onReorder: (final int oldIndex, final int newIndex) {
+                setState(() {
+                  int delta = newIndex;
+                  if (oldIndex < newIndex) {
+                    delta -= 1;
+                  }
+                  final item = languages.removeAt(oldIndex);
+                  languages.insert(delta, item);
+                  Provider.of<SettingsNotifier>(context, listen: false)
+                      .setPreferredLanguages(languages);
+                });
+              },
+              children: languages
+                  .map((final lang) => ListTile(
+                        key: ValueKey(lang),
+                        title: Text(lang.toString()),
+                        trailing: const Icon(Icons.drag_handle),
+                      ))
+                  .toList())),
     );
   }
 }

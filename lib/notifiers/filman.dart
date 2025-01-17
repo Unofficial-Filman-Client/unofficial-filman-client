@@ -1,4 +1,5 @@
 import "dart:convert";
+import "package:cached_annotation/cached_annotation.dart";
 import "package:dio/dio.dart";
 import "package:html/dom.dart" as dom;
 import "package:unofficial_filman_client/types/exceptions.dart";
@@ -14,7 +15,12 @@ import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 
-class FilmanNotifier {
+part "filman.cached.dart";
+
+@WithCache()
+abstract mixin class FilmanNotifier implements _$FilmanNotifier {
+  factory FilmanNotifier() = _FilmanNotifier;
+
   final List<String> cookies = [];
   late final SharedPreferences prefs;
   late final Dio dio;
@@ -228,6 +234,7 @@ class FilmanNotifier {
     }
   }
 
+  @Cached(ttl: 30)
   Future<FilmDetails> getFilmDetails(final String link) async {
     final response = await dio.get(
       link,
@@ -397,10 +404,11 @@ class FilmanNotifier {
     }
   }
 
+  @Cached(ttl: 30)
   Future<List<Category>> getCategories() async {
     final response = await dio.get(
-      "https://filman.cc/filmy-online-pl/",
-      options: _buildDioOptions(),
+      "https://filman.cc/filmy/",
+      options: _buildDioOptions(contentType: "aplication/json"),
     );
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
@@ -414,8 +422,7 @@ class FilmanNotifier {
 
     final column = document
         .querySelectorAll("h4")
-        .firstWhere((final e) => e.text.trim() == "Kategorie",
-            orElse: () => dom.Element.tag("h4"))
+        .firstWhere((final e) => e.text.trim() == "Kategorie")
         .parent;
 
     column?.querySelectorAll("li").forEach((final element) {
@@ -428,11 +435,13 @@ class FilmanNotifier {
     return categories;
   }
 
+  @Cached(ttl: 30)
   Future<List<Film>> getMoviesByCategory(
-      final Category category, final bool forSeries) async {
+      final Category category, final bool forSeries,
+      {final int? page = 1}) async {
     final response = await dio.get(
-        "${forSeries ? "https://filman.cc/seriale-online-pl" : "https://filman.cc/filmy-online-pl"}/category:${category.id}/",
-        options: _buildDioOptions());
+        "${forSeries ? "https://filman.cc/seriale" : "https://filman.cc/filmy"}/category:${category.id}/?page=$page",
+        options: _buildDioOptions(contentType: "aplication/json"));
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
         false) {

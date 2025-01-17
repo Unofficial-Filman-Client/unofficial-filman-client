@@ -1,7 +1,6 @@
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/types/home_page.dart";
 import "package:unofficial_filman_client/widgets/error_handling.dart";
-import "package:unofficial_filman_client/utils/updater.dart";
 import "package:flutter/material.dart";
 import "package:unofficial_filman_client/screens/film.dart";
 import "package:unofficial_filman_client/types/film.dart";
@@ -24,7 +23,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.initState();
     homePageLoader =
         Provider.of<FilmanNotifier>(context, listen: false).getFilmanPage();
-    checkForUpdates(context);
   }
 
   // void _showBottomSheet() {
@@ -44,7 +42,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   //   );
   // }
 
-  Widget _buildFilmCard(final BuildContext context, final Film film) {
+  Widget _buildFilmCard(final Film film) {
     return FocusInkWell(
         onTap: () {
           Navigator.of(context).push(
@@ -141,7 +139,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   for (final Film film
                                       in snapshot.data?.getFilms(category) ??
                                           [])
-                                    _buildFilmCard(context, film),
+                                    _buildFilmCard(film),
                                 ],
                               ),
                             ),
