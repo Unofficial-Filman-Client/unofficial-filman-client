@@ -14,13 +14,13 @@ import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
+import "package:cached_annotation/cached_annotation.dart";
 
 part "filman.cached.dart";
 
 @WithCache()
 abstract mixin class FilmanNotifier implements _$FilmanNotifier {
   factory FilmanNotifier() = _FilmanNotifier;
-
   final List<String> cookies = [];
   late final SharedPreferences prefs;
   late final Dio dio;

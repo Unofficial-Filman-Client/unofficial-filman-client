@@ -2,6 +2,7 @@ import "dart:async";
 import "dart:convert";
 import "dart:math";
 import "package:dio/dio.dart";
+import "package:flutter/material.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/exceptions.dart";
 
@@ -408,6 +409,7 @@ class MediaLink {
             followRedirects: true, headers: {"referer": getBaseUrl(url)}),
       );
       stopwatch.stop();
+      debugPrint(response.headers.toString());
       _isVideoValid = response.statusCode == 200 &&
           (response.headers.value("content-type")?.contains("video") == true ||
               response.headers.value("content-type")?.contains("mpegurl") ==

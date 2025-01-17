@@ -15,7 +15,7 @@ import "package:permission_handler/permission_handler.dart";
 Future<void> checkForUpdates() async {
   final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
-    "https://api.github.com/repos/Unofficial-Filman-Client/unofficial-filman-client-tv/releases/latest",
+    "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
   );
 
   final Version currentVersion = Version.parse(packageInfo.version);
@@ -41,16 +41,16 @@ Future<void> checkForUpdates() async {
                     onPressed: () {
                       Navigator.pop(context);
                       downloadAndInstallApk(response, (final e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(e.toString()),
-                              dismissDirection: DismissDirection.horizontal,
-                              behavior: SnackBarBehavior.floating,
-                              showCloseIcon: true,
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(
+                                NavigationService.navigatorKey.currentContext!)
+                            .showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                            dismissDirection: DismissDirection.horizontal,
+                            behavior: SnackBarBehavior.floating,
+                            showCloseIcon: true,
+                          ),
+                        );
                       });
                     },
                     child: const Text("Aktualizuj"),
@@ -101,7 +101,7 @@ Future<void> downloadAndInstallApk(
     final assets = response.data["assets"];
     if (assets is List) {
       final apkAsset = assets.firstWhereOrNull(
-        (final asset) => asset["name"] == "unofficial-filman-tv.apk",
+        (final asset) => asset["name"] == "unofficial-filman-android.apk",
       );
 
       if (apkAsset != null && apkAsset["browser_download_url"] is String) {

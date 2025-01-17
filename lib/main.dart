@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
     return DynamicColorBuilder(
         builder: (final lightColorScheme, final darkColorScheme) {
       return SafeArea(
-          minimum: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          minimum: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           child: MaterialApp(
             title: "Unofficial Filman.cc App",
             debugShowCheckedModeBanner: false,
@@ -75,7 +75,7 @@ class MyApp extends StatelessWidget {
               colorScheme: darkColorScheme ?? _defaultDarkColorScheme,
               useMaterial3: true,
             ),
-            themeMode: Provider.of<SettingsNotifier>(context).theme,
+            themeMode: ThemeMode.dark,
             home: isAuth ? const MainScreen() : const HelloScreen(),
           ));
     });
