@@ -89,37 +89,40 @@ class _FilmanNotifier with FilmanNotifier implements _$FilmanNotifier {
   }
 
   @override
-  Future<List<Film>> getMoviesByCategory(
-      Category category, bool forSeries) async {
+  Future<List<Film>> getMoviesByCategory(Category category, bool forSeries,
+      {int? page = 1}) async {
     final now = DateTime.now();
-    final cachedTtl =
-        _getMoviesByCategoryTtl["${category.hashCode}${forSeries.hashCode}"];
+    final cachedTtl = _getMoviesByCategoryTtl[
+        "${category.hashCode}${forSeries.hashCode}${page.hashCode}"];
     final currentTtl = cachedTtl != null ? DateTime.parse(cachedTtl) : null;
 
     if (currentTtl != null && currentTtl.isBefore(now)) {
       _getMoviesByCategoryTtl
-          .remove("${category.hashCode}${forSeries.hashCode}");
+          .remove("${category.hashCode}${forSeries.hashCode}${page.hashCode}");
       _getMoviesByCategoryCached
-          .remove("${category.hashCode}${forSeries.hashCode}");
+          .remove("${category.hashCode}${forSeries.hashCode}${page.hashCode}");
     }
 
-    final cachedValue =
-        _getMoviesByCategoryCached["${category.hashCode}${forSeries.hashCode}"];
+    final cachedValue = _getMoviesByCategoryCached[
+        "${category.hashCode}${forSeries.hashCode}${page.hashCode}"];
     if (cachedValue == null) {
       final List<Film> toReturn;
       try {
-        final result = super.getMoviesByCategory(category, forSeries);
+        final result =
+            super.getMoviesByCategory(category, forSeries, page: page);
 
         toReturn = await result;
       } catch (_) {
         rethrow;
       } finally {}
 
-      _getMoviesByCategoryCached["${category.hashCode}${forSeries.hashCode}"] =
+      _getMoviesByCategoryCached[
+              "${category.hashCode}${forSeries.hashCode}${page.hashCode}"] =
           toReturn;
 
       const duration = Duration(seconds: 30);
-      _getMoviesByCategoryTtl["${category.hashCode}${forSeries.hashCode}"] =
+      _getMoviesByCategoryTtl[
+              "${category.hashCode}${forSeries.hashCode}${page.hashCode}"] =
           DateTime.now().add(duration).toIso8601String();
 
       return toReturn;
