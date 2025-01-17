@@ -437,9 +437,10 @@ abstract mixin class FilmanNotifier implements _$FilmanNotifier {
 
   @Cached(ttl: 30)
   Future<List<Film>> getMoviesByCategory(
-      final Category category, final bool forSeries) async {
+      final Category category, final bool forSeries,
+      {final int? page = 1}) async {
     final response = await dio.get(
-        "${forSeries ? "https://filman.cc/seriale" : "https://filman.cc/filmy"}/category:${category.id}/",
+        "${forSeries ? "https://filman.cc/seriale" : "https://filman.cc/filmy"}/category:${category.id}/?page=$page",
         options: _buildDioOptions(contentType: "aplication/json"));
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??
