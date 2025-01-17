@@ -13,8 +13,13 @@ import "package:flutter_secure_storage/flutter_secure_storage.dart";
 import "package:shared_preferences/shared_preferences.dart";
 import "package:html/parser.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
+import "package:cached_annotation/cached_annotation.dart";
 
-class FilmanNotifier {
+part "filman.cached.dart";
+
+@WithCache()
+abstract mixin class FilmanNotifier implements _$FilmanNotifier {
+  factory FilmanNotifier() = _FilmanNotifier;
   final List<String> cookies = [];
   late final SharedPreferences prefs;
   late final Dio dio;
@@ -228,6 +233,8 @@ class FilmanNotifier {
     }
   }
 
+  @Cached(ttl: 30)
+
   Future<FilmDetails> getFilmDetails(final String link) async {
     final response = await dio.get(
       link,
@@ -397,9 +404,11 @@ class FilmanNotifier {
     }
   }
 
+  @Cached(ttl: 30)
+
   Future<List<Category>> getCategories() async {
     final response = await dio.get(
-      "https://filman.cc/filmy-online-pl/",
+      "https://filman.cc/filmy/",
       options: _buildDioOptions(),
     );
 
@@ -414,8 +423,7 @@ class FilmanNotifier {
 
     final column = document
         .querySelectorAll("h4")
-        .firstWhere((final e) => e.text.trim() == "Kategorie",
-            orElse: () => dom.Element.tag("h4"))
+         .firstWhere((final e) => e.text.trim() == "Kategorie")
         .parent;
 
     column?.querySelectorAll("li").forEach((final element) {
@@ -428,10 +436,12 @@ class FilmanNotifier {
     return categories;
   }
 
+  @Cached(ttl: 30)
+  
   Future<List<Film>> getMoviesByCategory(
       final Category category, final bool forSeries) async {
     final response = await dio.get(
-        "${forSeries ? "https://filman.cc/seriale-online-pl" : "https://filman.cc/filmy-online-pl"}/category:${category.id}/",
+        "${forSeries ? "https://filman.cc/seriale" : "https://filman.cc/filmy"}/category:${category.id}/",
         options: _buildDioOptions());
 
     if (response.headers["location"]?.contains("https://filman.cc/logowanie") ??

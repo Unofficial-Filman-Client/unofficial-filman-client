@@ -6,12 +6,14 @@ import "dart:io";
 import "package:provider/provider.dart";
 import "package:unofficial_filman_client/notifiers/filman.dart";
 import "package:unofficial_filman_client/screens/main.dart";
+import "package:unofficial_filman_client/utils/updater.dart";
 
 enum LoginState { waiting, loginin, done }
 
 class HelloScreen extends StatefulWidget {
   const HelloScreen({super.key});
 
+  
   @override
   State<HelloScreen> createState() => _HelloScreenState();
 }
@@ -26,6 +28,7 @@ class _HelloScreenState extends State<HelloScreen> {
   void initState() {
     super.initState();
     setupLogin();
+    checkForUpdates();
   }
 
   @override

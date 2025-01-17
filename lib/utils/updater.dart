@@ -7,14 +7,15 @@ import "package:flutter/material.dart";
 import "package:open_file/open_file.dart";
 import "package:package_info_plus/package_info_plus.dart";
 import "package:path_provider/path_provider.dart";
+import "package:unofficial_filman_client/utils/navigation_service.dart";
 import "package:url_launcher/url_launcher.dart";
 import "package:version/version.dart";
 import "package:permission_handler/permission_handler.dart";
 
-Future<void> checkForUpdates(final BuildContext context) async {
+Future<void> checkForUpdates() async {
   final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
-    "https://api.github.com/repos/Unofficial-Filman-Client/unofficial-filman-client-tv/releases/latest",
+    "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
   );
 
   final Version currentVersion = Version.parse(packageInfo.version);
@@ -22,81 +23,77 @@ Future<void> checkForUpdates(final BuildContext context) async {
   final Version latestVersion = Version.parse(response.data["tag_name"]);
 
   if (currentVersion < latestVersion) {
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        builder: (final context) {
-          return AlertDialog(
-            title: const Text("Dostępna jest nowa wersja aplikacji"),
-            content: Text(
-              "Twoja wersja: ${currentVersion.toString()}\nNajnowsza wersja: ${latestVersion.toString()}",
+    showDialog(
+      context: NavigationService.navigatorKey.currentContext!,
+      builder: (final context) {
+        return AlertDialog(
+          title: const Text("Dostępna jest nowa wersja aplikacji"),
+          content: Text(
+            "Twoja wersja: ${currentVersion.toString()}\nNajnowsza wersja: ${latestVersion.toString()}",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Może później"),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Może później"),
-              ),
-              Platform.isAndroid
-                  ? TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        downloadAndInstallApk(context, response, (final e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.toString()),
-                                dismissDirection: DismissDirection.horizontal,
-                                behavior: SnackBarBehavior.floating,
-                                showCloseIcon: true,
-                              ),
-                            );
-                          }
-                        });
-                      },
-                      child: const Text("Aktualizuj"),
-                    )
-                  : TextButton(
-                      onPressed: () async {
-                        final url = Uri.parse(
-                          "https://github.com/Unofficial-Filman-Client/unofficial-filman-client-tv/releases/latest",
+            Platform.isAndroid
+                ? TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      downloadAndInstallApk(response, (final e) {
+                        ScaffoldMessenger.of(
+                                NavigationService.navigatorKey.currentContext!)
+                            .showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString()),
+                            dismissDirection: DismissDirection.horizontal,
+                            behavior: SnackBarBehavior.floating,
+                            showCloseIcon: true,
+                          ),
                         );
-                        if (!await launchUrl(
-                          url,
-                          mode: LaunchMode.externalApplication,
-                        )) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    "Nie można otworzyć linku w przeglądarce"),
-                                dismissDirection: DismissDirection.horizontal,
-                                behavior: SnackBarBehavior.floating,
-                                showCloseIcon: true,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text("Przejdź do wydania"),
-                    ),
-            ],
-          );
-        },
-      );
-    }
+                      });
+                    },
+                    child: const Text("Aktualizuj"),
+                  )
+                : TextButton(
+                    onPressed: () async {
+                      final url = Uri.parse(
+                        "https://github.com/majusss/unofficial-filman-flutter/releases/latest",
+                      );
+                      if (!await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      )) {
+                        ScaffoldMessenger.of(
+                                NavigationService.navigatorKey.currentContext!)
+                            .showSnackBar(
+                          const SnackBar(
+                            content:
+                                Text("Nie można otworzyć linku w przeglądarce"),
+                            dismissDirection: DismissDirection.horizontal,
+                            behavior: SnackBarBehavior.floating,
+                            showCloseIcon: true,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text("Przejdź do wydania"),
+                  ),
+          ],
+        );
+      },
+    );
   }
 }
 
 Future<void> downloadAndInstallApk(
-  final BuildContext context,
   final Response<dynamic> response,
   final Function(Exception) onError,
 ) async {
-  await Permission.requestInstallPackages.request();
-  final permissionStatus = await Permission.requestInstallPackages.status;
+  final permissionStatus = await Permission.requestInstallPackages.request();
 
-  if (permissionStatus.isDenied || permissionStatus.isRestricted) {
-    onError(Exception("Brak uprawnień do instalacji aplikacji"));
+  if (permissionStatus.isDenied) {
+    onError(Exception("Brak uprawnień do instalowania aplikacji"));
     return;
   }
 
@@ -104,18 +101,17 @@ Future<void> downloadAndInstallApk(
     final assets = response.data["assets"];
     if (assets is List) {
       final apkAsset = assets.firstWhereOrNull(
-        (final asset) => asset["name"] == "unofficial-filman-tv.apk",
+        (final asset) => asset["name"] == "unofficial-filman-android.apk",
       );
 
       if (apkAsset != null && apkAsset["browser_download_url"] is String) {
         final tempDir = await getTemporaryDirectory();
         final savePath = '${tempDir.path}/${response.data["tag_name"]}.apk';
 
-        if (!context.mounted) return;
         if (File(savePath).existsSync()) {
-          _showExistingFileDialog(context, apkAsset, savePath);
+          _showExistingFileDialog(apkAsset, savePath);
         } else {
-          _downloadAndDisplayProgress(context, apkAsset, savePath);
+          _downloadAndDisplayProgress(apkAsset, savePath);
         }
       } else {
         onError(Exception("Brak linku do pobrania pliku"));
@@ -127,12 +123,11 @@ Future<void> downloadAndInstallApk(
 }
 
 void _showExistingFileDialog(
-  final BuildContext context,
   final dynamic version,
   final String savePath,
 ) {
   showDialog(
-    context: context,
+    context: NavigationService.navigatorKey.currentContext!,
     barrierDismissible: false,
     builder: (final context) {
       return AlertDialog(
@@ -142,7 +137,7 @@ void _showExistingFileDialog(
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _downloadAndDisplayProgress(context, version, savePath);
+              _downloadAndDisplayProgress(version, savePath);
             },
             child: const Text("Pobierz ponownie"),
           ),
@@ -156,8 +151,7 @@ void _showExistingFileDialog(
   );
 }
 
-void _downloadAndDisplayProgress(
-    final BuildContext context, final dynamic version, final String savePath) {
+void _downloadAndDisplayProgress(final dynamic version, final String savePath) {
   final downloadProgress = StreamController<double>();
 
   Dio().download(
@@ -174,7 +168,7 @@ void _downloadAndDisplayProgress(
   });
 
   showDialog(
-    context: context,
+    context: NavigationService.navigatorKey.currentContext!,
     barrierDismissible: false,
     builder: (final context) {
       return AlertDialog(

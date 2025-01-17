@@ -11,6 +11,7 @@ import "package:unofficial_filman_client/types/film_details.dart";
 import "package:unofficial_filman_client/types/video_scrapers.dart";
 import "package:unofficial_filman_client/utils/title.dart";
 import "package:shared_preferences/shared_preferences.dart";
+import "package:permission_handler/permission_handler.dart";
 
 class DownloadNotifier extends ChangeNotifier {
   final List<Downloading> _downloading = [];
@@ -22,6 +23,43 @@ class DownloadNotifier extends ChangeNotifier {
   List<DownloadedSerial> get downloadedSerials => _downloadedSerials;
 
   SharedPreferences? prefs;
+
+  Future<void> removeDownloaded(final DownloadedSingle download) async {
+    try {
+      final filePath = await download.getFilePath();
+      final file = File(filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint("Error deleting file: $e");
+    }
+
+    if (_downloaded.contains(download)) {
+      _downloaded.remove(download);
+      await prefs?.setStringList(
+        "downloaded",
+        _downloaded.map((final e) => jsonEncode(e.toMap())).toList(),
+      );
+    }
+
+    for (var serial in _downloadedSerials) {
+      if (serial.episodes.contains(download)) {
+        serial.episodes.remove(download);
+        if (serial.episodes.isEmpty) {
+          _downloadedSerials.remove(serial);
+        }
+        
+        await prefs?.setStringList(
+          "downloadedSerials",
+          _downloadedSerials.map((final e) => jsonEncode(e.toMap())).toList(),
+        );
+        break;
+      }
+    }
+
+    notifyListeners();
+  }
 
   void loadSaved() async {
     prefs = await SharedPreferences.getInstance();
@@ -136,6 +174,9 @@ class DownloadNotifier extends ChangeNotifier {
         language: language,
         quality: quality);
     _downloading.add(download);
+
+    await Permission.notification.request();
+
 
     final queued = await FileDownloader().enqueue(await download.getTask());
 
