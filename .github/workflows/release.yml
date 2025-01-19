@@ -74,13 +74,21 @@ jobs:
         run: flutter build apk --release
 
       - name: Rename APK
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/unofficial-filman-android.apk
+        run: |
+          mv build/app/outputs/flutter-apk/app-armfull-release.apk build/app/outputs/flutter-apk/unofficial-filman-android-arm.apk
+          mv build/app/outputs/flutter-apk/app-x86full-release.apk build/app/outputs/flutter-apk/unofficial-filman-android-x86.apk
 
-      - name: Upload APK Artifact
+      - name: Upload ARM APK Artifact
         uses: actions/upload-artifact@v3
         with:
           name: unofficial-filman-android.apk
-          path: build/app/outputs/flutter-apk/unofficial-filman-android.apk
+          path: build/app/outputs/flutter-apk/unofficial-filman-android-arm.apk
+
+      - name: Upload X86 APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: unofficial-filman-android.apk
+          path: build/app/outputs/flutter-apk/unofficial-filman-android-x86.apk
 
   ios-build:
     name: Build iOS IPA
@@ -126,10 +134,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download APK Artifact
+      - name: Download ARM APK Artifact
         uses: actions/download-artifact@v3
         with:
-          name: unofficial-filman-android.apk
+          name: unofficial-filman-android-arm.apk
+
+      - name: Download X86 APK Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: unofficial-filman-android-x86.apk
 
       - name: Download IPA Artifact
         uses: actions/download-artifact@v3
@@ -152,5 +165,6 @@ jobs:
 
           gh release create "${release_tag}" \
             --title "${release_name}" \
-            unofficial-filman-android.apk \
+            unofficial-filman-android-arm.apk \
+            unofficial-filman-android-x86.apk \
             unofficial-filman-ios.ipa

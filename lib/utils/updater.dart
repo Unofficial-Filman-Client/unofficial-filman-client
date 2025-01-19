@@ -15,10 +15,13 @@ import "package:permission_handler/permission_handler.dart";
 Future<void> checkForUpdates() async {
   final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
-    "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
+    "https://api.github.com/repos/Unofficial-Filman-Client/unofficial-filman-client/releases/latest",
   );
 
-  final Version currentVersion = Version.parse(packageInfo.version);
+  final bool isArm = packageInfo.version.contains("arm");
+
+  final Version currentVersion = Version.parse(
+      packageInfo.version.split("-").firstOrNull ?? packageInfo.version);
 
   final Version latestVersion = Version.parse(response.data["tag_name"]);
 
@@ -40,7 +43,7 @@ Future<void> checkForUpdates() async {
                 ? TextButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      downloadAndInstallApk(response, (final e) {
+                      downloadAndInstallApk(response, isArm, (final e) {
                         ScaffoldMessenger.of(
                                 NavigationService.navigatorKey.currentContext!)
                             .showSnackBar(
@@ -58,7 +61,7 @@ Future<void> checkForUpdates() async {
                 : TextButton(
                     onPressed: () async {
                       final url = Uri.parse(
-                        "https://github.com/majusss/unofficial-filman-flutter/releases/latest",
+                        "https://github.com/Unofficial-Filman-Client/unofficial-filman-client/releases/latest",
                       );
                       if (!await launchUrl(
                         url,
@@ -88,6 +91,7 @@ Future<void> checkForUpdates() async {
 
 Future<void> downloadAndInstallApk(
   final Response<dynamic> response,
+  final bool isArm,
   final Function(Exception) onError,
 ) async {
   final permissionStatus = await Permission.requestInstallPackages.request();
@@ -100,7 +104,13 @@ Future<void> downloadAndInstallApk(
   if (permissionStatus.isGranted) {
     final assets = response.data["assets"];
     if (assets is List) {
-      final apkAsset = assets.firstWhereOrNull(
+      dynamic apkAsset = assets.firstWhereOrNull(
+        (final asset) =>
+            asset["name"] ==
+            "unofficial-filman-android-${isArm ? "arm" : "x86"}.apk",
+      );
+
+      apkAsset ??= assets.firstWhereOrNull(
         (final asset) => asset["name"] == "unofficial-filman-android.apk",
       );
 
