@@ -65,7 +65,11 @@ Oto nieoficjalny klient strony internetowej filman.cc! Ta aplikacja, stworzona p
 4. **Uruchom Aplikację**:
 
    ```bash
-   flutter run
+   flutter run --flavor armfull
+   ```
+   lub
+   ```bash
+   flutter run --flavor x86full
    ```
 
 To uruchomi aplikację na podłączonym urządzeniu lub emulatorze.
