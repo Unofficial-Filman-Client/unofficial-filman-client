@@ -1,0 +1,29 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "unofficial-filman-client",
+          "appId": "1:734218388713:android:554d414c7bf844e0e25c78",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "unofficial-filman-client",
+          "appId": "1:734218388713:ios:cb31877c6327a698e25c78",
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "unofficial-filman-client",
+          "configurations": {
+            "android": "1:734218388713:android:554d414c7bf844e0e25c78",
+            "ios": "1:734218388713:ios:cb31877c6327a698e25c78"
+          }
+        }
+      }
+    }
+  }
+}

@@ -12,9 +12,14 @@ import "package:unofficial_filman_client/screens/hello.dart";
 import "package:unofficial_filman_client/screens/main.dart";
 import "package:fast_cached_network_image/fast_cached_network_image.dart";
 import "package:unofficial_filman_client/utils/navigation_service.dart";
+import "package:firebase_core/firebase_core.dart";
+import "firebase_options.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   MediaKit.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();

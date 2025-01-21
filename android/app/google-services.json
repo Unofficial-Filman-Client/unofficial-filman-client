@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "734218388713",
+    "project_id": "unofficial-filman-client",
+    "storage_bucket": "unofficial-filman-client.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734218388713:android:554d414c7bf844e0e25c78",
+        "android_client_info": {
+          "package_name": "io.github.majusss.filman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYj7SgfjO6oUUiGwKWb48cS_jL67PPrP0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

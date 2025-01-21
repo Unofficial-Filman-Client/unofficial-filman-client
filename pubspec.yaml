@@ -36,6 +36,8 @@ dependencies:
   flutter_inappwebview: ^6.0.0
   bonsoir: ^5.1.10
   cached_annotation: ^1.7.0
+  firebase_core: ^3.10.1
+  firebase_analytics: ^11.4.1
 
 dev_dependencies:
   flutter_test:
