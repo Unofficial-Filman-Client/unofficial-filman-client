@@ -65,7 +65,11 @@ Here is the unofficial client for the filman.cc website! This app, built using F
 4. **Run the App**:
 
    ```bash
-   flutter run
+   flutter run --flavor armfull
+   ```
+   or
+   ```bash
+   flutter run --flavor x86full
    ```
 
 This will launch the app on your connected device or emulator.
