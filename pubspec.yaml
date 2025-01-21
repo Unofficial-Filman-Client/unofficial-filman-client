@@ -1,7 +1,7 @@
 name: unofficial_filman_client
 description: "This app allows you to browse, search, and watch movies and TV shows available on filman.cc."
 publish_to: "none"
-version: 1.5.6
+version: 1.5.7
 
 environment:
   sdk: ">=3.3.3 <4.0.0"
