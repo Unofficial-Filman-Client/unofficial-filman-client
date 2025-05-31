@@ -13,6 +13,44 @@ import "package:version/version.dart";
 import "package:permission_handler/permission_handler.dart";
 
 Future<void> checkForUpdates() async {
+  showDialog(
+    context: NavigationService.navigatorKey.currentContext!,
+    barrierDismissible: false,
+    builder: (final context) {
+      return AlertDialog(
+        title: const Text("Dostępna jest nowa wersja aplikacji"),
+        content: Text(
+          "Przejdź na PureVideo",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final url = Uri.parse(
+                "https://github.com/majusss/purevideo",
+              );
+              if (!await launchUrl(
+                url,
+                mode: LaunchMode.externalApplication,
+              )) {
+                ScaffoldMessenger.of(
+                        NavigationService.navigatorKey.currentContext!)
+                    .showSnackBar(
+                  const SnackBar(
+                    content: Text("Nie można otworzyć linku w przeglądarce"),
+                    dismissDirection: DismissDirection.horizontal,
+                    behavior: SnackBarBehavior.floating,
+                    showCloseIcon: true,
+                  ),
+                );
+              }
+            },
+            child: const Text("Przejdź do wydania"),
+          ),
+        ],
+      );
+    },
+  );
+
   final PackageInfo packageInfo = await PackageInfo.fromPlatform();
   final response = await Dio().get(
     "https://api.github.com/repos/majusss/unofficial-filman-flutter/releases/latest",
