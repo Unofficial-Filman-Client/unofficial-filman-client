@@ -30,9 +30,7 @@ dependencies:
   wakelock_plus: ^1.2.5
   webview_flutter: ^4.8.0
   screen_brightness: ^0.2.2+1
-  flutter_cast_framework:
-    git: https://github.com/Unofficial-Filman-Client/flutter_cast_framework
-  fast_cached_network_image: ^1.2.9
+  fast_cached_network_image: ^1.3.3+5
   flutter_inappwebview: ^6.0.0
   bonsoir: ^5.1.10
   cached_annotation: ^1.7.0
